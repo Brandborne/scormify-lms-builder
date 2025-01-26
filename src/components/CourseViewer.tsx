@@ -61,15 +61,15 @@ export function CourseViewer() {
   });
 
   const { data: courseUrl } = useQuery({
-    queryKey: ['courseUrl', course?.unzipped_path, course?.manifest_data],
-    enabled: !!course?.unzipped_path && course?.manifest_data?.status === 'processed',
+    queryKey: ['courseUrl', course?.course_files_path, course?.manifest_data],
+    enabled: !!course?.course_files_path && course?.manifest_data?.status === 'processed',
     queryFn: async () => {
-      if (!course?.unzipped_path) {
+      if (!course?.course_files_path) {
         throw new Error('Missing course path');
       }
 
       // Construct the path to the SCORM driver
-      const scormDriverPath = `${course.unzipped_path}/scormdriver/indexAPI.html`;
+      const scormDriverPath = `${course.course_files_path}/scormdriver/indexAPI.html`;
       
       // Get the public URL
       const { data } = supabase
