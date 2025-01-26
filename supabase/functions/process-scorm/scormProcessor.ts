@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import JSZip from 'https://esm.sh/jszip@3.10.1'
-import { getContentType, uploadFile } from './fileUtils.ts'
+import { uploadFile } from './fileUtils.ts'
 
 export async function processZipContent(
   zip: JSZip,
@@ -21,7 +21,7 @@ export async function processZipContent(
   for (const relativePath of files) {
     const file = zip.files[relativePath];
     
-    // Skip macOS metadata files and directories
+    // Skip directories and macOS metadata
     if (file.dir || relativePath.startsWith('__MACOSX/')) {
       console.log('Skipping directory or macOS file:', relativePath);
       continue;
@@ -33,46 +33,19 @@ export async function processZipContent(
       // Preserve the exact path structure from the zip
       const originalPath = `${unzippedDirPath}/${relativePath}`;
       console.log('Target storage path:', originalPath);
-      
-      const contentType = getContentType(relativePath);
-      console.log('Content type:', contentType);
 
-      try {
-        let content: ArrayBuffer;
-        
-        // Handle binary files directly as ArrayBuffer
-        if (contentType.includes('xml') || 
-            contentType.includes('xsd') || 
-            contentType.includes('image/') || 
-            contentType.includes('application/octet-stream')) {
-          content = await file.async('arraybuffer');
-        } 
-        // Handle text files
-        else if (contentType.startsWith('text/') || 
-                 contentType.includes('javascript') || 
-                 contentType.includes('json')) {
-          const text = await file.async('text');
-          content = new TextEncoder().encode(text).buffer;
-        } 
-        // Default to binary for unknown types
-        else {
-          content = await file.async('arraybuffer');
-        }
+      // Get file content as ArrayBuffer
+      const content = await file.async('arraybuffer');
 
-        // Upload the file with its exact path structure
-        await uploadFile(supabase, originalPath, content, contentType);
-        console.log('Successfully uploaded file to:', originalPath);
+      // Upload the file with its exact path structure
+      await uploadFile(supabase, originalPath, content);
+      console.log('Successfully uploaded file to:', originalPath);
 
-        // Check if this is an index.html file and store its exact path
-        if (relativePath.toLowerCase().endsWith('index.html')) {
-          originalIndexPath = originalPath;
-          indexHtmlPath = originalPath;
-          console.log('Found index.html at:', originalPath);
-        }
-      } catch (processError) {
-        console.error(`Failed to process file ${relativePath}:`, processError);
-        // Continue with other files even if one fails
-        continue;
+      // Check if this is an index.html file and store its path
+      if (relativePath.toLowerCase().endsWith('index.html')) {
+        originalIndexPath = originalPath;
+        indexHtmlPath = originalPath;
+        console.log('Found index.html at:', originalPath);
       }
     } catch (error) {
       console.error(`Error processing file ${relativePath}:`, error);
