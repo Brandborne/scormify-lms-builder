@@ -8,6 +8,7 @@ export interface CourseTables {
     id: string
     manifest_data: Json | null
     package_path: string
+    unzipped_path: string
     title: string
     updated_at: string
   }
@@ -18,6 +19,7 @@ export interface CourseTables {
     id?: string
     manifest_data?: Json | null
     package_path: string
+    unzipped_path: string
     title: string
     updated_at?: string
   }
@@ -28,6 +30,7 @@ export interface CourseTables {
     id?: string
     manifest_data?: Json | null
     package_path?: string
+    unzipped_path?: string
     title?: string
     updated_at?: string
   }

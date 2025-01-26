@@ -65,15 +65,12 @@ export function CourseViewer() {
   });
 
   const { data: publicUrl } = useQuery({
-    queryKey: ['courseUrl', course?.package_path],
-    enabled: !!course?.package_path && course?.manifest_data?.status === 'processed',
+    queryKey: ['courseUrl', course?.unzipped_path],
+    enabled: !!course?.unzipped_path && course?.manifest_data?.status === 'processed',
     queryFn: async () => {
-      console.log('Getting public URL for path:', course.package_path);
-      const pathParts = course.package_path.split('/');
-      const courseName = pathParts[pathParts.length - 1].split('.zip')[0];
+      console.log('Getting public URL for path:', course.unzipped_path);
       const startingPage = course.manifest_data?.startingPage || 'index.html';
-      
-      const indexPath = `Courses/${courseId}/unzipped/${courseName}/${startingPage}`;
+      const indexPath = `${course.unzipped_path}/${startingPage}`;
       console.log('Constructed index path:', indexPath);
       
       const { data } = supabase

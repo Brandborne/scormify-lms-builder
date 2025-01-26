@@ -42,6 +42,7 @@ export type Database = {
           manifest_data: Json | null
           package_path: string
           title: string
+          unzipped_path: string
           updated_at: string
         }
         Insert: {
@@ -52,6 +53,7 @@ export type Database = {
           manifest_data?: Json | null
           package_path: string
           title: string
+          unzipped_path: string
           updated_at?: string
         }
         Update: {
@@ -62,6 +64,7 @@ export type Database = {
           manifest_data?: Json | null
           package_path?: string
           title?: string
+          unzipped_path?: string
           updated_at?: string
         }
         Relationships: []
