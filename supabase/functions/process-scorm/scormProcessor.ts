@@ -30,8 +30,13 @@ export async function processZipContent(
     console.log('Processing file:', relativePath);
 
     try {
-      // Preserve the exact path structure from the zip
-      const originalPath = `${courseFilesPath}/${relativePath}`;
+      // Remove any potential parent folder from the zip structure
+      const pathParts = relativePath.split('/');
+      // Skip the first folder level if it exists
+      const cleanPath = pathParts.length > 1 ? pathParts.slice(1).join('/') : relativePath;
+      
+      // Construct the final path without the zip name folder
+      const originalPath = `${courseFilesPath}/${cleanPath}`;
       console.log('Target storage path:', originalPath);
 
       // Get file content as ArrayBuffer
@@ -42,7 +47,7 @@ export async function processZipContent(
       console.log('Successfully uploaded file to:', originalPath);
 
       // Check if this is an index.html file and store its path
-      if (relativePath.toLowerCase().endsWith('index.html')) {
+      if (cleanPath.toLowerCase().endsWith('index.html')) {
         originalIndexPath = originalPath;
         indexHtmlPath = originalPath;
         console.log('Found index.html at:', originalPath);
