@@ -7,17 +7,28 @@ import { processZipContent } from './scormProcessor.ts'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 }
 
 serve(async (req) => {
+  console.log('Received request:', req.method)
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    console.log('Handling OPTIONS request')
+    return new Response(null, { 
+      headers: {
+        ...corsHeaders,
+        'Access-Control-Max-Age': '86400',
+      }
+    })
   }
 
   try {
     const body = await req.json().catch(() => null)
     if (!body || !body.courseId) {
+      console.error('Invalid request: Missing courseId')
       throw new Error('Invalid request: courseId is required')
     }
 
@@ -28,6 +39,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
     if (!supabaseUrl || !supabaseKey) {
+      console.error('Missing required environment variables')
       throw new Error('Missing required environment variables')
     }
 
