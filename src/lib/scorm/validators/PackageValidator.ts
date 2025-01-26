@@ -11,15 +11,20 @@ export class PackageValidator {
     let manifest: ScormManifest | undefined;
 
     try {
-      // Check for imsmanifest.xml
-      const manifestFile = zip.files['imsmanifest.xml'];
+      // Find imsmanifest.xml in root or nested directories
+      const manifestFile = Object.keys(zip.files).find(path => 
+        path.toLowerCase().endsWith('imsmanifest.xml')
+      );
+
       if (!manifestFile) {
         errors.push('Missing required imsmanifest.xml file');
         return { isValid: false, errors };
       }
 
+      console.log('Found manifest file at:', manifestFile);
+
       // Validate manifest content
-      const manifestContent = await manifestFile.async('text');
+      const manifestContent = await zip.files[manifestFile].async('text');
       manifest = await ManifestParser.parse(manifestContent);
 
       if (!manifest.startingPage) {
@@ -27,18 +32,24 @@ export class PackageValidator {
       }
 
       // Check if starting page exists in package
-      if (manifest.startingPage && !zip.files[manifest.startingPage]) {
-        errors.push(`Starting page ${manifest.startingPage} not found in package`);
+      if (manifest.startingPage) {
+        const hasStartingPage = Object.keys(zip.files).some(file => 
+          file.endsWith(manifest.startingPage!)
+        );
+        
+        if (!hasStartingPage) {
+          errors.push(`Starting page ${manifest.startingPage} not found in package`);
+        }
       }
 
       // Check for common required directories/files
       const requiredPaths = ['common', 'scripts'];
       requiredPaths.forEach(path => {
         const hasPath = Object.keys(zip.files).some(file => 
-          file.toLowerCase().startsWith(path.toLowerCase() + '/')
+          file.toLowerCase().includes(path.toLowerCase() + '/')
         );
         if (!hasPath) {
-          errors.push(`Missing recommended ${path} directory`);
+          console.warn(`Missing recommended ${path} directory`);
         }
       });
 
@@ -48,7 +59,7 @@ export class PackageValidator {
         if (!file.endsWith('/')) { // Skip directories
           const ext = '.' + file.split('.').pop()?.toLowerCase();
           if (!allowedExtensions.includes(ext)) {
-            errors.push(`Unsupported file type: ${file}`);
+            console.warn(`Unsupported file type: ${file}`);
           }
         }
       });
