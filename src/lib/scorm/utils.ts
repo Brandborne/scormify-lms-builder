@@ -1,11 +1,6 @@
 import { CompletionStatus } from './types';
-
-export const validateCompletionStatus = (status: string): CompletionStatus => {
-  const validStatuses: CompletionStatus[] = ['completed', 'incomplete', 'not attempted', 'unknown'];
-  return validStatuses.includes(status as CompletionStatus) 
-    ? status as CompletionStatus 
-    : 'unknown';
-};
+import { validateDataModelValue } from './validation';
+import { SCORM_ERROR_CODES } from './constants';
 
 export const traverseDataModel = (data: any, path: string): any => {
   const parts = path.split('.');
@@ -19,7 +14,13 @@ export const traverseDataModel = (data: any, path: string): any => {
   return current;
 };
 
-export const updateDataModel = (data: any, path: string, value: string): void => {
+export const updateDataModel = (data: any, path: string, value: any): { success: boolean; error?: string } => {
+  // Validate the value before updating
+  const validation = validateDataModelValue(path, value);
+  if (!validation.isValid) {
+    return { success: false, error: validation.error };
+  }
+
   const parts = path.split('.');
   const last = parts.pop()!;
   let current: any = data;
@@ -31,9 +32,14 @@ export const updateDataModel = (data: any, path: string, value: string): void =>
     current = current[part];
   }
 
-  if (path === 'cmi.completion_status') {
-    current[last] = validateCompletionStatus(value);
-  } else {
-    current[last] = value;
-  }
+  current[last] = value;
+  return { success: true };
+};
+
+export const formatTime = (seconds: number): string => {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+  
+  return `PT${hours}H${minutes}M${remainingSeconds}S`;
 };
