@@ -60,20 +60,30 @@ export function CourseViewer() {
     }
   });
 
-  const { data: publicUrl } = useQuery({
-    queryKey: ['courseUrl', course?.unzipped_path],
+  const { data: courseUrl } = useQuery({
+    queryKey: ['courseUrl', course?.unzipped_path, course?.manifest_data],
     enabled: !!course?.unzipped_path && course?.manifest_data?.status === 'processed',
     queryFn: async () => {
-      if (!course?.unzipped_path) {
-        throw new Error('Missing unzipped path');
+      if (!course?.unzipped_path || !course?.manifest_data?.startingPage) {
+        throw new Error('Missing course path or starting page');
       }
 
-      const scormDriverPath = `${course.unzipped_path}/scormdriver/indexAPI.html`;
+      // Get the base course path
+      const basePath = course.unzipped_path;
+      
+      // Get the starting page from manifest
+      const startingPage = course.manifest_data.startingPage;
+      
+      // Construct the full path
+      const coursePath = `${basePath}/${startingPage}`;
+      
+      // Get the public URL
       const { data } = supabase
         .storage
         .from('scorm_packages')
-        .getPublicUrl(scormDriverPath);
+        .getPublicUrl(coursePath);
       
+      console.log('Course URL:', data.publicUrl);
       return data.publicUrl;
     }
   });
@@ -114,7 +124,7 @@ export function CourseViewer() {
       <CourseContent 
         courseId={courseId!} 
         title={course.title} 
-        publicUrl={publicUrl} 
+        publicUrl={courseUrl} 
       />
     </div>
   );
