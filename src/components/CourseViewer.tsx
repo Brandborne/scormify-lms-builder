@@ -6,12 +6,14 @@ import { ArrowLeft } from "lucide-react";
 import { CourseManifestData } from "@/types/course";
 import { ScormFrame } from "./scorm/ScormFrame";
 import { ScormInitializer } from "./scorm/ScormInitializer";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { ReloadIcon } from "@radix-ui/react-icons";
 
 export function CourseViewer() {
   const { courseId } = useParams();
   const navigate = useNavigate();
 
-  const { data: course, isLoading, error: courseError } = useQuery({
+  const { data: course, isLoading, error: courseError, refetch } = useQuery({
     queryKey: ['course', courseId],
     queryFn: async () => {
       console.log('Fetching course data for ID:', courseId);
@@ -36,7 +38,7 @@ export function CourseViewer() {
 
   const { data: publicUrl } = useQuery({
     queryKey: ['courseUrl', course?.package_path],
-    enabled: !!course?.package_path,
+    enabled: !!course?.package_path && course?.manifest_data?.status === 'processed',
     queryFn: async () => {
       console.log('Getting public URL for path:', course.package_path);
       const pathParts = course.package_path.split('/');
@@ -86,6 +88,25 @@ export function CourseViewer() {
           <p className="text-muted-foreground mt-2">{course.description}</p>
         )}
       </div>
+
+      {course.manifest_data?.status === 'pending_processing' && (
+        <Alert className="mb-6">
+          <AlertTitle>Course Processing</AlertTitle>
+          <AlertDescription className="flex items-center justify-between">
+            <span>This course is still being processed. Please wait a moment.</span>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => refetch()}
+              className="ml-4"
+            >
+              <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+              Check Again
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="bg-card border rounded-lg p-6">
         {courseId && <ScormInitializer courseId={courseId} />}
         {publicUrl ? (
