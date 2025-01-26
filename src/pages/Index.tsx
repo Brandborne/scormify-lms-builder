@@ -83,6 +83,7 @@ const Index = () => {
                   description={course.description || "SCORM Course"}
                   createdAt={course.created_at}
                   onDelete={handleCourseDelete}
+                  stats={course.manifest_data?.stats}
                 />
               ))}
             </div>

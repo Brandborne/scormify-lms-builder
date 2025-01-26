@@ -33,6 +33,78 @@ export type Database = {
         }
         Relationships: []
       }
+      contacts: {
+        Row: {
+          created_at: string
+          created_by: string
+          email: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          email: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          email?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      course_assignments: {
+        Row: {
+          access_token: string
+          assigned_at: string
+          completed_at: string | null
+          contact_id: string
+          course_id: string
+          id: string
+          last_position: string | null
+          status: Database["public"]["Enums"]["assignment_status"]
+        }
+        Insert: {
+          access_token?: string
+          assigned_at?: string
+          completed_at?: string | null
+          contact_id: string
+          course_id: string
+          id?: string
+          last_position?: string | null
+          status?: Database["public"]["Enums"]["assignment_status"]
+        }
+        Update: {
+          access_token?: string
+          assigned_at?: string
+          completed_at?: string | null
+          contact_id?: string
+          course_id?: string
+          id?: string
+          last_position?: string | null
+          status?: Database["public"]["Enums"]["assignment_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_assignments_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_assignments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           course_files_path: string
@@ -247,7 +319,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      assignment_status: "pending" | "in_progress" | "completed"
     }
     CompositeTypes: {
       [_ in never]: never

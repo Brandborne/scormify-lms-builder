@@ -4,6 +4,7 @@ import { EditableTitle } from "./EditableTitle";
 import { DeleteCourseButton } from "./DeleteCourseButton";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
+import { ContactsManagement } from "./ContactsManagement";
 
 interface CourseCardProps {
   id: string;
@@ -11,9 +12,20 @@ interface CourseCardProps {
   description: string;
   createdAt: string;
   onDelete: () => void;
+  stats?: {
+    total_assigned?: string;
+    completed?: string;
+  };
 }
 
-export function CourseCard({ id, title, description, createdAt, onDelete }: CourseCardProps) {
+export function CourseCard({ 
+  id, 
+  title, 
+  description, 
+  createdAt, 
+  onDelete,
+  stats 
+}: CourseCardProps) {
   const navigate = useNavigate();
 
   const handleStart = () => {
@@ -32,11 +44,26 @@ export function CourseCard({ id, title, description, createdAt, onDelete }: Cour
       <CardContent>
         <p className="text-muted-foreground mb-4">{description}</p>
         <p className="text-sm text-muted-foreground mb-4">Added {formattedDate}</p>
+        {stats && (
+          <div className="flex gap-4 mb-4 text-sm">
+            <div>
+              <span className="font-medium">Assigned: </span>
+              {stats.total_assigned || "0"}
+            </div>
+            <div>
+              <span className="font-medium">Completed: </span>
+              {stats.completed || "0"}
+            </div>
+          </div>
+        )}
         <div className="space-y-2">
           <Button onClick={handleStart} className="w-full">
             Start Course
           </Button>
-          <DeleteCourseButton id={id} onDelete={onDelete} />
+          <div className="flex gap-2">
+            <ContactsManagement />
+            <DeleteCourseButton id={id} onDelete={onDelete} />
+          </div>
         </div>
       </CardContent>
     </Card>
