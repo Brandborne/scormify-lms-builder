@@ -46,6 +46,13 @@ export function ScormUploader() {
 
       if (courseError) throw courseError;
 
+      // Call the process-scorm function
+      const { error: processError } = await supabase.functions.invoke('process-scorm', {
+        body: { courseId: courseData.id }
+      });
+
+      if (processError) throw processError;
+
       toast.success('SCORM package uploaded successfully');
       // Invalidate the courses query to trigger a refresh
       queryClient.invalidateQueries({ queryKey: ['courses'] });
