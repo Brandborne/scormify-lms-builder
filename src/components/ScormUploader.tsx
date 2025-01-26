@@ -13,23 +13,38 @@ export function ScormUploader() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    console.log('Selected file:', file.name, 'Size:', file.size);
+
     if (!file.name.toLowerCase().endsWith('.zip')) {
+      console.error('Invalid file type:', file.type);
       toast.error('Please upload a SCORM zip file');
       return;
     }
 
     setIsUploading(true);
     try {
+      console.log('Starting file upload process');
       const fileName = `${crypto.randomUUID()}-${file.name}`;
+      console.log('Generated unique filename:', fileName);
+
       const { data, error } = await supabase.storage
         .from('scorm_packages')
         .upload(fileName, file);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Storage upload error:', error);
+        throw error;
+      }
+
+      console.log('File uploaded successfully:', data.path);
 
       const { data: session } = await supabase.auth.getSession();
-      if (!session.session) throw new Error('No active session');
+      if (!session.session) {
+        console.error('No active session found');
+        throw new Error('No active session');
+      }
 
+      console.log('Creating course record in database');
       const { data: courseData, error: courseError } = await supabase
         .from('courses')
         .insert({
@@ -44,19 +59,28 @@ export function ScormUploader() {
         .select()
         .single();
 
-      if (courseError) throw courseError;
+      if (courseError) {
+        console.error('Course creation error:', courseError);
+        throw courseError;
+      }
 
-      // Call the process-scorm function
+      console.log('Course record created:', courseData);
+      console.log('Initiating SCORM processing');
+
       const { error: processError } = await supabase.functions.invoke('process-scorm', {
         body: { courseId: courseData.id }
       });
 
-      if (processError) throw processError;
+      if (processError) {
+        console.error('SCORM processing error:', processError);
+        throw processError;
+      }
 
+      console.log('SCORM package processed successfully');
       toast.success('SCORM package uploaded successfully');
-      // Invalidate the courses query to trigger a refresh
       queryClient.invalidateQueries({ queryKey: ['courses'] });
     } catch (error: any) {
+      console.error('Upload process failed:', error);
       toast.error('Failed to upload SCORM package: ' + error.message);
     } finally {
       setIsUploading(false);

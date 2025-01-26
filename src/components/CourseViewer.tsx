@@ -13,17 +13,22 @@ export function CourseViewer() {
   const navigate = useNavigate();
   const scormApiRef = useRef<ScormAPI | null>(null);
 
-  const { data: course, isLoading } = useQuery({
+  const { data: course, isLoading, error: courseError } = useQuery({
     queryKey: ['course', courseId],
     queryFn: async () => {
+      console.log('Fetching course data for ID:', courseId);
       const { data, error } = await supabase
         .from('courses')
         .select('*')
         .eq('id', courseId)
         .maybeSingle();
       
-      if (error) throw error;
-      console.log('Course data:', data);
+      if (error) {
+        console.error('Error fetching course:', error);
+        throw error;
+      }
+      
+      console.log('Course data retrieved:', data);
       return {
         ...data,
         manifest_data: data?.manifest_data as CourseManifestData
@@ -31,16 +36,17 @@ export function CourseViewer() {
     }
   });
 
-  const { data: publicUrl } = useQuery({
+  const { data: publicUrl, error: urlError } = useQuery({
     queryKey: ['courseUrl', course?.manifest_data?.index_path],
     enabled: !!course?.manifest_data?.index_path,
     queryFn: async () => {
+      console.log('Getting public URL for path:', course.manifest_data.index_path);
       const { data } = supabase
         .storage
         .from('scorm_packages')
         .getPublicUrl(course.manifest_data.index_path!);
       
-      console.log('Storage URL:', data.publicUrl);
+      console.log('Storage URL generated:', data.publicUrl);
       return data.publicUrl;
     }
   });
@@ -48,13 +54,15 @@ export function CourseViewer() {
   useEffect(() => {
     if (courseId && !scormApiRef.current) {
       const initScormApi = async () => {
+        console.log('Initializing SCORM API for course:', courseId);
         const api = new ScormAPI(courseId);
         const success = await api.initialize();
         
         if (success) {
           scormApiRef.current = api;
-          console.log('SCORM API initialized');
+          console.log('SCORM API initialized successfully');
         } else {
+          console.error('Failed to initialize SCORM API');
           toast.error('Failed to initialize SCORM tracking');
         }
       };
@@ -64,6 +72,7 @@ export function CourseViewer() {
 
     return () => {
       if (scormApiRef.current) {
+        console.log('Terminating SCORM API');
         scormApiRef.current.terminate();
         scormApiRef.current = null;
       }
@@ -74,8 +83,19 @@ export function CourseViewer() {
     return <div>Loading course...</div>;
   }
 
+  if (courseError) {
+    console.error('Course loading error:', courseError);
+    return <div>Error loading course: {courseError.message}</div>;
+  }
+
   if (!course) {
+    console.error('No course found for ID:', courseId);
     return <div>Course not found</div>;
+  }
+
+  if (urlError) {
+    console.error('Error getting course URL:', urlError);
+    return <div>Error loading course content: {urlError.message}</div>;
   }
 
   return (
