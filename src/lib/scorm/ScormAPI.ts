@@ -19,16 +19,20 @@ class ScormAPI {
   constructor(courseId: string) {
     this.courseId = courseId;
     this.startTime = Date.now();
-    this.initializeUserId();
   }
 
   private async initializeUserId() {
-    const { data: { user } } = await supabase.auth.getUser();
-    this.userId = user?.id;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) {
+      throw new Error('No authenticated user found');
+    }
+    this.userId = session.user.id;
   }
 
   async initialize(): Promise<boolean> {
     try {
+      await this.initializeUserId();
+      
       if (!this.userId) {
         console.error('No user ID found');
         return false;
