@@ -11,10 +11,12 @@ class ScormAPI {
   private terminated: boolean = false;
   private startTime: number;
   private userId: string | undefined;
+  private courseId: string;
   private dataManager: ScormDataManager;
   private errorHandler: ScormErrorHandler;
 
   constructor(courseId: string) {
+    this.courseId = courseId;
     this.startTime = Date.now();
     this.errorHandler = new ScormErrorHandler();
     this.dataManager = new ScormDataManager(courseId, this.userId, this.startTime);
