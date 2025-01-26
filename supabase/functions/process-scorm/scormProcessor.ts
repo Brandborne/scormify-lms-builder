@@ -25,10 +25,22 @@ export async function processZipContent(
 
     try {
       let content: ArrayBuffer;
-      if (contentType.startsWith('text/') || contentType.includes('xml') || contentType.includes('javascript') || contentType.includes('json')) {
+      // Handle binary files directly as ArrayBuffer
+      if (contentType.includes('xml') || 
+          contentType.includes('xsd') || 
+          contentType.includes('image/') || 
+          contentType.includes('application/octet-stream')) {
+        content = await file.async('arraybuffer');
+      } 
+      // Handle text files
+      else if (contentType.startsWith('text/') || 
+               contentType.includes('javascript') || 
+               contentType.includes('json')) {
         const text = await file.async('text');
         content = new TextEncoder().encode(text).buffer;
-      } else {
+      } 
+      // Default to binary for unknown types
+      else {
         content = await file.async('arraybuffer');
       }
 
