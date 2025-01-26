@@ -39,9 +39,13 @@ export function CourseViewer() {
     enabled: !!course?.package_path,
     queryFn: async () => {
       console.log('Getting public URL for path:', course.package_path);
-      const basePath = course.package_path.split('.zip')[0];
+      // Extract courseId and courseName from package_path
+      const pathParts = course.package_path.split('/');
+      const courseName = pathParts[pathParts.length - 1].split('.zip')[0];
       const startingPage = course.manifest_data?.startingPage || 'index.html';
-      const indexPath = `${basePath}/unzipped/${startingPage}`;
+      
+      // Construct the correct path using the new structure
+      const indexPath = `Courses/${courseId}/unzipped/${courseName}/${startingPage}`;
       console.log('Constructed index path:', indexPath);
       
       const { data } = supabase
