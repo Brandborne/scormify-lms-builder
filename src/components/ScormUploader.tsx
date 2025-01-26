@@ -4,6 +4,8 @@ import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import JSZip from "jszip";
+import { PackageValidator } from "@/lib/scorm/validators/PackageValidator";
 
 export function ScormUploader() {
   const [isUploading, setIsUploading] = useState(false);
@@ -24,6 +26,17 @@ export function ScormUploader() {
     setIsUploading(true);
     try {
       console.log('Starting file upload process');
+      
+      // Load and validate zip content
+      const zipContent = await JSZip.loadAsync(file);
+      const validationResult = await PackageValidator.validatePackageStructure(zipContent);
+
+      if (!validationResult.isValid) {
+        console.error('Package validation failed:', validationResult.errors);
+        toast.error(`Invalid SCORM package: ${validationResult.errors.join(', ')}`);
+        return;
+      }
+
       const courseId = crypto.randomUUID();
       const originalZipPath = `Courses/${courseId}/original/${file.name}`;
       console.log('Generated storage path:', originalZipPath);
@@ -50,11 +63,12 @@ export function ScormUploader() {
         .from('courses')
         .insert({
           id: courseId,
-          title: file.name.replace('.zip', ''),
+          title: validationResult.manifest?.title || file.name.replace('.zip', ''),
           package_path: data.path,
           created_by: session.session.user.id,
           manifest_data: {
-            scormVersion: "1.3",
+            ...validationResult.manifest,
+            scormVersion: validationResult.manifest?.version || "1.2",
             status: "pending_processing"
           }
         })
