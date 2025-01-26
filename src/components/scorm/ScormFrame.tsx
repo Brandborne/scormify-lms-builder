@@ -14,7 +14,8 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
     const iframe = iframeRef.current;
     if (iframe) {
       // Force set sandbox attribute to ensure it's applied
-      const sandboxPermissions = 'allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-modals allow-top-navigation allow-presentation';
+      // Removed 'allow-presentation' as it's invalid
+      const sandboxPermissions = 'allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-modals allow-top-navigation';
       iframe.setAttribute('sandbox', sandboxPermissions);
       console.log('Sandbox permissions after force set:', sandboxPermissions);
       
@@ -22,7 +23,6 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
         console.log('SCORM content frame loaded:', iframe.src);
         console.log('Final sandbox permissions:', iframe.getAttribute('sandbox'));
         
-        // Try to access iframe content with more detailed error handling
         try {
           const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
           if (iframeDoc) {
@@ -30,11 +30,9 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
             console.log('Document ready state:', iframeDoc.readyState);
             console.log('Document URL:', iframeDoc.URL);
             
-            // Check if document is actually loaded
             if (iframeDoc.readyState === 'complete') {
               console.log('Document fully loaded');
               
-              // Check for specific SCORM-related elements
               const scormContent = iframeDoc.querySelector('#scorm_content');
               if (scormContent) {
                 console.log('SCORM content container found');
@@ -42,7 +40,6 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
                 console.warn('No SCORM content container found in document');
               }
               
-              // Log body content for debugging
               console.log('Document body exists:', !!iframeDoc.body);
               if (iframeDoc.body) {
                 console.log('Body content length:', iframeDoc.body.innerHTML.length);
@@ -61,14 +58,12 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
             type: error instanceof DOMException ? 'DOMException' : 'Unknown'
           });
           
-          // Additional error context
           if (error instanceof DOMException) {
             console.error('Security policy violation - check CORS and sandbox settings');
           }
         }
       };
 
-      // Enhanced error handling for iframe loading
       iframe.onerror = (event: Event | string) => {
         if (event instanceof Event) {
           console.error('Iframe loading error:', {
@@ -100,7 +95,7 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
       src={url}
       className="w-full min-h-[800px] border-0 bg-white"
       title={title}
-      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-modals allow-top-navigation allow-presentation"
+      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-modals allow-top-navigation"
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
       loading="eager"
     />
