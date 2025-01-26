@@ -43,7 +43,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
+    <BrowserRouter basename="/">
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -89,6 +89,7 @@ const App = () => (
             }
           />
           <Route path="/auth" element={<Auth />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </TooltipProvider>
     </BrowserRouter>
