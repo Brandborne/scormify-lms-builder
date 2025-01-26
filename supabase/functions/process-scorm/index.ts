@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import JSZip from 'https://esm.sh/jszip@3.10.1'
 import { downloadZipFile } from './fileUtils.ts'
-import { processZipContent, updateCourseMetadata } from './scormProcessor.ts'
+import { processZipContent } from './scormProcessor.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -63,29 +63,13 @@ serve(async (req) => {
       courseId
     )
 
-    if (!indexHtmlPath || !originalIndexPath) {
-      throw new Error('No index.html found in the SCORM package')
-    }
-
-    await updateCourseMetadata(
-      supabase, 
-      courseId,
-      indexHtmlPath,
-      originalIndexPath
-    )
-
-    console.log('Course updated successfully with paths:', {
-      indexPath: indexHtmlPath,
-      originalIndexPath: originalIndexPath
-    })
+    console.log('SCORM package unzipped successfully')
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'SCORM package processed successfully',
-        courseId,
-        indexPath: indexHtmlPath,
-        originalIndexPath: originalIndexPath
+        message: 'SCORM package unzipped successfully',
+        courseId
       }),
       {
         headers: {
