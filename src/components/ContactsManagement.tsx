@@ -23,15 +23,27 @@ export function ContactsManagement({ variant = "default", courseId }: ContactsMa
   const [isOpen, setIsOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  const handleToggleAssignment = async (contactId: string, isAssigned: boolean) => {
+  const handleToggleAssignment = async (contactId: string, currentlyAssigned: boolean) => {
     if (!courseId) {
       toast.error('No course selected');
       return;
     }
 
     try {
-      if (!isAssigned) {
-        // Assign
+      if (currentlyAssigned) {
+        // If currently assigned, we want to unassign
+        const { error } = await supabase
+          .from('course_assignments')
+          .delete()
+          .match({ 
+            course_id: courseId, 
+            contact_id: contactId 
+          });
+
+        if (error) throw error;
+        toast.success('Contact unassigned from course successfully');
+      } else {
+        // If not currently assigned, we want to assign
         const { error } = await supabase
           .from('course_assignments')
           .insert([{
@@ -48,24 +60,12 @@ export function ContactsManagement({ variant = "default", courseId }: ContactsMa
         } else {
           toast.success('Contact assigned to course successfully');
         }
-      } else {
-        // Unassign
-        const { error } = await supabase
-          .from('course_assignments')
-          .delete()
-          .match({ 
-            course_id: courseId, 
-            contact_id: contactId 
-          });
-
-        if (error) throw error;
-        toast.success('Contact unassigned from course successfully');
       }
       
       // Invalidate both contacts and course_assignments queries
       queryClient.invalidateQueries({ queryKey: ['course_assignments', courseId] });
     } catch (error: any) {
-      toast.error(`Failed to ${!isAssigned ? 'assign' : 'unassign'} contact: ${error.message}`);
+      toast.error(`Failed to ${currentlyAssigned ? 'unassign' : 'assign'} contact: ${error.message}`);
     }
   };
 
