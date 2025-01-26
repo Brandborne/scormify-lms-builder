@@ -12,10 +12,14 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
     const iframe = iframeRef.current;
     if (iframe) {
       console.log('Setting up iframe with URL:', url);
-      console.log('Current sandbox permissions:', iframe.getAttribute('sandbox'));
+      
+      // Force set sandbox attribute to ensure it's applied
+      iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-modals allow-top-navigation allow-presentation');
+      console.log('Sandbox permissions after force set:', iframe.getAttribute('sandbox'));
       
       iframe.onload = () => {
         console.log('SCORM content frame loaded:', url);
+        console.log('Final sandbox permissions:', iframe.getAttribute('sandbox'));
         
         // Try to access iframe content to check if it's loading properly
         try {
@@ -36,7 +40,6 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
           }
         } catch (error) {
           console.error('Error accessing iframe content:', error);
-          // Log the full error object for better debugging
           console.error('Detailed error:', {
             name: error.name,
             message: error.message,
