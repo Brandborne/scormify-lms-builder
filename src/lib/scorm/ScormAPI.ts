@@ -23,6 +23,8 @@ export interface ScormData {
   };
 }
 
+type CompletionStatus = 'completed' | 'incomplete' | 'not attempted' | 'unknown';
+
 class ScormAPI {
   private courseId: string;
   private data: ScormData = { cmi: {} };
@@ -32,7 +34,6 @@ class ScormAPI {
   private startTime: number;
   private userId: string | undefined;
 
-  // Error codes as per SCORM 2004 specification
   private readonly errorCodes = {
     NO_ERROR: '0',
     GENERAL_EXCEPTION: '101',
@@ -71,6 +72,13 @@ class ScormAPI {
     };
   }
 
+  private validateCompletionStatus(status: string): CompletionStatus {
+    const validStatuses: CompletionStatus[] = ['completed', 'incomplete', 'not attempted', 'unknown'];
+    return validStatuses.includes(status as CompletionStatus) 
+      ? status as CompletionStatus 
+      : 'unknown';
+  }
+
   private async initializeUserId() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user?.id) {
@@ -80,7 +88,6 @@ class ScormAPI {
     this.userId = session.user.id;
   }
 
-  // SCORM API Implementation Methods
   async Initialize(param: string = ""): Promise<string> {
     console.log('Initialize called with param:', param);
     
@@ -259,7 +266,6 @@ class ScormAPI {
     return this.GetErrorString(errorCode);
   }
 
-  // Helper methods
   private traverseDataModel(path: string): any {
     const parts = path.split('.');
     let current: any = this.data;
@@ -283,8 +289,13 @@ class ScormAPI {
       }
       current = current[part];
     }
-    
-    current[last] = value;
+
+    // Handle special case for completion_status
+    if (path === 'cmi.completion_status') {
+      current[last] = this.validateCompletionStatus(value);
+    } else {
+      current[last] = value;
+    }
   }
 
   private async saveData(): Promise<void> {
@@ -297,7 +308,7 @@ class ScormAPI {
       .upsert({
         course_id: this.courseId,
         user_id: this.userId,
-        completion_status: this.data.cmi?.completion_status,
+        completion_status: this.validateCompletionStatus(this.data.cmi?.completion_status || 'unknown'),
         progress: this.data.cmi?.progress_measure,
         score: this.data.cmi?.score?.scaled,
         total_time: totalTime,
