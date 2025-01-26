@@ -23,6 +23,21 @@ export function CourseViewer() {
     }
   });
 
+  const { data: publicUrl } = useQuery({
+    queryKey: ['courseUrl', course?.package_path],
+    enabled: !!course?.package_path,
+    queryFn: async () => {
+      const { data } = supabase
+        .storage
+        .from('scorm_packages')
+        .getPublicUrl(course.package_path);
+      
+      // The SCORM package is a zip file, we need to get the index.html inside it
+      const basePath = data.publicUrl.split('.zip')[0];
+      return `${basePath}/index.html`;
+    }
+  });
+
   if (isLoading) {
     return <div>Loading course...</div>;
   }
@@ -48,11 +63,15 @@ export function CourseViewer() {
         )}
       </div>
       <div className="bg-card border rounded-lg p-6">
-        <iframe
-          src={`${course.package_path}/index.html`}
-          className="w-full h-[600px] border-0"
-          title={course.title}
-        />
+        {publicUrl ? (
+          <iframe
+            src={publicUrl}
+            className="w-full h-[600px] border-0"
+            title={course.title}
+          />
+        ) : (
+          <div>Loading course content...</div>
+        )}
       </div>
     </div>
   );
