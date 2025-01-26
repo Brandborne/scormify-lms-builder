@@ -27,6 +27,32 @@ async function downloadZipFile(supabase: any, filePath: string): Promise<ArrayBu
   return await data.arrayBuffer()
 }
 
+function getContentType(filename: string): string {
+  const ext = filename.split('.').pop()?.toLowerCase() || ''
+  const contentTypes: { [key: string]: string } = {
+    'html': 'text/html',
+    'htm': 'text/html',
+    'css': 'text/css',
+    'js': 'application/javascript',
+    'json': 'application/json',
+    'xml': 'application/xml',
+    'xsd': 'application/xml',
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'gif': 'image/gif',
+    'svg': 'image/svg+xml',
+    'mp4': 'video/mp4',
+    'webm': 'video/webm',
+    'mp3': 'audio/mpeg',
+    'wav': 'audio/wav',
+    'pdf': 'application/pdf',
+    'zip': 'application/zip',
+  }
+  
+  return contentTypes[ext] || 'application/octet-stream'
+}
+
 async function processZipContent(
   zip: JSZip,
   supabase: any,
@@ -39,6 +65,7 @@ async function processZipContent(
 
     const cleanFilename = filename.split('/').pop() || filename
     const uploadPath = `${unzippedDirPath}/${cleanFilename}`
+    const contentType = getContentType(cleanFilename)
 
     if (cleanFilename.toLowerCase() === 'index.html') {
       indexHtmlPath = uploadPath
@@ -46,12 +73,21 @@ async function processZipContent(
     }
 
     try {
-      const content = await file.async('arraybuffer')
+      let content: ArrayBuffer
+      if (contentType.startsWith('text/') || contentType.includes('xml') || contentType.includes('javascript') || contentType.includes('json')) {
+        // Handle text files
+        const text = await file.async('text')
+        content = new TextEncoder().encode(text).buffer
+      } else {
+        // Handle binary files
+        content = await file.async('arraybuffer')
+      }
+
       const { error: uploadError } = await supabase
         .storage
         .from('scorm_packages')
         .upload(uploadPath, content, {
-          contentType: 'application/octet-stream',
+          contentType,
           upsert: true
         })
 
@@ -94,7 +130,7 @@ async function updateCourseMetadata(
 }
 
 serve(async (req) => {
-  // Always return proper CORS headers for OPTIONS requests
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
       headers: {
