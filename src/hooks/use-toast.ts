@@ -1,5 +1,4 @@
-// First, fix the React import
-import React from "react"
+import * as React from "react"
 
 import type {
   ToastActionElement,
