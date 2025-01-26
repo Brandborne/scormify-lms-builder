@@ -35,36 +35,36 @@ export type Database = {
       }
       courses: {
         Row: {
+          course_files_path: string
           created_at: string
           created_by: string
           description: string | null
           id: string
           manifest_data: Json | null
-          package_path: string
+          original_zip_path: string
           title: string
-          unzipped_path: string
           updated_at: string
         }
         Insert: {
+          course_files_path: string
           created_at?: string
           created_by: string
           description?: string | null
           id?: string
           manifest_data?: Json | null
-          package_path: string
+          original_zip_path: string
           title: string
-          unzipped_path: string
           updated_at?: string
         }
         Update: {
+          course_files_path?: string
           created_at?: string
           created_by?: string
           description?: string | null
           id?: string
           manifest_data?: Json | null
-          package_path?: string
+          original_zip_path?: string
           title?: string
-          unzipped_path?: string
           updated_at?: string
         }
         Relationships: []

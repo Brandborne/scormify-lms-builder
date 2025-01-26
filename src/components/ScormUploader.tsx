@@ -69,13 +69,18 @@ export function ScormUploader() {
         .insert({
           id: courseId,
           title: validationResult.manifest?.title || file.name.replace('.zip', ''),
-          package_path: data.path,
-          unzipped_path: courseFilesPath,
+          original_zip_path: data.path,
+          course_files_path: courseFilesPath,
           created_by: session.session.user.id,
           manifest_data: {
-            ...validationResult.manifest,
+            title: validationResult.manifest?.title,
+            description: validationResult.manifest?.description,
+            version: validationResult.manifest?.version,
             scormVersion: validationResult.manifest?.version || "1.2",
-            status: "pending_processing"
+            startingPage: validationResult.manifest?.startingPage,
+            status: "pending_processing",
+            index_path: `${courseFilesPath}/scormcontent/index.html`,
+            original_index_path: `${courseFilesPath}/scormcontent/index.html`
           }
         })
         .select()
