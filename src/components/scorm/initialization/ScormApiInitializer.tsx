@@ -10,10 +10,11 @@ interface ScormApiInitializerProps {
 export function ScormApiInitializer({ courseId, onInitialized }: ScormApiInitializerProps) {
   const { toast } = useToast();
   const initializingRef = useRef(false);
+  const hasInitializedRef = useRef(false);
 
   useEffect(() => {
-    if (initializingRef.current) {
-      console.log('ScormApiInitializer: Already initializing, skipping');
+    if (initializingRef.current || hasInitializedRef.current) {
+      console.log('ScormApiInitializer: Already initializing or initialized, skipping');
       return;
     }
 
@@ -44,6 +45,7 @@ export function ScormApiInitializer({ courseId, onInitialized }: ScormApiInitial
         
         if (success === 'true') {
           onInitialized(api);
+          hasInitializedRef.current = true;
           console.log('ScormApiInitializer: API initialized successfully');
           
           toast({
@@ -76,6 +78,7 @@ export function ScormApiInitializer({ courseId, onInitialized }: ScormApiInitial
 
     return () => {
       initializingRef.current = false;
+      hasInitializedRef.current = false;
     };
   }, [courseId, onInitialized, toast]);
 
