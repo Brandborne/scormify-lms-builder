@@ -4,15 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "./ui/button";
 import { ArrowLeft } from "lucide-react";
 import { CourseManifestData } from "@/types/course";
-import { useEffect, useRef } from "react";
-import ScormAPI from "@/lib/scorm/ScormAPI";
-import { toast } from "sonner";
+import { ScormFrame } from "./scorm/ScormFrame";
+import { ScormInitializer } from "./scorm/ScormInitializer";
 
 export function CourseViewer() {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const scormApiRef = useRef<ScormAPI | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const { data: course, isLoading, error: courseError } = useQuery({
     queryKey: ['course', courseId],
@@ -52,49 +49,6 @@ export function CourseViewer() {
     }
   });
 
-  useEffect(() => {
-    if (courseId && !scormApiRef.current) {
-      const initScormApi = async () => {
-        console.log('Initializing SCORM API for course:', courseId);
-        const api = new ScormAPI(courseId, true); // Enable debug mode
-        
-        // Make API available to SCORM content
-        (window as any).API_1484_11 = {
-          Initialize: (param: string) => api.Initialize(param),
-          Terminate: (param: string) => api.Terminate(param),
-          GetValue: (element: string) => api.GetValue(element),
-          SetValue: (element: string, value: string) => api.SetValue(element, value),
-          Commit: (param: string) => api.Commit(param),
-          GetLastError: () => api.GetLastError(),
-          GetErrorString: (errorCode: string) => api.GetErrorString(errorCode),
-          GetDiagnostic: (errorCode: string) => api.GetDiagnostic(errorCode)
-        };
-        
-        const success = await api.Initialize();
-        
-        if (success === 'true') {
-          scormApiRef.current = api;
-          console.log('SCORM API initialized successfully');
-          toast.success('Course initialized successfully');
-        } else {
-          console.error('Failed to initialize SCORM API');
-          toast.error('Failed to initialize course tracking');
-        }
-      };
-
-      initScormApi();
-    }
-
-    return () => {
-      if (scormApiRef.current) {
-        console.log('Terminating SCORM API');
-        scormApiRef.current.Terminate();
-        scormApiRef.current = null;
-        delete (window as any).API_1484_11;
-      }
-    };
-  }, [courseId]);
-
   if (isLoading) {
     return <div>Loading course...</div>;
   }
@@ -131,16 +85,9 @@ export function CourseViewer() {
         )}
       </div>
       <div className="bg-card border rounded-lg p-6">
+        {courseId && <ScormInitializer courseId={courseId} />}
         {publicUrl ? (
-          <iframe
-            ref={iframeRef}
-            src={publicUrl}
-            className="w-full h-[600px] border-0"
-            title={course.title}
-            sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-downloads"
-            allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-            referrerPolicy="no-referrer"
-          />
+          <ScormFrame url={publicUrl} title={course.title} />
         ) : (
           <div>Loading course content...</div>
         )}
