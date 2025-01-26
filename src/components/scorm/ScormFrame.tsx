@@ -55,7 +55,6 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
       referrerPolicy="origin"
       loading="eager"
-      importance="high"
       crossOrigin="anonymous"
     />
   );
