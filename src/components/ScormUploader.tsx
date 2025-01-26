@@ -39,8 +39,7 @@ export function ScormUploader() {
 
       const courseId = crypto.randomUUID();
       const originalZipPath = `Courses/${courseId}/original/${file.name}`;
-      const courseName = file.name.replace('.zip', '');
-      const courseFilesPath = `Courses/${courseId}/course_files/${courseName}`;
+      const courseFilesPath = `Courses/${courseId}/course_files`;
       
       console.log('Generated storage paths:', {
         originalZipPath,
