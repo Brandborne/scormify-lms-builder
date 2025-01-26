@@ -70,6 +70,7 @@ serve(async (req) => {
       .from('courses')
       .update({
         manifest_data: {
+          ...course.manifest_data,
           status: 'processed',
           index_path: indexHtmlPath,
           original_index_path: originalIndexPath

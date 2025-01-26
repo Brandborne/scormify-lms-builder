@@ -25,7 +25,8 @@ export async function uploadFile(
   const { error } = await supabase.storage
     .from('scorm_packages')
     .upload(path, content, {
-      upsert: true // Allow overwriting existing files
+      upsert: true, // Allow overwriting existing files
+      contentType: 'application/octet-stream' // Generic binary content type
     });
 
   if (error) {
