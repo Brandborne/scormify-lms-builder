@@ -16,6 +16,8 @@ export function CourseViewer() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  console.log('CourseViewer mounted with courseId from URL:', courseId);
+
   const { data: course, isLoading, error: courseError, refetch } = useQuery({
     queryKey: ['course', courseId],
     queryFn: async () => {
@@ -48,7 +50,8 @@ export function CourseViewer() {
         ...courseData,
         manifest_data: courseData.manifest_data as CourseManifestData
       };
-    }
+    },
+    retry: 1
   });
 
   const processMutation = useMutation({
