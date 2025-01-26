@@ -12,6 +12,7 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
     const iframe = iframeRef.current;
     if (iframe) {
       console.log('Setting up iframe with URL:', url);
+      console.log('Current sandbox permissions:', iframe.getAttribute('sandbox'));
       
       iframe.onload = () => {
         console.log('SCORM content frame loaded:', url);
@@ -35,6 +36,12 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
           }
         } catch (error) {
           console.error('Error accessing iframe content:', error);
+          // Log the full error object for better debugging
+          console.error('Detailed error:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+          });
         }
       };
 
