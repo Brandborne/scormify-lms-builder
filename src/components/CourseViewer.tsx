@@ -41,7 +41,7 @@ export function CourseViewer() {
       console.log('Getting public URL for path:', course.package_path);
       const basePath = course.package_path.split('.zip')[0];
       const startingPage = course.manifest_data?.startingPage || 'index.html';
-      const indexPath = `${basePath}/${startingPage}`;
+      const indexPath = `${basePath}/unzipped/${startingPage}`;
       console.log('Constructed index path:', indexPath);
       
       const { data } = supabase
