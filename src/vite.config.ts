@@ -11,7 +11,6 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react({
-      jsxRuntime: "classic",
       plugins: [["@swc/plugin-react-refresh", {}]],
     }),
     mode === 'development' &&

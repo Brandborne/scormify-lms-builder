@@ -1,6 +1,6 @@
 import * as React from "react";
 import { toast } from "./toast";
-import { listeners, memoryState } from "./reducer";
+import { listeners, memoryState, dispatch } from "./reducer";
 import type { State } from "./types";
 
 function useToast() {
