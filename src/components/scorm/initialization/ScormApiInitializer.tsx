@@ -7,13 +7,15 @@ interface ScormApiInitializerProps {
   onInitialized: (api: ScormAPI) => void;
 }
 
+// Keep track of initialized courses across renders
+const initializedCourses = new Set<string>();
+
 export function ScormApiInitializer({ courseId, onInitialized }: ScormApiInitializerProps) {
   const { toast } = useToast();
   const initializingRef = useRef(false);
-  const hasInitializedRef = useRef(false);
 
   useEffect(() => {
-    if (initializingRef.current || hasInitializedRef.current) {
+    if (initializingRef.current || initializedCourses.has(courseId)) {
       console.log('ScormApiInitializer: Already initializing or initialized, skipping');
       return;
     }
@@ -45,13 +47,16 @@ export function ScormApiInitializer({ courseId, onInitialized }: ScormApiInitial
         
         if (success === 'true') {
           onInitialized(api);
-          hasInitializedRef.current = true;
+          initializedCourses.add(courseId);
           console.log('ScormApiInitializer: API initialized successfully');
           
-          toast({
-            title: "Course Initialized",
-            description: "Course tracking is now active",
-          });
+          // Only show toast on first initialization
+          if (!initializedCourses.has(courseId)) {
+            toast({
+              title: "Course Initialized",
+              description: "Course tracking is now active",
+            });
+          }
         } else {
           console.error('ScormApiInitializer: Failed to initialize SCORM API');
           
@@ -77,8 +82,12 @@ export function ScormApiInitializer({ courseId, onInitialized }: ScormApiInitial
     initApi();
 
     return () => {
-      initializingRef.current = false;
-      hasInitializedRef.current = false;
+      // Only clean up if component is unmounting and we're not just re-rendering
+      if (!document.hidden) {
+        console.log('ScormApiInitializer: Cleaning up initialization state');
+        initializingRef.current = false;
+        initializedCourses.delete(courseId);
+      }
     };
   }, [courseId, onInitialized, toast]);
 
