@@ -40,11 +40,11 @@ export function ScormUploader() {
       const courseId = crypto.randomUUID();
       const originalZipPath = `Courses/${courseId}/original/${file.name}`;
       const courseName = file.name.replace('.zip', '');
-      const unzippedPath = `Courses/${courseId}/unzipped/${courseName}`;
+      const courseFilesPath = `Courses/${courseId}/course_files/${courseName}`;
       
       console.log('Generated storage paths:', {
         originalZipPath,
-        unzippedPath
+        courseFilesPath
       });
 
       const { data, error } = await supabase.storage
@@ -71,7 +71,7 @@ export function ScormUploader() {
           id: courseId,
           title: validationResult.manifest?.title || file.name.replace('.zip', ''),
           package_path: data.path,
-          unzipped_path: unzippedPath,
+          unzipped_path: courseFilesPath,
           created_by: session.session.user.id,
           manifest_data: {
             ...validationResult.manifest,

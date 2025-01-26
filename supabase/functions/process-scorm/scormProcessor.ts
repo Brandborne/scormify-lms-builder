@@ -10,8 +10,8 @@ export async function processZipContent(
   let indexHtmlPath = null;
   let originalIndexPath = null;
 
-  const unzippedDirPath = `Courses/${courseId}/unzipped`;
-  console.log('Base unzipped directory path:', unzippedDirPath);
+  const courseFilesPath = `Courses/${courseId}/course_files`;
+  console.log('Base course files directory path:', courseFilesPath);
 
   // Get all files from the zip
   const files = Object.keys(zip.files);
@@ -31,7 +31,7 @@ export async function processZipContent(
 
     try {
       // Preserve the exact path structure from the zip
-      const originalPath = `${unzippedDirPath}/${relativePath}`;
+      const originalPath = `${courseFilesPath}/${relativePath}`;
       console.log('Target storage path:', originalPath);
 
       // Get file content as ArrayBuffer
