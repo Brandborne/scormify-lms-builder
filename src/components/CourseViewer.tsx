@@ -9,6 +9,7 @@ import { ScormInitializer } from "./scorm/ScormInitializer";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { ReloadIcon } from "@radix-ui/react-icons";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
 
 export function CourseViewer() {
   const { courseId } = useParams();
@@ -86,7 +87,7 @@ export function CourseViewer() {
   });
 
   // Automatically trigger processing if needed
-  React.useEffect(() => {
+  useEffect(() => {
     if (course?.manifest_data?.status === 'pending_processing') {
       processMutation.mutate();
     }
