@@ -28,10 +28,12 @@ export function CourseViewer() {
     queryKey: ['courseUrl', course?.package_path],
     enabled: !!course?.package_path,
     queryFn: async () => {
+      // Get the base path without .zip extension
+      const unzippedPath = course.package_path.replace('.zip', '');
       const { data } = supabase
         .storage
         .from('scorm_packages')
-        .getPublicUrl(course.package_path);
+        .getPublicUrl(`${unzippedPath}/index.html`);
       
       console.log('Storage URL:', data.publicUrl); // Debug log
       return data.publicUrl;
