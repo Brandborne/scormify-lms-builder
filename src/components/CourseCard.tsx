@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EditableTitle } from "./EditableTitle";
 import { DeleteCourseButton } from "./DeleteCourseButton";
+import { useNavigate } from "react-router-dom";
 
 interface CourseCardProps {
   id: string;
@@ -11,7 +12,13 @@ interface CourseCardProps {
   onDelete: () => void;
 }
 
-export function CourseCard({ id, title, description, onStart, onDelete }: CourseCardProps) {
+export function CourseCard({ id, title, description, onDelete }: CourseCardProps) {
+  const navigate = useNavigate();
+
+  const handleStart = () => {
+    navigate(`/courses/${id}`);
+  };
+
   return (
     <Card className="hover:shadow-lg transition-shadow">
       <CardHeader>
@@ -22,7 +29,7 @@ export function CourseCard({ id, title, description, onStart, onDelete }: Course
       <CardContent>
         <p className="text-muted-foreground mb-4">{description}</p>
         <div className="space-y-2">
-          <Button onClick={onStart} className="w-full">
+          <Button onClick={handleStart} className="w-full">
             Start Course
           </Button>
           <DeleteCourseButton id={id} onDelete={onDelete} />
