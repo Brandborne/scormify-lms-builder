@@ -23,7 +23,8 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
       'allow-downloads',
       'allow-pointer-lock',
       'allow-top-navigation',
-      'allow-popups-to-escape-sandbox'
+      'allow-popups-to-escape-sandbox',
+      'allow-presentation'
     ].join(' ');
     
     iframe.setAttribute('sandbox', sandboxPermissions);
@@ -34,6 +35,14 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
       try {
         if (iframe.contentWindow) {
           console.log('Successfully accessed iframe content window');
+          
+          // Check if scormdriver.js is loaded
+          const hasScormDriver = iframe.contentWindow.document.querySelector('script[src*="scormdriver.js"]');
+          console.log('ScormDriver script found:', !!hasScormDriver);
+          
+          // Check if SCORM API is available
+          console.log('SCORM API available:', !!iframe.contentWindow.API);
+          console.log('SCORM 2004 API available:', !!iframe.contentWindow.API_1484_11);
         }
       } catch (error) {
         console.error('Error accessing iframe content:', error);
@@ -59,7 +68,7 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
       src={url}
       className="w-full min-h-[800px] border-0 bg-white"
       title={title}
-      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-pointer-lock allow-top-navigation allow-popups-to-escape-sandbox"
+      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-pointer-lock allow-top-navigation allow-popups-to-escape-sandbox allow-presentation"
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; clipboard-write; fullscreen; microphone; camera; display-capture; web-share"
       loading="eager"
     />
