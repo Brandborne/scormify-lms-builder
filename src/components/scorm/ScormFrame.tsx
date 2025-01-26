@@ -17,13 +17,7 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
     const sandboxPermissions = [
       'allow-same-origin',
       'allow-scripts',
-      'allow-forms',
-      'allow-popups',
-      'allow-modals',
-      'allow-downloads',
-      'allow-pointer-lock',
-      'allow-top-navigation',
-      'allow-popups-to-escape-sandbox'
+      'allow-forms'
     ].join(' ');
     
     // Apply sandbox permissions
@@ -85,7 +79,7 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
       src={url}
       className="w-full min-h-[800px] border-0 bg-white"
       title={title}
-      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-pointer-lock allow-top-navigation allow-popups-to-escape-sandbox"
+      sandbox="allow-same-origin allow-scripts allow-forms"
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; clipboard-write; fullscreen; microphone; camera; display-capture; web-share"
       loading="eager"
     />
