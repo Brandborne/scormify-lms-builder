@@ -25,6 +25,9 @@ export function getContentType(filename: string): string {
     'ico': 'image/x-icon',
     'txt': 'text/plain',
     'md': 'text/markdown',
+    'pdf': 'application/pdf',
+    'zip': 'application/zip',
+    'wav': 'audio/wav'
   }
   
   return contentTypes[ext] || 'application/octet-stream'
