@@ -13,16 +13,6 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
     const iframe = iframeRef.current;
     if (!iframe) return;
 
-    // Define sandbox permissions needed for SCORM
-    const sandboxPermissions = [
-      'allow-same-origin',
-      'allow-scripts',
-      'allow-forms'
-    ].join(' ');
-    
-    // Apply sandbox permissions
-    iframe.setAttribute('sandbox', sandboxPermissions);
-
     const handleLoad = debounce(() => {
       console.log('SCORM content frame loaded:', iframe.src);
       
@@ -30,14 +20,19 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
         if (iframe.contentWindow) {
           console.log('Successfully accessed iframe content window');
           
-          // Add CSP meta tag to allow inline styles
+          // Add CSP meta tag to allow inline styles and scripts
           try {
             const meta = document.createElement('meta');
             meta.httpEquiv = 'Content-Security-Policy';
-            meta.content = "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;";
+            meta.content = "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; style-src * 'unsafe-inline';";
             
             if (iframe.contentDocument?.head) {
               iframe.contentDocument.head.appendChild(meta);
+              
+              // Also add base target to handle relative URLs
+              const base = document.createElement('base');
+              base.target = '_self';
+              iframe.contentDocument.head.appendChild(base);
             }
 
             const hasScormDriver = iframe.contentWindow.document.querySelector('script[src*="scormdriver.js"]');
@@ -79,7 +74,7 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
       src={url}
       className="w-full min-h-[800px] border-0 bg-white"
       title={title}
-      sandbox="allow-same-origin allow-scripts allow-forms"
+      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; clipboard-write; fullscreen; microphone; camera; display-capture; web-share"
       loading="eager"
     />
