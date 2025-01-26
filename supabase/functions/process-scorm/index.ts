@@ -1,6 +1,6 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-import { unZipFromURL } from 'https://deno.land/x/zip@v1.2.5/mod.ts'
+import { Buffer } from "https://deno.land/std@0.177.0/node/buffer.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -40,27 +40,41 @@ serve(async (req) => {
     const zipUrl = zipData.publicUrl
     console.log('Downloading ZIP from:', zipUrl)
 
+    // Download the zip file
+    const response = await fetch(zipUrl)
+    if (!response.ok) {
+      throw new Error(`Failed to download ZIP: ${response.statusText}`)
+    }
+
+    const zipBuffer = await response.arrayBuffer()
+    
+    // Use the JSZip library from a CDN
+    const JSZip = (await import('https://esm.sh/jszip@3.10.1')).default
+    const zip = new JSZip()
+    
+    // Load and parse the zip file
+    const zipContent = await zip.loadAsync(zipBuffer)
+    
     // Create a directory name without .zip extension
     const dirPath = course.package_path.replace('.zip', '')
 
-    // Download and unzip the file
-    const files = await unZipFromURL(zipUrl)
-    console.log('Unzipped files:', files.length)
+    // Process each file in the zip
+    for (const [filename, file] of Object.entries(zipContent.files)) {
+      if (file.dir) continue // Skip directories
 
-    // Upload each file to the storage bucket
-    for (const file of files) {
-      if (file.name.endsWith('/')) continue // Skip directories
+      // Get file content as ArrayBuffer
+      const content = await file.async('arraybuffer')
 
       const { error: uploadError } = await supabase
         .storage
         .from('scorm_packages')
-        .upload(`${dirPath}/${file.name}`, file.content, {
+        .upload(`${dirPath}/${filename}`, content, {
           contentType: 'application/octet-stream',
           upsert: true
         })
 
       if (uploadError) {
-        console.error('Error uploading file:', file.name, uploadError)
+        console.error('Error uploading file:', filename, uploadError)
         throw uploadError
       }
     }
