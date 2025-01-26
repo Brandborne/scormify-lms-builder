@@ -11,17 +11,15 @@ export async function processZipContent(
   let indexHtmlPath = null
   let originalIndexPath = null
 
-  for (const [filename, file] of Object.entries(zip.files)) {
+  // Process each file in the zip, maintaining folder structure
+  for (const [relativePath, file] of Object.entries(zip.files)) {
     if (file.dir) continue
 
-    const cleanFilename = filename.split('/').pop() || filename
-    const originalPath = `${unzippedDirPath}/${cleanFilename}`
-    const contentType = getContentType(cleanFilename)
+    console.log('Processing file:', relativePath)
 
-    if (cleanFilename.toLowerCase() === 'index.html') {
-      originalIndexPath = originalPath
-      console.log('Found original index.html at:', originalPath)
-    }
+    // Preserve the full path structure
+    const originalPath = `${unzippedDirPath}/${relativePath}`
+    const contentType = getContentType(relativePath)
 
     try {
       let content: ArrayBuffer
@@ -32,21 +30,28 @@ export async function processZipContent(
         content = await file.async('arraybuffer')
       }
 
+      // Upload the file with its full path structure
       await uploadFile(supabase, originalPath, content, contentType)
+      console.log('Uploaded file to:', originalPath)
 
-      if (!filename.endsWith('.ts') && !filename.endsWith('.jsx') && !filename.endsWith('.tsx')) {
-        const compiledPath = `${compiledDirPath}/${cleanFilename}`
-        await uploadFile(supabase, compiledPath, content, contentType)
-
-        if (cleanFilename.toLowerCase() === 'index.html') {
-          indexHtmlPath = compiledPath
-          console.log('Set compiled index.html path:', compiledPath)
-        }
+      // Check if this is an index.html file
+      if (relativePath.toLowerCase().endsWith('index.html')) {
+        originalIndexPath = originalPath
+        indexHtmlPath = `${compiledDirPath}/${relativePath}`
+        console.log('Found index.html at:', originalPath)
+        
+        // Also upload to compiled path
+        await uploadFile(supabase, indexHtmlPath, content, contentType)
+        console.log('Uploaded index.html to compiled path:', indexHtmlPath)
       }
     } catch (error) {
-      console.error(`Failed to process file ${cleanFilename}:`, error)
-      throw new Error(`Failed to process file ${cleanFilename}: ${error.message}`)
+      console.error(`Failed to process file ${relativePath}:`, error)
+      throw new Error(`Failed to process file ${relativePath}: ${error.message}`)
     }
+  }
+
+  if (!originalIndexPath) {
+    console.error('No index.html found in the SCORM package')
   }
 
   return { indexHtmlPath, originalIndexPath }
@@ -60,6 +65,13 @@ export async function updateCourseMetadata(
   indexHtmlPath: string,
   originalIndexPath: string
 ) {
+  console.log('Updating course metadata with paths:', {
+    unzippedDirPath,
+    compiledDirPath,
+    indexHtmlPath,
+    originalIndexPath
+  })
+
   const { error: updateError } = await supabase
     .from('courses')
     .update({
@@ -77,4 +89,6 @@ export async function updateCourseMetadata(
     console.error('Error updating course:', updateError)
     throw new Error(`Failed to update course: ${updateError.message}`)
   }
+
+  console.log('Course metadata updated successfully')
 }
