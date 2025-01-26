@@ -55,27 +55,31 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
           }
         } catch (error) {
           console.error('Error accessing iframe content:', {
-            name: error.name,
-            message: error.message,
-            stack: error.stack,
-            type: error instanceof SecurityError ? 'SecurityError' : 'Unknown'
+            name: error instanceof Error ? error.name : 'Unknown',
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            type: error instanceof DOMException ? 'DOMException' : 'Unknown'
           });
           
           // Additional error context
-          if (error instanceof SecurityError) {
+          if (error instanceof DOMException) {
             console.error('Security policy violation - check CORS and sandbox settings');
           }
         }
       };
 
       // Enhanced error handling for iframe loading
-      iframe.onerror = (event) => {
-        console.error('Iframe loading error:', {
-          type: event.type,
-          bubbles: event.bubbles,
-          cancelable: event.cancelable,
-          timeStamp: event.timeStamp
-        });
+      iframe.onerror = (event: Event | string) => {
+        if (event instanceof Event) {
+          console.error('Iframe loading error:', {
+            type: event.type,
+            bubbles: event.bubbles,
+            cancelable: event.cancelable,
+            timeStamp: event.timeStamp
+          });
+        } else {
+          console.error('Iframe loading error:', event);
+        }
       };
     } else {
       console.error('No iframe reference available');
