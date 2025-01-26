@@ -47,60 +47,97 @@ serve(async (req) => {
     }
 
     const zipBuffer = await response.arrayBuffer()
+    console.log('ZIP file downloaded, size:', zipBuffer.byteLength)
     
-    // Use the JSZip library from a CDN
-    const JSZip = (await import('https://esm.sh/jszip@3.10.1')).default
-    const zip = new JSZip()
-    
-    // Load and parse the zip file
-    const zipContent = await zip.loadAsync(zipBuffer)
-    
-    // Create a directory name without .zip extension
-    const dirPath = course.package_path.replace('.zip', '')
+    try {
+      // Use the JSZip library from a CDN
+      const JSZip = (await import('https://esm.sh/jszip@3.10.1')).default
+      const zip = new JSZip()
+      
+      // Load and parse the zip file
+      const zipContent = await zip.loadAsync(zipBuffer)
+      console.log('ZIP file loaded successfully')
+      
+      // Create a directory name without .zip extension
+      const dirPath = course.package_path.replace('.zip', '')
 
-    // Process each file in the zip
-    for (const [filename, file] of Object.entries(zipContent.files)) {
-      if (file.dir) continue // Skip directories
-
-      // Get file content as ArrayBuffer
-      const content = await file.async('arraybuffer')
-
-      const { error: uploadError } = await supabase
-        .storage
-        .from('scorm_packages')
-        .upload(`${dirPath}/${filename}`, content, {
-          contentType: 'application/octet-stream',
-          upsert: true
-        })
-
-      if (uploadError) {
-        console.error('Error uploading file:', filename, uploadError)
-        throw uploadError
-      }
-    }
-
-    // Update course status
-    const { error: updateError } = await supabase
-      .from('courses')
-      .update({
-        manifest_data: {
-          ...course.manifest_data,
-          status: 'processed'
+      // Process each file in the zip
+      for (const [filename, file] of Object.entries(zipContent.files)) {
+        if (file.dir) {
+          console.log('Skipping directory:', filename)
+          continue
         }
-      })
-      .eq('id', courseId)
 
-    if (updateError) throw updateError
+        try {
+          // Get file content as ArrayBuffer
+          const content = await file.async('arraybuffer')
+          console.log('Processing file:', filename)
 
-    return new Response(
-      JSON.stringify({ success: true, message: 'SCORM package processed successfully' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+          const { error: uploadError } = await supabase
+            .storage
+            .from('scorm_packages')
+            .upload(`${dirPath}/${filename}`, content, {
+              contentType: 'application/octet-stream',
+              upsert: true
+            })
+
+          if (uploadError) {
+            console.error('Error uploading file:', filename, uploadError)
+            throw uploadError
+          }
+          
+          console.log('Successfully uploaded:', filename)
+        } catch (fileError) {
+          console.error('Error processing file:', filename, fileError)
+          throw fileError
+        }
+      }
+
+      // Update course status
+      const { error: updateError } = await supabase
+        .from('courses')
+        .update({
+          manifest_data: {
+            ...course.manifest_data,
+            status: 'processed'
+          }
+        })
+        .eq('id', courseId)
+
+      if (updateError) throw updateError
+      console.log('Course status updated successfully')
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'SCORM package processed successfully',
+          courseId 
+        }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      )
+    } catch (processingError) {
+      console.error('Error processing ZIP:', processingError)
+      throw processingError
+    }
   } catch (error) {
     console.error('Error processing SCORM package:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      JSON.stringify({ 
+        error: error.message,
+        details: error.stack 
+      }),
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        }, 
+        status: 500 
+      }
     )
   }
 })
