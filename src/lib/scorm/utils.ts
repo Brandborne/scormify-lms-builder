@@ -1,6 +1,4 @@
-import { CompletionStatus } from './types';
 import { validateDataModelValue } from './validation';
-import { SCORM_ERROR_CODES } from './constants';
 
 export const traverseDataModel = (data: any, path: string): any => {
   const parts = path.split('.');

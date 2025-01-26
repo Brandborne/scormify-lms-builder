@@ -1,7 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { SCORM_ERROR_CODES, ERROR_MESSAGES } from './constants';
-import { ScormData, CompletionStatus } from './types';
-import { validateCompletionStatus, traverseDataModel, updateDataModel } from './utils';
+import { ScormData } from './types';
+import { traverseDataModel, updateDataModel } from './utils';
+import { validateCompletionStatus } from './validation';
 
 class ScormAPI {
   private courseId: string;

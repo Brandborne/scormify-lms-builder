@@ -1,7 +1,7 @@
 import { ValidationRule, ValidationRules, CompletionStatus, SuccessStatus, Mode, Entry, Exit, Credit, InteractionType } from './types';
 import { SCORM_ERROR_CODES } from './constants';
 
-const timePattern = /^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d{1,2})?S)?)?$/;
+const timePattern = /^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d{1,2})S))?)?$/;
 
 export const CMI_VALIDATION_RULES: ValidationRules = {
   'cmi.completion_status': {
