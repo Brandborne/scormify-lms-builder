@@ -13,8 +13,14 @@ export async function processZipContent(
   const unzippedDirPath = `Courses/${courseId}/unzipped`;
   console.log('Base unzipped directory path:', unzippedDirPath);
 
+  // Get all files from the zip
+  const files = Object.keys(zip.files);
+  console.log('Total files in zip:', files.length);
+
   // Process each file in the zip, maintaining folder structure
-  for (const [relativePath, file] of Object.entries(zip.files)) {
+  for (const relativePath of files) {
+    const file = zip.files[relativePath];
+    
     // Skip macOS metadata files and directories
     if (file.dir || relativePath.startsWith('__MACOSX/')) {
       console.log('Skipping directory or macOS file:', relativePath);
@@ -29,9 +35,11 @@ export async function processZipContent(
       console.log('Target storage path:', originalPath);
       
       const contentType = getContentType(relativePath);
+      console.log('Content type:', contentType);
 
       try {
         let content: ArrayBuffer;
+        
         // Handle binary files directly as ArrayBuffer
         if (contentType.includes('xml') || 
             contentType.includes('xsd') || 
