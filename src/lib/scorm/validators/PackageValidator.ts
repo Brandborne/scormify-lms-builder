@@ -11,20 +11,28 @@ export class PackageValidator {
     let manifest: ScormManifest | undefined;
 
     try {
-      // Find imsmanifest.xml in root or nested directories
-      const manifestFile = Object.keys(zip.files).find(path => 
-        path.toLowerCase().endsWith('imsmanifest.xml')
-      );
+      // Check for imsmanifest.xml in root directory first
+      let manifestFile = zip.files['imsmanifest.xml'];
+      
+      // If not in root, search in nested directories
+      if (!manifestFile) {
+        const manifestPath = Object.keys(zip.files).find(path => 
+          path.toLowerCase().endsWith('imsmanifest.xml')
+        );
+        if (manifestPath) {
+          manifestFile = zip.files[manifestPath];
+        }
+      }
 
       if (!manifestFile) {
         errors.push('Missing required imsmanifest.xml file');
         return { isValid: false, errors };
       }
 
-      console.log('Found manifest file at:', manifestFile);
+      console.log('Found manifest file');
 
       // Validate manifest content
-      const manifestContent = await zip.files[manifestFile].async('text');
+      const manifestContent = await manifestFile.async('text');
       manifest = await ManifestParser.parse(manifestContent);
 
       if (!manifest.startingPage) {
