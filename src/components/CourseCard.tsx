@@ -60,8 +60,8 @@ export function CourseCard({
           <Button onClick={handleStart} className="w-full">
             Start Course
           </Button>
-          <ContactsManagement />
-          <DeleteCourseButton id={id} onDelete={onDelete} />
+          <ContactsManagement variant="secondary" />
+          <DeleteCourseButton id={id} onDelete={onDelete} variant="default" />
         </div>
       </CardContent>
     </Card>

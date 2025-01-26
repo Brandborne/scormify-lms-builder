@@ -7,9 +7,10 @@ import { toast } from "sonner";
 interface DeleteCourseButtonProps {
   id: string;
   onDelete: () => void;
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
 }
 
-export function DeleteCourseButton({ id, onDelete }: DeleteCourseButtonProps) {
+export function DeleteCourseButton({ id, onDelete, variant = "default" }: DeleteCourseButtonProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
@@ -33,7 +34,7 @@ export function DeleteCourseButton({ id, onDelete }: DeleteCourseButtonProps) {
 
   return (
     <Button
-      variant="secondary"
+      variant={variant}
       onClick={handleDelete}
       disabled={isDeleting}
       className="w-full"
