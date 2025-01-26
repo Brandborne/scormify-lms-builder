@@ -35,43 +35,36 @@ export type Database = {
       }
       courses: {
         Row: {
-          id: string
-          title: string
-          description: string | null
-          package_path: string
-          manifest_data: Json | null
           created_at: string
-          updated_at: string
           created_by: string
+          description: string | null
+          id: string
+          manifest_data: Json | null
+          package_path: string
+          title: string
+          updated_at: string
         }
         Insert: {
-          id?: string
-          title: string
-          description?: string | null
-          package_path: string
-          manifest_data?: Json | null
           created_at?: string
-          updated_at?: string
           created_by: string
+          description?: string | null
+          id?: string
+          manifest_data?: Json | null
+          package_path: string
+          title: string
+          updated_at?: string
         }
         Update: {
-          id?: string
-          title?: string
-          description?: string | null
-          package_path?: string
-          manifest_data?: Json | null
           created_at?: string
-          updated_at?: string
           created_by?: string
+          description?: string | null
+          id?: string
+          manifest_data?: Json | null
+          package_path?: string
+          title?: string
+          updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "courses_created_by_fkey"
-            columns: ["created_by"]
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
+        Relationships: []
       }
       documents: {
         Row: {

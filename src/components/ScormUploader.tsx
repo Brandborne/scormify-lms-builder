@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function ScormUploader() {
   const [isUploading, setIsUploading] = useState(false);
+  const queryClient = useQueryClient();
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -45,6 +47,8 @@ export function ScormUploader() {
       if (courseError) throw courseError;
 
       toast.success('SCORM package uploaded successfully');
+      // Invalidate the courses query to trigger a refresh
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
     } catch (error: any) {
       toast.error('Failed to upload SCORM package: ' + error.message);
     } finally {
