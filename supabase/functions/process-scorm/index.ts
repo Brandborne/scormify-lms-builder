@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-import { Buffer } from "https://deno.land/std@0.177.0/node/buffer.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -58,8 +57,9 @@ serve(async (req) => {
       const zipContent = await zip.loadAsync(zipBuffer)
       console.log('ZIP file loaded successfully')
       
-      // Create a directory name without .zip extension
-      const dirPath = course.package_path.replace('.zip', '')
+      // Create a unique directory name for the unzipped content
+      const unzippedDirPath = `${crypto.randomUUID()}`
+      let indexHtmlPath = null
 
       // Process each file in the zip
       for (const [filename, file] of Object.entries(zipContent.files)) {
@@ -73,45 +73,62 @@ serve(async (req) => {
           const content = await file.async('arraybuffer')
           console.log('Processing file:', filename)
 
+          // Clean up the filename to remove any parent directory structure
+          const cleanFilename = filename.split('/').pop() || filename
+          const uploadPath = `${unzippedDirPath}/${cleanFilename}`
+
+          // Track the index.html location
+          if (cleanFilename.toLowerCase() === 'index.html') {
+            indexHtmlPath = uploadPath
+          }
+
           const { error: uploadError } = await supabase
             .storage
             .from('scorm_packages')
-            .upload(`${dirPath}/${filename}`, content, {
+            .upload(uploadPath, content, {
               contentType: 'application/octet-stream',
               upsert: true
             })
 
           if (uploadError) {
-            console.error('Error uploading file:', filename, uploadError)
+            console.error('Error uploading file:', cleanFilename, uploadError)
             throw uploadError
           }
           
-          console.log('Successfully uploaded:', filename)
+          console.log('Successfully uploaded:', uploadPath)
         } catch (fileError) {
           console.error('Error processing file:', filename, fileError)
           throw fileError
         }
       }
 
-      // Update course status
+      if (!indexHtmlPath) {
+        throw new Error('No index.html found in the SCORM package')
+      }
+
+      // Update course with the unzipped directory path
       const { error: updateError } = await supabase
         .from('courses')
         .update({
           manifest_data: {
             ...course.manifest_data,
-            status: 'processed'
+            status: 'processed',
+            unzipped_path: unzippedDirPath,
+            index_path: indexHtmlPath
           }
         })
         .eq('id', courseId)
 
       if (updateError) throw updateError
-      console.log('Course status updated successfully')
+      console.log('Course status and paths updated successfully')
 
       return new Response(
         JSON.stringify({ 
           success: true, 
           message: 'SCORM package processed successfully',
-          courseId 
+          courseId,
+          unzippedPath: unzippedDirPath,
+          indexPath: indexHtmlPath
         }),
         { 
           headers: { 

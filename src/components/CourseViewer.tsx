@@ -19,23 +19,21 @@ export function CourseViewer() {
         .single();
       
       if (error) throw error;
-      console.log('Course data:', data); // Debug log
+      console.log('Course data:', data);
       return data;
     }
   });
 
   const { data: publicUrl } = useQuery({
-    queryKey: ['courseUrl', course?.package_path],
-    enabled: !!course?.package_path,
+    queryKey: ['courseUrl', course?.manifest_data?.index_path],
+    enabled: !!course?.manifest_data?.index_path,
     queryFn: async () => {
-      // Get the base path without .zip extension
-      const unzippedPath = course.package_path.replace('.zip', '');
       const { data } = supabase
         .storage
         .from('scorm_packages')
-        .getPublicUrl(`${unzippedPath}/index.html`);
+        .getPublicUrl(course.manifest_data.index_path);
       
-      console.log('Storage URL:', data.publicUrl); // Debug log
+      console.log('Storage URL:', data.publicUrl);
       return data.publicUrl;
     }
   });
