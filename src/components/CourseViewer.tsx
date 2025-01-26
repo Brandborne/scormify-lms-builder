@@ -79,20 +79,22 @@ export function CourseViewer() {
   });
 
   const { data: publicUrl } = useQuery({
-    queryKey: ['courseUrl', course?.unzipped_path, course?.manifest_data?.index_path],
+    queryKey: ['courseUrl', course?.unzipped_path],
     enabled: !!course?.unzipped_path && course?.manifest_data?.status === 'processed',
     queryFn: async () => {
-      if (!course?.manifest_data?.index_path) {
-        console.error('No index path found in manifest data');
-        throw new Error('Missing index path');
+      if (!course?.unzipped_path) {
+        console.error('No unzipped path found');
+        throw new Error('Missing unzipped path');
       }
 
-      console.log('Getting public URL for manifest index path:', course.manifest_data.index_path);
+      // Construct the full path to the SCORM driver index file
+      const scormDriverPath = `${course.unzipped_path}/scormdriver/indexAPI.html`;
+      console.log('Getting public URL for SCORM driver path:', scormDriverPath);
       
       const { data } = supabase
         .storage
         .from('scorm_packages')
-        .getPublicUrl(course.manifest_data.index_path);
+        .getPublicUrl(scormDriverPath);
       
       console.log('Storage URL generated:', data.publicUrl);
       return data.publicUrl;
