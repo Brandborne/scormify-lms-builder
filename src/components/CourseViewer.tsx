@@ -56,7 +56,7 @@ export function CourseViewer() {
     if (courseId && !scormApiRef.current) {
       const initScormApi = async () => {
         console.log('Initializing SCORM API for course:', courseId);
-        const api = new ScormAPI(courseId);
+        const api = new ScormAPI(courseId, true); // Enable debug mode
         
         // Make API available to SCORM content
         (window as any).API_1484_11 = {
@@ -75,9 +75,10 @@ export function CourseViewer() {
         if (success === 'true') {
           scormApiRef.current = api;
           console.log('SCORM API initialized successfully');
+          toast.success('Course initialized successfully');
         } else {
           console.error('Failed to initialize SCORM API');
-          toast.error('Failed to initialize SCORM tracking');
+          toast.error('Failed to initialize course tracking');
         }
       };
 
