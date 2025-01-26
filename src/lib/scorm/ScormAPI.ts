@@ -7,6 +7,7 @@ export interface ScormData {
   totalTime?: number;
   suspendData?: string;
   location?: string;
+  [key: string]: string | number | undefined;  // Index signature to allow dynamic property access
 }
 
 class ScormAPI {
