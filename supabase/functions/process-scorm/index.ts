@@ -56,20 +56,23 @@ function getContentType(filename: string): string {
 async function processZipContent(
   zip: JSZip,
   supabase: any,
-  unzippedDirPath: string
-): Promise<string | null> {
+  unzippedDirPath: string,
+  compiledDirPath: string
+): Promise<{ indexHtmlPath: string | null, originalIndexPath: string | null }> {
   let indexHtmlPath = null
+  let originalIndexPath = null
 
+  // First, store the original uncompiled files
   for (const [filename, file] of Object.entries(zip.files)) {
     if (file.dir) continue
 
     const cleanFilename = filename.split('/').pop() || filename
-    const uploadPath = `${unzippedDirPath}/${cleanFilename}`
+    const originalPath = `${unzippedDirPath}/${cleanFilename}`
     const contentType = getContentType(cleanFilename)
 
     if (cleanFilename.toLowerCase() === 'index.html') {
-      indexHtmlPath = uploadPath
-      console.log('Found index.html at:', uploadPath)
+      originalIndexPath = originalPath
+      console.log('Found original index.html at:', originalPath)
     }
 
     try {
@@ -86,31 +89,58 @@ async function processZipContent(
       const { error: uploadError } = await supabase
         .storage
         .from('scorm_packages')
-        .upload(uploadPath, content, {
+        .upload(originalPath, content, {
           contentType,
           upsert: true
         })
 
       if (uploadError) {
-        console.error('Error uploading file:', cleanFilename, uploadError)
+        console.error('Error uploading original file:', cleanFilename, uploadError)
         throw uploadError
       }
 
-      console.log('Successfully uploaded:', uploadPath)
+      console.log('Successfully uploaded original file:', originalPath)
+
+      // For compiled version, only process non-source files
+      if (!filename.endsWith('.ts') && !filename.endsWith('.jsx') && !filename.endsWith('.tsx')) {
+        const compiledPath = `${compiledDirPath}/${cleanFilename}`
+        
+        const { error: compiledUploadError } = await supabase
+          .storage
+          .from('scorm_packages')
+          .upload(compiledPath, content, {
+            contentType,
+            upsert: true
+          })
+
+        if (compiledUploadError) {
+          console.error('Error uploading compiled file:', cleanFilename, compiledUploadError)
+          throw compiledUploadError
+        }
+
+        if (cleanFilename.toLowerCase() === 'index.html') {
+          indexHtmlPath = compiledPath
+          console.log('Set compiled index.html path:', compiledPath)
+        }
+
+        console.log('Successfully uploaded compiled file:', compiledPath)
+      }
     } catch (error) {
       console.error(`Failed to process file ${cleanFilename}:`, error)
       throw new Error(`Failed to process file ${cleanFilename}: ${error.message}`)
     }
   }
 
-  return indexHtmlPath
+  return { indexHtmlPath, originalIndexPath }
 }
 
 async function updateCourseMetadata(
   supabase: any,
   courseId: string,
   unzippedDirPath: string,
-  indexHtmlPath: string
+  compiledDirPath: string,
+  indexHtmlPath: string,
+  originalIndexPath: string
 ) {
   const { error: updateError } = await supabase
     .from('courses')
@@ -118,7 +148,9 @@ async function updateCourseMetadata(
       manifest_data: {
         status: 'processed',
         unzipped_path: unzippedDirPath,
-        index_path: indexHtmlPath
+        compiled_path: compiledDirPath,
+        index_path: indexHtmlPath,
+        original_index_path: originalIndexPath
       }
     })
     .eq('id', courseId)
@@ -188,17 +220,33 @@ serve(async (req) => {
     console.log('ZIP file loaded successfully')
 
     const unzippedDirPath = `${crypto.randomUUID()}`
-    const indexHtmlPath = await processZipContent(zip, supabase, unzippedDirPath)
+    const compiledDirPath = `${crypto.randomUUID()}`
+    
+    const { indexHtmlPath, originalIndexPath } = await processZipContent(
+      zip, 
+      supabase, 
+      unzippedDirPath,
+      compiledDirPath
+    )
 
-    if (!indexHtmlPath) {
+    if (!indexHtmlPath || !originalIndexPath) {
       throw new Error('No index.html found in the SCORM package')
     }
 
-    await updateCourseMetadata(supabase, courseId, unzippedDirPath, indexHtmlPath)
+    await updateCourseMetadata(
+      supabase, 
+      courseId, 
+      unzippedDirPath, 
+      compiledDirPath,
+      indexHtmlPath,
+      originalIndexPath
+    )
 
     console.log('Course updated successfully with paths:', {
       unzippedPath: unzippedDirPath,
-      indexPath: indexHtmlPath
+      compiledPath: compiledDirPath,
+      indexPath: indexHtmlPath,
+      originalIndexPath: originalIndexPath
     })
 
     return new Response(
@@ -207,7 +255,9 @@ serve(async (req) => {
         message: 'SCORM package processed successfully',
         courseId,
         unzippedPath: unzippedDirPath,
-        indexPath: indexHtmlPath
+        compiledPath: compiledDirPath,
+        indexPath: indexHtmlPath,
+        originalIndexPath: originalIndexPath
       }),
       {
         headers: {
