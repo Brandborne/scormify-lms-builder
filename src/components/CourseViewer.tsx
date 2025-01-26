@@ -31,6 +31,11 @@ export function CourseViewer() {
         throw error;
       }
       
+      if (!data) {
+        console.error('No course found with ID:', courseId);
+        throw new Error('Course not found');
+      }
+      
       console.log('Course data retrieved:', data);
       return {
         ...data,
@@ -102,12 +107,49 @@ export function CourseViewer() {
 
   if (courseError) {
     console.error('Course loading error:', courseError);
-    return <div>Error loading course: {courseError.message}</div>;
+    return (
+      <div className="container mx-auto p-8">
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/')}
+          className="mb-4"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Courses
+        </Button>
+        <Alert variant="destructive">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            {courseError.message === 'Course not found' 
+              ? 'The requested course could not be found. It may have been deleted.'
+              : `Error loading course: ${courseError.message}`
+            }
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
   if (!course) {
     console.error('No course found for ID:', courseId);
-    return <div>Course not found</div>;
+    return (
+      <div className="container mx-auto p-8">
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/')}
+          className="mb-4"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Courses
+        </Button>
+        <Alert variant="destructive">
+          <AlertTitle>Course Not Found</AlertTitle>
+          <AlertDescription>
+            The requested course could not be found. It may have been deleted.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
   return (
@@ -147,7 +189,7 @@ export function CourseViewer() {
       )}
 
       <div className="bg-card border rounded-lg p-6">
-        {courseId && <ScormInitializer courseId={courseId} />}
+        {courseId && course && <ScormInitializer courseId={courseId} />}
         {publicUrl ? (
           <ScormFrame url={publicUrl} title={course.title} />
         ) : (
