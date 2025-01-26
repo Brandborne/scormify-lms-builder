@@ -5,4 +5,5 @@ export interface CourseManifestData {
   compiled_path?: string;
   index_path?: string;
   original_index_path?: string;
+  startingPage?: string;
 }
