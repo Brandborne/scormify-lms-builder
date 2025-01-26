@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import ScormAPI from "@/lib/scorm/ScormAPI";
 
@@ -9,9 +9,16 @@ interface ScormApiInitializerProps {
 
 export function ScormApiInitializer({ courseId, onInitialized }: ScormApiInitializerProps) {
   const { toast } = useToast();
+  const initializingRef = useRef(false);
 
   useEffect(() => {
+    if (initializingRef.current) {
+      console.log('ScormApiInitializer: Already initializing, skipping');
+      return;
+    }
+
     console.log('ScormApiInitializer: Starting initialization');
+    initializingRef.current = true;
     
     // Clean up any existing API instances
     if (window.API) {
@@ -32,9 +39,6 @@ export function ScormApiInitializer({ courseId, onInitialized }: ScormApiInitial
         window.API = api;
         window.API_1484_11 = api;
         
-        console.log('ScormApiInitializer: Window.API after assignment:', !!window.API);
-        console.log('ScormApiInitializer: Window.API_1484_11 after assignment:', !!window.API_1484_11);
-        
         const success = await api.Initialize();
         console.log('ScormApiInitializer: Initialize() result:', success);
         
@@ -48,7 +52,6 @@ export function ScormApiInitializer({ courseId, onInitialized }: ScormApiInitial
           });
         } else {
           console.error('ScormApiInitializer: Failed to initialize SCORM API');
-          console.error('ScormApiInitializer: Initialization response:', success);
           
           toast({
             title: "Initialization Failed",
@@ -57,21 +60,23 @@ export function ScormApiInitializer({ courseId, onInitialized }: ScormApiInitial
           });
         }
       } catch (error) {
-        console.error('ScormApiInitializer: Error during initialization:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        });
+        console.error('ScormApiInitializer: Error during initialization:', error);
         
         toast({
           title: "Initialization Error",
           description: `Failed to initialize course: ${error.message}. Please refresh the page and try again.`,
           variant: "destructive",
         });
+      } finally {
+        initializingRef.current = false;
       }
     };
 
     initApi();
+
+    return () => {
+      initializingRef.current = false;
+    };
   }, [courseId, onInitialized, toast]);
 
   return null;
