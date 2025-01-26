@@ -70,7 +70,13 @@ export function CourseViewer() {
     queryFn: async () => {
       console.log('Getting public URL for path:', course.unzipped_path);
       const startingPage = course.manifest_data?.startingPage || 'index.html';
-      const indexPath = `${course.unzipped_path}/${startingPage}`;
+      console.log('Starting page from manifest:', startingPage);
+      
+      // Ensure we don't have any double slashes in the path
+      const cleanUnzippedPath = course.unzipped_path.replace(/\/+/g, '/');
+      const cleanStartingPage = startingPage.replace(/^\/+/, '');
+      const indexPath = `${cleanUnzippedPath}/${cleanStartingPage}`;
+      
       console.log('Constructed index path:', indexPath);
       
       const { data } = supabase
