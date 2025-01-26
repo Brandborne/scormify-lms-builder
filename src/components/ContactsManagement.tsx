@@ -30,16 +30,7 @@ export function ContactsManagement({ variant = "default", courseId }: ContactsMa
     }
 
     try {
-      if (isAssigned) {
-        // Unassign
-        const { error } = await supabase
-          .from('course_assignments')
-          .delete()
-          .match({ course_id: courseId, contact_id: contactId });
-
-        if (error) throw error;
-        toast.success('Contact unassigned from course successfully');
-      } else {
+      if (!isAssigned) {
         // Assign
         const { error } = await supabase
           .from('course_assignments')
@@ -57,11 +48,24 @@ export function ContactsManagement({ variant = "default", courseId }: ContactsMa
         } else {
           toast.success('Contact assigned to course successfully');
         }
+      } else {
+        // Unassign
+        const { error } = await supabase
+          .from('course_assignments')
+          .delete()
+          .match({ 
+            course_id: courseId, 
+            contact_id: contactId 
+          });
+
+        if (error) throw error;
+        toast.success('Contact unassigned from course successfully');
       }
+      
       // Invalidate both contacts and course_assignments queries
       queryClient.invalidateQueries({ queryKey: ['course_assignments', courseId] });
     } catch (error: any) {
-      toast.error(`Failed to ${isAssigned ? 'unassign' : 'assign'} contact: ${error.message}`);
+      toast.error(`Failed to ${!isAssigned ? 'assign' : 'unassign'} contact: ${error.message}`);
     }
   };
 
