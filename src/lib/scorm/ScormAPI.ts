@@ -79,12 +79,14 @@ class ScormAPI {
 
       this.data[key] = value;
       
+      const snakeCaseKey = typeof key === 'string' ? this.toSnakeCase(key) : key;
+      
       const { error } = await supabase
         .from('scorm_runtime_data')
         .upsert({
           course_id: this.courseId,
           user_id: this.userId,
-          [this.toSnakeCase(key)]: value,
+          [snakeCaseKey]: value,
         });
 
       if (error) throw error;
