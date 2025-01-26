@@ -10,6 +10,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -31,6 +32,21 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey)
+
+    // First update the status to processing to prevent multiple processing attempts
+    const { error: updateError } = await supabase
+      .from('courses')
+      .update({
+        manifest_data: {
+          status: 'processing'
+        }
+      })
+      .eq('id', courseId)
+
+    if (updateError) {
+      console.error('Error updating course status:', updateError)
+      throw new Error(`Failed to update course status: ${updateError.message}`)
+    }
 
     const { data: course, error: courseError } = await supabase
       .from('courses')
@@ -65,10 +81,28 @@ serve(async (req) => {
 
     console.log('SCORM package unzipped successfully')
 
+    // Update the manifest data with the processed status and paths
+    const { error: finalUpdateError } = await supabase
+      .from('courses')
+      .update({
+        manifest_data: {
+          ...course.manifest_data,
+          status: 'processed',
+          indexHtmlPath,
+          originalIndexPath
+        }
+      })
+      .eq('id', courseId)
+
+    if (finalUpdateError) {
+      console.error('Error updating final course status:', finalUpdateError)
+      throw new Error(`Failed to update final course status: ${finalUpdateError.message}`)
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'SCORM package unzipped successfully',
+        message: 'SCORM package processed successfully',
         courseId
       }),
       {
