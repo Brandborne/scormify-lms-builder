@@ -66,7 +66,6 @@ export function CourseViewer() {
         title: "Processing Started",
         description: "The course is being processed. Please wait a moment.",
       });
-      // Refetch after a short delay to allow processing to start
       setTimeout(() => refetch(), 2000);
     },
     onError: (error) => {
@@ -80,24 +79,20 @@ export function CourseViewer() {
   });
 
   const { data: publicUrl } = useQuery({
-    queryKey: ['courseUrl', course?.unzipped_path],
+    queryKey: ['courseUrl', course?.unzipped_path, course?.manifest_data?.indexHtmlPath],
     enabled: !!course?.unzipped_path && course?.manifest_data?.status === 'processed',
     queryFn: async () => {
-      console.log('Getting public URL for path:', course.unzipped_path);
-      const startingPage = course.manifest_data?.startingPage || 'index.html';
-      console.log('Starting page from manifest:', startingPage);
-      
-      // Ensure we don't have any double slashes in the path
-      const cleanUnzippedPath = course.unzipped_path.replace(/\/+/g, '/');
-      const cleanStartingPage = startingPage.replace(/^\/+/, '');
-      const indexPath = `${cleanUnzippedPath}/${cleanStartingPage}`;
-      
-      console.log('Constructed index path:', indexPath);
+      if (!course?.manifest_data?.indexHtmlPath) {
+        console.error('No index HTML path found in manifest data');
+        throw new Error('Missing index HTML path');
+      }
+
+      console.log('Getting public URL for manifest index path:', course.manifest_data.indexHtmlPath);
       
       const { data } = supabase
         .storage
         .from('scorm_packages')
-        .getPublicUrl(indexPath);
+        .getPublicUrl(course.manifest_data.indexHtmlPath);
       
       console.log('Storage URL generated:', data.publicUrl);
       return data.publicUrl;
