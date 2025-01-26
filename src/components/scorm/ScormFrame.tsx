@@ -14,7 +14,7 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
     const iframe = iframeRef.current;
     if (iframe) {
       // Set basic sandbox permissions needed for SCORM
-      const sandboxPermissions = 'allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-presentation allow-storage-access-by-user-activation';
+      const sandboxPermissions = 'allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads';
       iframe.setAttribute('sandbox', sandboxPermissions);
       console.log('Sandbox permissions set:', sandboxPermissions);
       
@@ -68,7 +68,7 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
       src={url}
       className="w-full min-h-[800px] border-0 bg-white"
       title={title}
-      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-presentation allow-storage-access-by-user-activation"
+      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads"
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; clipboard-write"
       loading="eager"
       security="restricted"
