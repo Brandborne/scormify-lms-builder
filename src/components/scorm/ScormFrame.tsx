@@ -13,8 +13,19 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
     const iframe = iframeRef.current;
     if (!iframe) return;
 
-    // Set basic sandbox permissions needed for SCORM
-    const sandboxPermissions = 'allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-pointer-lock allow-top-navigation';
+    // Set comprehensive sandbox permissions needed for SCORM
+    const sandboxPermissions = [
+      'allow-same-origin',
+      'allow-scripts',
+      'allow-forms',
+      'allow-popups',
+      'allow-modals',
+      'allow-downloads',
+      'allow-pointer-lock',
+      'allow-top-navigation',
+      'allow-popups-to-escape-sandbox'
+    ].join(' ');
+    
     iframe.setAttribute('sandbox', sandboxPermissions);
 
     const handleLoad = debounce(() => {
@@ -22,15 +33,6 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
       
       try {
         if (iframe.contentWindow) {
-          // Try to inject a meta tag to set CSP for the iframe content
-          const meta = document.createElement('meta');
-          meta.setAttribute('http-equiv', 'Content-Security-Policy');
-          meta.setAttribute('content', "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval';");
-          
-          if (iframe.contentDocument && iframe.contentDocument.head) {
-            iframe.contentDocument.head.appendChild(meta);
-          }
-          
           console.log('Successfully accessed iframe content window');
         }
       } catch (error) {
@@ -57,10 +59,9 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
       src={url}
       className="w-full min-h-[800px] border-0 bg-white"
       title={title}
-      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-pointer-lock allow-top-navigation"
+      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-pointer-lock allow-top-navigation allow-popups-to-escape-sandbox"
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; clipboard-write; fullscreen; microphone; camera; display-capture; web-share"
       loading="eager"
-      security="restricted"
     />
   );
 }
