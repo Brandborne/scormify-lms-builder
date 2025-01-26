@@ -53,6 +53,7 @@ export function ContactItem({
           <Switch
             checked={isAssigned}
             onCheckedChange={() => onToggleAssignment(contact.id, isAssigned)}
+            aria-label={`Toggle assignment for ${contact.name}`}
           />
         )}
         <Button

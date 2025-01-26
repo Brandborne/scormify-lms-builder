@@ -64,6 +64,7 @@ export function ContactsManagement({ variant = "default", courseId }: ContactsMa
       
       // Invalidate both contacts and course_assignments queries
       queryClient.invalidateQueries({ queryKey: ['course_assignments', courseId] });
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
     } catch (error: any) {
       toast.error(`Failed to ${currentlyAssigned ? 'unassign' : 'assign'} contact: ${error.message}`);
     }
