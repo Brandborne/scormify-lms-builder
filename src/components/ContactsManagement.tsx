@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { ContactForm } from "./contacts/ContactForm";
 import { ContactList } from "./contacts/ContactList";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ContactsManagementProps {
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
@@ -20,6 +21,7 @@ interface ContactsManagementProps {
 
 export function ContactsManagement({ variant = "default", courseId }: ContactsManagementProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   const handleToggleAssignment = async (contactId: string, isAssigned: boolean) => {
     if (!courseId) {
@@ -56,9 +58,15 @@ export function ContactsManagement({ variant = "default", courseId }: ContactsMa
           toast.success('Contact assigned to course successfully');
         }
       }
+      // Invalidate both contacts and course_assignments queries
+      queryClient.invalidateQueries({ queryKey: ['course_assignments', courseId] });
     } catch (error: any) {
       toast.error(`Failed to ${isAssigned ? 'unassign' : 'assign'} contact: ${error.message}`);
     }
+  };
+
+  const handleContactDeleted = () => {
+    queryClient.invalidateQueries({ queryKey: ['contacts'] });
   };
 
   return (
@@ -74,11 +82,13 @@ export function ContactsManagement({ variant = "default", courseId }: ContactsMa
           <DialogTitle>Contact Management</DialogTitle>
         </DialogHeader>
         <div className="space-y-6">
-          <ContactForm onSuccess={() => {}} />
+          <ContactForm onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['contacts'] });
+          }} />
           <ContactList 
             courseId={courseId}
             onToggleAssignment={handleToggleAssignment}
-            onContactDeleted={() => {}}
+            onContactDeleted={handleContactDeleted}
           />
         </div>
       </DialogContent>
