@@ -74,8 +74,6 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; clipboard-write; fullscreen; microphone; camera; display-capture; web-share"
       loading="eager"
       referrerPolicy="origin"
-      importance="high"
-      fetchpriority="high"
     />
   );
 }
