@@ -25,11 +25,15 @@ export function ScormUploader() {
 
       if (error) throw error;
 
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) throw new Error('No active session');
+
       const { data: courseData, error: courseError } = await supabase
         .from('courses')
         .insert({
           title: file.name.replace('.zip', ''),
           package_path: data.path,
+          created_by: session.session.user.id,
           manifest_data: {
             scormVersion: "1.3",
             status: "pending_processing"

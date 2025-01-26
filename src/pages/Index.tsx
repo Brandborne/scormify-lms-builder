@@ -5,6 +5,7 @@ import { CourseCard } from "@/components/CourseCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ScormUploader } from "@/components/ScormUploader";
+import { toast } from "sonner";
 
 const Index = () => {
   const { data: courses, isLoading } = useQuery({
@@ -40,7 +41,7 @@ const Index = () => {
                 <CourseCard
                   key={course.id}
                   title={course.title}
-                  description="SCORM Course"
+                  description={course.description || "SCORM Course"}
                   onStart={handleStartCourse}
                 />
               ))}
