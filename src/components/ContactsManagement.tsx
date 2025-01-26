@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Users, Plus, ArrowRight, ArrowLeft, Trash } from "lucide-react";
+import { Users, Plus, Trash } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useQuery } from "@tanstack/react-query";
+import { Switch } from "@/components/ui/switch";
 
 interface Contact {
   id: string;
@@ -42,6 +43,21 @@ export function ContactsManagement({ variant = "default", courseId }: ContactsMa
       if (error) throw error;
       return data as Contact[];
     }
+  });
+
+  const { data: assignments } = useQuery({
+    queryKey: ['course_assignments', courseId],
+    queryFn: async () => {
+      if (!courseId) return [];
+      const { data, error } = await supabase
+        .from('course_assignments')
+        .select('contact_id')
+        .eq('course_id', courseId);
+      
+      if (error) throw error;
+      return data.map(a => a.contact_id);
+    },
+    enabled: !!courseId
   });
 
   const handleAddContact = async (e: React.FormEvent) => {
@@ -81,50 +97,43 @@ export function ContactsManagement({ variant = "default", courseId }: ContactsMa
     }
   };
 
-  const handleAssignContact = async (contactId: string) => {
+  const handleToggleAssignment = async (contactId: string, isAssigned: boolean) => {
     if (!courseId) {
       toast.error('No course selected');
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from('course_assignments')
-        .insert([{
-          course_id: courseId,
-          contact_id: contactId,
-        }]);
+      if (isAssigned) {
+        // Unassign
+        const { error } = await supabase
+          .from('course_assignments')
+          .delete()
+          .match({ course_id: courseId, contact_id: contactId });
 
-      if (error) {
-        if (error.code === '23505') {
-          toast.error('Contact is already assigned to this course');
-        } else {
-          throw error;
-        }
+        if (error) throw error;
+        toast.success('Contact unassigned from course successfully');
       } else {
-        toast.success('Contact assigned to course successfully');
+        // Assign
+        const { error } = await supabase
+          .from('course_assignments')
+          .insert([{
+            course_id: courseId,
+            contact_id: contactId,
+          }]);
+
+        if (error) {
+          if (error.code === '23505') {
+            toast.error('Contact is already assigned to this course');
+          } else {
+            throw error;
+          }
+        } else {
+          toast.success('Contact assigned to course successfully');
+        }
       }
     } catch (error: any) {
-      toast.error('Failed to assign contact: ' + error.message);
-    }
-  };
-
-  const handleUnassignContact = async (contactId: string) => {
-    if (!courseId) {
-      toast.error('No course selected');
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('course_assignments')
-        .delete()
-        .match({ course_id: courseId, contact_id: contactId });
-
-      if (error) throw error;
-      toast.success('Contact unassigned from course successfully');
-    } catch (error: any) {
-      toast.error('Failed to unassign contact: ' + error.message);
+      toast.error(`Failed to ${isAssigned ? 'unassign' : 'assign'} contact: ${error.message}`);
     }
   };
 
@@ -187,45 +196,38 @@ export function ContactsManagement({ variant = "default", courseId }: ContactsMa
           <div className="space-y-4">
             <h4 className="text-sm font-medium">Existing Contacts</h4>
             <div className="max-h-[200px] overflow-y-auto space-y-2">
-              {contacts?.map((contact) => (
-                <div
-                  key={contact.id}
-                  className="flex justify-between items-center p-2 bg-secondary rounded-md"
-                >
-                  <div>
-                    <p className="font-medium">{contact.name}</p>
-                    <p className="text-sm text-muted-foreground">{contact.email}</p>
+              {contacts?.map((contact) => {
+                const isAssigned = assignments?.includes(contact.id);
+                return (
+                  <div
+                    key={contact.id}
+                    className={`flex justify-between items-center p-2 rounded-md ${
+                      isAssigned ? 'bg-primary/10' : 'bg-secondary'
+                    }`}
+                  >
+                    <div>
+                      <p className="font-medium">{contact.name}</p>
+                      <p className="text-sm text-muted-foreground">{contact.email}</p>
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      {courseId && (
+                        <Switch
+                          checked={isAssigned}
+                          onCheckedChange={(checked) => handleToggleAssignment(contact.id, !checked)}
+                        />
+                      )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteContact(contact.id)}
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    {courseId && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleAssignContact(contact.id)}
-                        >
-                          <ArrowRight className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleUnassignContact(contact.id)}
-                        >
-                          <ArrowLeft className="h-4 w-4" />
-                        </Button>
-                      </>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDeleteContact(contact.id)}
-                    >
-                      <Trash className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               {!contacts?.length && (
                 <p className="text-sm text-muted-foreground">No contacts found</p>
               )}
