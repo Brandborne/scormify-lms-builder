@@ -1,30 +1,22 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "./ui/button";
-import { ArrowLeft } from "lucide-react";
 import { CourseManifestData } from "@/types/course";
-import { ScormFrame } from "./scorm/ScormFrame";
-import { ScormInitializer } from "./scorm/ScormInitializer";
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
-import { ReloadIcon } from "@radix-ui/react-icons";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
+import { CourseHeader } from "./course/CourseHeader";
+import { CourseProcessingAlert } from "./course/CourseProcessingAlert";
+import { CourseErrorAlert } from "./course/CourseErrorAlert";
+import { CourseContent } from "./course/CourseContent";
 
 export function CourseViewer() {
   const { courseId } = useParams();
-  const navigate = useNavigate();
   const { toast } = useToast();
-
-  console.log('CourseViewer mounted with courseId from URL:', courseId);
 
   const { data: course, isLoading, error: courseError, refetch } = useQuery({
     queryKey: ['course', courseId],
     queryFn: async () => {
-      console.log('Fetching course data for ID:', courseId);
-      
       if (!courseId) {
-        console.error('No course ID provided');
         throw new Error('Course ID is required');
       }
 
@@ -34,17 +26,8 @@ export function CourseViewer() {
         .eq('id', courseId)
         .maybeSingle();
       
-      if (error) {
-        console.error('Error fetching course:', error);
-        throw error;
-      }
-      
-      console.log('Course data retrieved:', courseData);
-      
-      if (!courseData) {
-        console.error('No course found with ID:', courseId);
-        throw new Error('Course not found');
-      }
+      if (error) throw error;
+      if (!courseData) throw new Error('Course not found');
 
       return {
         ...courseData,
@@ -69,7 +52,6 @@ export function CourseViewer() {
       setTimeout(() => refetch(), 2000);
     },
     onError: (error) => {
-      console.error('Processing error:', error);
       toast({
         title: "Processing Failed",
         description: "Failed to process the course. Please try again.",
@@ -83,25 +65,19 @@ export function CourseViewer() {
     enabled: !!course?.unzipped_path && course?.manifest_data?.status === 'processed',
     queryFn: async () => {
       if (!course?.unzipped_path) {
-        console.error('No unzipped path found');
         throw new Error('Missing unzipped path');
       }
 
-      // Construct the full path to the SCORM driver index file
       const scormDriverPath = `${course.unzipped_path}/scormdriver/indexAPI.html`;
-      console.log('Getting public URL for SCORM driver path:', scormDriverPath);
-      
       const { data } = supabase
         .storage
         .from('scorm_packages')
         .getPublicUrl(scormDriverPath);
       
-      console.log('Storage URL generated:', data.publicUrl);
       return data.publicUrl;
     }
   });
 
-  // Automatically trigger processing if needed
   useEffect(() => {
     if (course?.manifest_data?.status === 'pending_processing') {
       processMutation.mutate();
@@ -113,96 +89,33 @@ export function CourseViewer() {
   }
 
   if (courseError) {
-    console.error('Course loading error:', courseError);
-    return (
-      <div className="container mx-auto p-8">
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/')}
-          className="mb-4"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Courses
-        </Button>
-        <Alert variant="destructive">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
-            {courseError.message === 'Course not found' 
-              ? 'The requested course could not be found. It may have been deleted.'
-              : `Error loading course: ${courseError.message}`
-            }
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
+    const errorMessage = courseError.message === 'Course not found' 
+      ? 'The requested course could not be found. It may have been deleted.'
+      : `Error loading course: ${courseError.message}`;
+    
+    return <CourseErrorAlert message={errorMessage} />;
   }
 
   if (!course) {
-    console.error('No course found for ID:', courseId);
-    return (
-      <div className="container mx-auto p-8">
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/')}
-          className="mb-4"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Courses
-        </Button>
-        <Alert variant="destructive">
-          <AlertTitle>Course Not Found</AlertTitle>
-          <AlertDescription>
-            The requested course could not be found. It may have been deleted.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
+    return <CourseErrorAlert message="The requested course could not be found. It may have been deleted." />;
   }
 
   return (
     <div className="container mx-auto p-8">
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/')}
-          className="mb-4"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Courses
-        </Button>
-        <h1 className="text-3xl font-bold">{course.title}</h1>
-        {course.description && (
-          <p className="text-muted-foreground mt-2">{course.description}</p>
-        )}
-      </div>
-
+      <CourseHeader title={course.title} description={course.description} />
+      
       {course.manifest_data?.status === 'pending_processing' && (
-        <Alert className="mb-6">
-          <AlertTitle>Course Processing</AlertTitle>
-          <AlertDescription className="flex items-center justify-between">
-            <span>This course is being processed. Please wait a moment.</span>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => refetch()}
-              className="ml-4"
-              disabled={processMutation.isPending}
-            >
-              <ReloadIcon className={`mr-2 h-4 w-4 ${processMutation.isPending ? 'animate-spin' : ''}`} />
-              Check Again
-            </Button>
-          </AlertDescription>
-        </Alert>
+        <CourseProcessingAlert 
+          onRefresh={() => refetch()} 
+          isProcessing={processMutation.isPending} 
+        />
       )}
 
-      <div className="bg-card border rounded-lg p-6">
-        {courseId && course && <ScormInitializer courseId={courseId} />}
-        {publicUrl ? (
-          <ScormFrame url={publicUrl} title={course.title} />
-        ) : (
-          <div>Loading course content...</div>
-        )}
-      </div>
+      <CourseContent 
+        courseId={courseId!} 
+        title={course.title} 
+        publicUrl={publicUrl} 
+      />
     </div>
   );
 }
