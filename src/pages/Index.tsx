@@ -8,6 +8,21 @@ import { ScormUploader } from "@/components/ScormUploader";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+interface CourseStats {
+  total_assigned?: string;
+  completed?: string;
+}
+
+interface CourseWithStats {
+  id: string;
+  title: string;
+  description: string | null;
+  created_at: string;
+  manifest_data: {
+    stats?: CourseStats;
+  } | null;
+}
+
 const Index = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -47,7 +62,7 @@ const Index = () => {
       }
       
       console.log('Courses fetched:', data);
-      return data;
+      return data as CourseWithStats[];
     },
     enabled: !!session
   });
