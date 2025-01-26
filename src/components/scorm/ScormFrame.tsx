@@ -22,6 +22,15 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
       
       try {
         if (iframe.contentWindow) {
+          // Try to inject a meta tag to set CSP for the iframe content
+          const meta = document.createElement('meta');
+          meta.setAttribute('http-equiv', 'Content-Security-Policy');
+          meta.setAttribute('content', "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval';");
+          
+          if (iframe.contentDocument && iframe.contentDocument.head) {
+            iframe.contentDocument.head.appendChild(meta);
+          }
+          
           console.log('Successfully accessed iframe content window');
         }
       } catch (error) {
