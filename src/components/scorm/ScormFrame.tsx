@@ -36,8 +36,16 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
         if (iframe.contentWindow) {
           console.log('Successfully accessed iframe content window');
           
-          // Attempt to access the iframe content in a try-catch block
+          // Add CSP meta tag to allow inline styles
           try {
+            const meta = document.createElement('meta');
+            meta.httpEquiv = 'Content-Security-Policy';
+            meta.content = "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;";
+            
+            if (iframe.contentDocument?.head) {
+              iframe.contentDocument.head.appendChild(meta);
+            }
+
             const hasScormDriver = iframe.contentWindow.document.querySelector('script[src*="scormdriver.js"]');
             console.log('ScormDriver script found:', !!hasScormDriver);
             
