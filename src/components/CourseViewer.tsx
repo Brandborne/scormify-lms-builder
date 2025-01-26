@@ -35,14 +35,18 @@ export function CourseViewer() {
   });
 
   const { data: publicUrl, error: urlError } = useQuery({
-    queryKey: ['courseUrl', course?.manifest_data?.index_path],
-    enabled: !!course?.manifest_data?.index_path,
+    queryKey: ['courseUrl', course?.package_path],
+    enabled: !!course?.package_path,
     queryFn: async () => {
-      console.log('Getting public URL for path:', course.manifest_data.index_path);
+      console.log('Getting public URL for path:', course.package_path);
+      const basePath = course.package_path.replace('.zip', '');
+      const indexPath = `${basePath}/${course.manifest_data?.startingPage}`;
+      console.log('Constructed index path:', indexPath);
+      
       const { data } = supabase
         .storage
         .from('scorm_packages')
-        .getPublicUrl(course.manifest_data.index_path!);
+        .getPublicUrl(indexPath);
       
       console.log('Storage URL generated:', data.publicUrl);
       return data.publicUrl;
