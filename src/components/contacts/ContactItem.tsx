@@ -13,7 +13,7 @@ interface ContactItemProps {
   isAssigned?: boolean;
   courseId?: string;
   onDelete: () => void;
-  onToggleAssignment?: (contactId: string, isAssigned: boolean) => void;
+  onToggleAssignment?: (contactId: string) => void;
 }
 
 export function ContactItem({ 
@@ -40,7 +40,7 @@ export function ContactItem({
 
   const handleToggle = () => {
     if (onToggleAssignment) {
-      onToggleAssignment(contact.id, isAssigned);
+      onToggleAssignment(contact.id);
     }
   };
 

@@ -23,15 +23,27 @@ export function ContactsManagement({ variant = "default", courseId }: ContactsMa
   const [isOpen, setIsOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  const handleToggleAssignment = async (contactId: string, isCurrentlyAssigned: boolean) => {
+  const handleToggleAssignment = async (contactId: string) => {
     if (!courseId) {
       toast.error('No course selected');
       return;
     }
 
     try {
-      if (isCurrentlyAssigned) {
-        // If currently assigned, we want to unassign
+      // First, check if the assignment exists
+      const { data: existingAssignment, error: checkError } = await supabase
+        .from('course_assignments')
+        .select('id')
+        .match({ 
+          course_id: courseId, 
+          contact_id: contactId 
+        })
+        .maybeSingle();
+
+      if (checkError) throw checkError;
+
+      if (existingAssignment) {
+        // Assignment exists, so unassign
         const { error } = await supabase
           .from('course_assignments')
           .delete()
@@ -43,7 +55,7 @@ export function ContactsManagement({ variant = "default", courseId }: ContactsMa
         if (error) throw error;
         toast.success('Contact unassigned from course successfully');
       } else {
-        // If not currently assigned, we want to assign
+        // No assignment exists, so assign
         const { error } = await supabase
           .from('course_assignments')
           .insert([{
@@ -66,7 +78,7 @@ export function ContactsManagement({ variant = "default", courseId }: ContactsMa
       queryClient.invalidateQueries({ queryKey: ['course_assignments', courseId] });
       queryClient.invalidateQueries({ queryKey: ['courses'] });
     } catch (error: any) {
-      toast.error(`Failed to ${isCurrentlyAssigned ? 'unassign' : 'assign'} contact: ${error.message}`);
+      toast.error(`Failed to toggle contact assignment: ${error.message}`);
     }
   };
 
