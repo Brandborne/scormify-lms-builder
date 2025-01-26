@@ -1,3 +1,10 @@
+import type { AuditLogTables } from './audit-logs'
+import type { CourseTables } from './courses'
+import type { DocumentTables } from './documents'
+import type { IncidentTables } from './incidents'
+import type { ProfileTables } from './profiles'
+import type { RiskTables } from './risks'
+
 export type Json =
   | string
   | number

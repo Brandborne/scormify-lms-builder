@@ -1,3 +1,5 @@
+import type { Json } from './common'
+
 export interface CourseTables {
   Row: {
     created_at: string
