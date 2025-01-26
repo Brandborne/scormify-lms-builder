@@ -14,7 +14,6 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
     const iframe = iframeRef.current;
     if (iframe) {
       // Force set sandbox attribute to ensure it's applied
-      // Removed 'allow-presentation' as it's invalid
       const sandboxPermissions = 'allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-modals allow-top-navigation';
       iframe.setAttribute('sandbox', sandboxPermissions);
       console.log('Sandbox permissions after force set:', sandboxPermissions);
@@ -24,6 +23,20 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
         console.log('Final sandbox permissions:', iframe.getAttribute('sandbox'));
         
         try {
+          // Try to access the iframe content window first
+          if (iframe.contentWindow) {
+            console.log('Successfully accessed iframe content window');
+            
+            // Attempt to modify CSP for the iframe content
+            const meta = document.createElement('meta');
+            meta.setAttribute('http-equiv', 'Content-Security-Policy');
+            meta.setAttribute('content', "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: *;");
+            
+            if (iframe.contentDocument?.head) {
+              iframe.contentDocument.head.appendChild(meta);
+            }
+          }
+
           const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
           if (iframeDoc) {
             console.log('Successfully accessed iframe document');
@@ -64,7 +77,7 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
         }
       };
 
-      iframe.onerror = (event: Event | string) => {
+      iframe.onerror = (event) => {
         if (event instanceof Event) {
           console.error('Iframe loading error:', {
             type: event.type,
@@ -95,7 +108,7 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
       src={url}
       className="w-full min-h-[800px] border-0 bg-white"
       title={title}
-      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-modals allow-top-navigation"
+      sandbox={`allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-modals allow-top-navigation`}
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
       loading="eager"
     />
