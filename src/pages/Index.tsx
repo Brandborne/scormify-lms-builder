@@ -5,26 +5,60 @@ import { CourseCard } from "@/components/CourseCard";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ScormUploader } from "@/components/ScormUploader";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [session, setSession] = useState<any>(null);
   
-  const { data: courses, isLoading } = useQuery({
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (!session) {
+        navigate('/auth');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+  
+  const { data: courses, isLoading, error } = useQuery({
     queryKey: ['courses'],
     queryFn: async () => {
+      console.log('Fetching courses...');
       const { data, error } = await supabase
         .from('courses')
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching courses:', error);
+        throw error;
+      }
+      
+      console.log('Courses fetched:', data);
       return data;
-    }
+    },
+    enabled: !!session // Only fetch when we have a session
   });
 
   const handleCourseDelete = () => {
     queryClient.invalidateQueries({ queryKey: ['courses'] });
   };
+
+  if (!session) {
+    return null; // Don't render anything if not authenticated
+  }
 
   return (
     <SidebarProvider>
@@ -34,6 +68,9 @@ const Index = () => {
           <DashboardHeader title="Learning Dashboard">
             <ScormUploader />
           </DashboardHeader>
+          {error && (
+            <div className="text-red-500">Error loading courses: {error.message}</div>
+          )}
           {isLoading ? (
             <div>Loading courses...</div>
           ) : (
