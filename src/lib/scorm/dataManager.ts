@@ -55,28 +55,20 @@ export class ScormDataManager {
       return;
     }
     
-    // First check if a record already exists
-    const { data: existingRecord } = await supabase
+    const { error } = await supabase
       .from('scorm_runtime_data')
-      .select('id')
-      .eq('course_id', this.courseId)
-      .eq('user_id', this.userId)
-      .maybeSingle();
+      .upsert({
+        course_id: this.courseId,
+        user_id: this.userId,
+        completion_status: 'not attempted',
+        progress: 0
+      }, {
+        onConflict: 'course_id,user_id'
+      });
 
-    if (!existingRecord) {
-      const { error } = await supabase
-        .from('scorm_runtime_data')
-        .insert({
-          course_id: this.courseId,
-          user_id: this.userId,
-          completion_status: 'not attempted',
-          progress: 0
-        });
-
-      if (error) {
-        this.logger.error('Failed to create initial runtime record', error);
-        throw error;
-      }
+    if (error) {
+      this.logger.error('Failed to create initial runtime record', error);
+      throw error;
     }
   }
 
