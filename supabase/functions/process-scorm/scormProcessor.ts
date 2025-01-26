@@ -11,6 +11,7 @@ export async function processZipContent(
   let originalIndexPath = null;
 
   const unzippedDirPath = `Courses/${courseId}/unzipped`;
+  console.log('Base unzipped directory path:', unzippedDirPath);
 
   // Process each file in the zip, maintaining folder structure
   for (const [relativePath, file] of Object.entries(zip.files)) {
@@ -23,12 +24,14 @@ export async function processZipContent(
     console.log('Processing file:', relativePath);
 
     try {
-      // Preserve the full path structure
+      // Preserve the exact path structure from the zip
       const originalPath = `${unzippedDirPath}/${relativePath}`;
+      console.log('Target storage path:', originalPath);
+      
       const contentType = getContentType(relativePath);
 
-      let content: ArrayBuffer;
       try {
+        let content: ArrayBuffer;
         // Handle binary files directly as ArrayBuffer
         if (contentType.includes('xml') || 
             contentType.includes('xsd') || 
@@ -48,11 +51,11 @@ export async function processZipContent(
           content = await file.async('arraybuffer');
         }
 
-        // Upload the file with its full path structure
+        // Upload the file with its exact path structure
         await uploadFile(supabase, originalPath, content, contentType);
-        console.log('Uploaded file to:', originalPath);
+        console.log('Successfully uploaded file to:', originalPath);
 
-        // Check if this is an index.html file
+        // Check if this is an index.html file and store its exact path
         if (relativePath.toLowerCase().endsWith('index.html')) {
           originalIndexPath = originalPath;
           indexHtmlPath = originalPath;
@@ -71,6 +74,8 @@ export async function processZipContent(
 
   if (!originalIndexPath) {
     console.warn('No index.html found in the SCORM package');
+  } else {
+    console.log('Final index.html path:', originalIndexPath);
   }
 
   return { indexHtmlPath, originalIndexPath };
