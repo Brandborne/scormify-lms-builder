@@ -16,16 +16,7 @@ export function ScormInitializer({ courseId }: ScormInitializerProps) {
         const api = new ScormAPI(courseId, true); // Enable debug mode
         
         // Make API available to SCORM content
-        (window as any).API_1484_11 = {
-          Initialize: (param: string) => api.Initialize(param),
-          Terminate: (param: string) => api.Terminate(param),
-          GetValue: (element: string) => api.GetValue(element),
-          SetValue: (element: string, value: string) => api.SetValue(element, value),
-          Commit: (param: string) => api.Commit(param),
-          GetLastError: () => api.GetLastError(),
-          GetErrorString: (errorCode: string) => api.GetErrorString(errorCode),
-          GetDiagnostic: (errorCode: string) => api.GetDiagnostic(errorCode)
-        };
+        (window as any).API_1484_11 = api;
         
         const success = await api.Initialize();
         
