@@ -5,7 +5,6 @@ import { CourseCard } from "@/components/CourseCard";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ScormUploader } from "@/components/ScormUploader";
-import { toast } from "sonner";
 
 const Index = () => {
   const queryClient = useQueryClient();
@@ -22,10 +21,6 @@ const Index = () => {
       return data;
     }
   });
-
-  const handleStartCourse = () => {
-    toast.info("Course viewer will be implemented in the next iteration");
-  };
 
   const handleCourseDelete = () => {
     queryClient.invalidateQueries({ queryKey: ['courses'] });
@@ -49,7 +44,6 @@ const Index = () => {
                   id={course.id}
                   title={course.title}
                   description={course.description || "SCORM Course"}
-                  onStart={handleStartCourse}
                   onDelete={handleCourseDelete}
                 />
               ))}

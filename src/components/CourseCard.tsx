@@ -8,7 +8,6 @@ interface CourseCardProps {
   id: string;
   title: string;
   description: string;
-  onStart: () => void;
   onDelete: () => void;
 }
 
