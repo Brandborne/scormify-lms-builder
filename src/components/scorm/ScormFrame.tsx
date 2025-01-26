@@ -51,8 +51,12 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
       src={url}
       className="w-full min-h-[800px] border-0 bg-white"
       title={title}
+      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-modals allow-top-navigation allow-presentation"
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
       referrerPolicy="origin"
+      loading="eager"
+      importance="high"
+      crossOrigin="anonymous"
     />
   );
 }
