@@ -45,21 +45,26 @@ async function processZipContent(
       console.log('Found index.html at:', uploadPath)
     }
 
-    const content = await file.async('arraybuffer')
-    const { error: uploadError } = await supabase
-      .storage
-      .from('scorm_packages')
-      .upload(uploadPath, content, {
-        contentType: 'application/octet-stream',
-        upsert: true
-      })
+    try {
+      const content = await file.async('arraybuffer')
+      const { error: uploadError } = await supabase
+        .storage
+        .from('scorm_packages')
+        .upload(uploadPath, content, {
+          contentType: 'application/octet-stream',
+          upsert: true
+        })
 
-    if (uploadError) {
-      console.error('Error uploading file:', cleanFilename, uploadError)
-      throw uploadError
+      if (uploadError) {
+        console.error('Error uploading file:', cleanFilename, uploadError)
+        throw uploadError
+      }
+
+      console.log('Successfully uploaded:', uploadPath)
+    } catch (error) {
+      console.error(`Failed to process file ${cleanFilename}:`, error)
+      throw new Error(`Failed to process file ${cleanFilename}: ${error.message}`)
     }
-
-    console.log('Successfully uploaded:', uploadPath)
   }
 
   return indexHtmlPath
@@ -89,18 +94,35 @@ async function updateCourseMetadata(
 }
 
 serve(async (req) => {
+  // Always return proper CORS headers for OPTIONS requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { 
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json'
+      }
+    })
   }
 
   try {
-    const { courseId } = await req.json()
+    // Validate request body
+    const body = await req.json().catch(() => null)
+    if (!body || !body.courseId) {
+      throw new Error('Invalid request: courseId is required')
+    }
+
+    const { courseId } = body
     console.log('Processing SCORM package for course:', courseId)
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing required environment variables')
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Get course details
     const { data: course, error: courseError } = await supabase
