@@ -61,7 +61,7 @@ export function CourseCard({
             Start Course
           </Button>
           <ContactsManagement variant="secondary" />
-          <DeleteCourseButton id={id} onDelete={onDelete} variant="default" />
+          <DeleteCourseButton id={id} onDelete={onDelete} variant="ghost" />
         </div>
       </CardContent>
     </Card>
