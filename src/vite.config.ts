@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react({
-      plugins: [["@swc/plugin-react-refresh"]],
+      plugins: [["@swc/plugin-react-refresh", {}]],
     }),
     mode === 'development' &&
     componentTagger(),
