@@ -21,9 +21,9 @@ export async function processZipContent(
   for (const relativePath of files) {
     const file = zip.files[relativePath];
     
-    // Skip directories
-    if (file.dir) {
-      console.log('Skipping directory:', relativePath);
+    // Skip directories and macOS metadata files
+    if (file.dir || relativePath.startsWith('__MACOSX/') || relativePath.includes('/._')) {
+      console.log('Skipping directory or metadata file:', relativePath);
       continue;
     }
 
