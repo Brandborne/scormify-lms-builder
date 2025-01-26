@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
+import { useToast } from "@/hooks/use-toast";
 import ScormAPI from "@/lib/scorm/ScormAPI";
-import { toast } from "sonner";
 
 interface ScormInitializerProps {
   courseId: string;
@@ -8,6 +8,7 @@ interface ScormInitializerProps {
 
 export function ScormInitializer({ courseId }: ScormInitializerProps) {
   const scormApiRef = useRef<ScormAPI | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (courseId && !scormApiRef.current) {
@@ -16,17 +17,25 @@ export function ScormInitializer({ courseId }: ScormInitializerProps) {
         const api = new ScormAPI(courseId, true); // Enable debug mode
         
         // Make API available to SCORM content
-        (window as any).API_1484_11 = api;
+        (window as any).API = api; // For SCORM 1.2
+        (window as any).API_1484_11 = api; // For SCORM 2004
         
         const success = await api.Initialize();
         
         if (success === 'true') {
           scormApiRef.current = api;
           console.log('SCORM API initialized successfully');
-          toast.success('Course initialized successfully');
+          toast({
+            title: "Course Initialized",
+            description: "Course tracking is now active",
+          });
         } else {
           console.error('Failed to initialize SCORM API');
-          toast.error('Failed to initialize course tracking');
+          toast({
+            title: "Initialization Failed",
+            description: "Failed to initialize course tracking",
+            variant: "destructive",
+          });
         }
       };
 
@@ -38,10 +47,11 @@ export function ScormInitializer({ courseId }: ScormInitializerProps) {
         console.log('Terminating SCORM API');
         scormApiRef.current.Terminate();
         scormApiRef.current = null;
+        delete (window as any).API;
         delete (window as any).API_1484_11;
       }
     };
-  }, [courseId]);
+  }, [courseId, toast]);
 
   return null;
 }

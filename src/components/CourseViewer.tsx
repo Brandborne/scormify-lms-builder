@@ -34,17 +34,15 @@ export function CourseViewer() {
     }
   });
 
-  const { data: publicUrl, error: urlError } = useQuery({
+  const { data: publicUrl } = useQuery({
     queryKey: ['courseUrl', course?.package_path],
     enabled: !!course?.package_path,
     queryFn: async () => {
       console.log('Getting public URL for path:', course.package_path);
-      // Extract courseId and courseName from package_path
       const pathParts = course.package_path.split('/');
       const courseName = pathParts[pathParts.length - 1].split('.zip')[0];
       const startingPage = course.manifest_data?.startingPage || 'index.html';
       
-      // Construct the correct path using the new structure
       const indexPath = `Courses/${courseId}/unzipped/${courseName}/${startingPage}`;
       console.log('Constructed index path:', indexPath);
       
@@ -70,11 +68,6 @@ export function CourseViewer() {
   if (!course) {
     console.error('No course found for ID:', courseId);
     return <div>Course not found</div>;
-  }
-
-  if (urlError) {
-    console.error('Error getting course URL:', urlError);
-    return <div>Error loading course content: {urlError.message}</div>;
   }
 
   return (

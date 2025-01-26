@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 
 interface ScormFrameProps {
   url: string;
@@ -8,15 +8,24 @@ interface ScormFrameProps {
 export function ScormFrame({ url, title }: ScormFrameProps) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
+  useEffect(() => {
+    // Ensure the iframe is properly loaded
+    const iframe = iframeRef.current;
+    if (iframe) {
+      iframe.onload = () => {
+        console.log('SCORM content frame loaded:', url);
+      };
+    }
+  }, [url]);
+
   return (
     <iframe
       ref={iframeRef}
       src={url}
       className="w-full min-h-[800px] border-0 bg-white"
       title={title}
-      sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-downloads allow-modals"
+      sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-      referrerPolicy="no-referrer"
     />
   );
 }
