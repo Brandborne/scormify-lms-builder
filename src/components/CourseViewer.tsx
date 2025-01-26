@@ -100,6 +100,8 @@ export function CourseViewer() {
             src={publicUrl}
             className="w-full h-[600px] border-0"
             title={course.title}
+            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+            allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
           />
         ) : (
           <div>Loading course content...</div>
