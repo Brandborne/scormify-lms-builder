@@ -71,7 +71,7 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
       sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
       loading="eager"
-      crossorigin="anonymous"
+      crossOrigin="anonymous"
     />
   );
 }
