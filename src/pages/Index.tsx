@@ -49,7 +49,7 @@ const Index = () => {
       console.log('Courses fetched:', data);
       return data;
     },
-    enabled: !!session // Only fetch when we have a session
+    enabled: !!session
   });
 
   const handleCourseDelete = () => {
@@ -57,7 +57,7 @@ const Index = () => {
   };
 
   if (!session) {
-    return null; // Don't render anything if not authenticated
+    return null;
   }
 
   return (
@@ -81,6 +81,7 @@ const Index = () => {
                   id={course.id}
                   title={course.title}
                   description={course.description || "SCORM Course"}
+                  createdAt={course.created_at}
                   onDelete={handleCourseDelete}
                 />
               ))}
