@@ -16,7 +16,7 @@ interface ContactListProps {
 }
 
 export function ContactList({ courseId, onToggleAssignment, onContactDeleted }: ContactListProps) {
-  const { data: contacts } = useQuery({
+  const { data: contacts, isLoading } = useQuery({
     queryKey: ['contacts'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -44,6 +44,10 @@ export function ContactList({ courseId, onToggleAssignment, onContactDeleted }: 
     enabled: !!courseId
   });
 
+  if (isLoading) {
+    return <div>Loading contacts...</div>;
+  }
+
   return (
     <div className="space-y-4">
       <h4 className="text-sm font-medium">Existing Contacts</h4>
@@ -55,7 +59,6 @@ export function ContactList({ courseId, onToggleAssignment, onContactDeleted }: 
               key={contact.id}
               contact={contact}
               isAssigned={isAssigned}
-              courseId={courseId}
               onDelete={onContactDeleted}
               onToggleAssignment={onToggleAssignment}
             />

@@ -11,15 +11,13 @@ interface ContactItemProps {
     email: string;
   };
   isAssigned?: boolean;
-  courseId?: string;
   onDelete: () => void;
   onToggleAssignment?: (contactId: string) => void;
 }
 
 export function ContactItem({ 
   contact, 
-  isAssigned = false, 
-  courseId,
+  isAssigned = false,
   onDelete,
   onToggleAssignment 
 }: ContactItemProps) {
@@ -34,6 +32,7 @@ export function ContactItem({
       toast.success('Contact deleted successfully');
       onDelete();
     } catch (error: any) {
+      console.error('Delete contact error:', error);
       toast.error('Failed to delete contact: ' + error.message);
     }
   };
@@ -55,7 +54,7 @@ export function ContactItem({
         <p className="text-sm text-muted-foreground">{contact.email}</p>
       </div>
       <div className="flex gap-2 items-center">
-        {courseId && onToggleAssignment && (
+        {onToggleAssignment && (
           <Switch
             checked={isAssigned}
             onCheckedChange={handleToggle}

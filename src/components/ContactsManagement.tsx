@@ -40,11 +40,14 @@ export function ContactsManagement({ variant = "default", courseId }: ContactsMa
         })
         .maybeSingle();
 
-      if (checkError) throw checkError;
+      if (checkError) {
+        console.error('Error checking assignment:', checkError);
+        throw checkError;
+      }
 
       if (existingAssignment) {
         // Assignment exists, so unassign
-        const { error } = await supabase
+        const { error: deleteError } = await supabase
           .from('course_assignments')
           .delete()
           .match({ 
@@ -52,22 +55,27 @@ export function ContactsManagement({ variant = "default", courseId }: ContactsMa
             contact_id: contactId 
           });
 
-        if (error) throw error;
+        if (deleteError) {
+          console.error('Error deleting assignment:', deleteError);
+          throw deleteError;
+        }
+        
         toast.success('Contact unassigned from course successfully');
       } else {
         // No assignment exists, so assign
-        const { error } = await supabase
+        const { error: insertError } = await supabase
           .from('course_assignments')
           .insert([{
             course_id: courseId,
             contact_id: contactId,
           }]);
 
-        if (error) {
-          if (error.code === '23505') {
+        if (insertError) {
+          if (insertError.code === '23505') {
             toast.error('Contact is already assigned to this course');
           } else {
-            throw error;
+            console.error('Error inserting assignment:', insertError);
+            throw insertError;
           }
         } else {
           toast.success('Contact assigned to course successfully');
@@ -75,9 +83,10 @@ export function ContactsManagement({ variant = "default", courseId }: ContactsMa
       }
       
       // Invalidate both contacts and course_assignments queries
-      queryClient.invalidateQueries({ queryKey: ['course_assignments', courseId] });
-      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      await queryClient.invalidateQueries({ queryKey: ['course_assignments', courseId] });
+      await queryClient.invalidateQueries({ queryKey: ['courses'] });
     } catch (error: any) {
+      console.error('Toggle assignment error:', error);
       toast.error(`Failed to toggle contact assignment: ${error.message}`);
     }
   };
