@@ -24,12 +24,13 @@ export function ScormUploader() {
     setIsUploading(true);
     try {
       console.log('Starting file upload process');
-      const fileName = `${crypto.randomUUID()}-${file.name}`;
-      console.log('Generated unique filename:', fileName);
+      const courseId = crypto.randomUUID();
+      const originalZipPath = `Courses/${courseId}/original/${file.name}`;
+      console.log('Generated storage path:', originalZipPath);
 
       const { data, error } = await supabase.storage
         .from('scorm_packages')
-        .upload(fileName, file);
+        .upload(originalZipPath, file);
 
       if (error) {
         console.error('Storage upload error:', error);
@@ -48,6 +49,7 @@ export function ScormUploader() {
       const { data: courseData, error: courseError } = await supabase
         .from('courses')
         .insert({
+          id: courseId,
           title: file.name.replace('.zip', ''),
           package_path: data.path,
           created_by: session.session.user.id,

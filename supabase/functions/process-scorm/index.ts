@@ -57,14 +57,10 @@ serve(async (req) => {
     const zipContent = await zip.loadAsync(zipBuffer)
     console.log('ZIP file loaded successfully')
 
-    const unzippedDirPath = `${crypto.randomUUID()}`
-    const compiledDirPath = `${crypto.randomUUID()}`
-    
     const { indexHtmlPath, originalIndexPath } = await processZipContent(
       zip, 
-      supabase, 
-      unzippedDirPath,
-      compiledDirPath
+      supabase,
+      courseId
     )
 
     if (!indexHtmlPath || !originalIndexPath) {
@@ -73,16 +69,12 @@ serve(async (req) => {
 
     await updateCourseMetadata(
       supabase, 
-      courseId, 
-      unzippedDirPath, 
-      compiledDirPath,
+      courseId,
       indexHtmlPath,
       originalIndexPath
     )
 
     console.log('Course updated successfully with paths:', {
-      unzippedPath: unzippedDirPath,
-      compiledPath: compiledDirPath,
       indexPath: indexHtmlPath,
       originalIndexPath: originalIndexPath
     })
@@ -92,8 +84,6 @@ serve(async (req) => {
         success: true,
         message: 'SCORM package processed successfully',
         courseId,
-        unzippedPath: unzippedDirPath,
-        compiledPath: compiledDirPath,
         indexPath: indexHtmlPath,
         originalIndexPath: originalIndexPath
       }),
