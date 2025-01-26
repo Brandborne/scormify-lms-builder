@@ -38,6 +38,12 @@ export function ContactItem({
     }
   };
 
+  const handleToggle = () => {
+    if (onToggleAssignment) {
+      onToggleAssignment(contact.id, isAssigned);
+    }
+  };
+
   return (
     <div
       className={`flex justify-between items-center p-2 rounded-md ${
@@ -52,7 +58,7 @@ export function ContactItem({
         {courseId && onToggleAssignment && (
           <Switch
             checked={isAssigned}
-            onCheckedChange={() => onToggleAssignment(contact.id, isAssigned)}
+            onCheckedChange={handleToggle}
             aria-label={`Toggle assignment for ${contact.name}`}
           />
         )}

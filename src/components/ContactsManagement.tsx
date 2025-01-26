@@ -23,14 +23,14 @@ export function ContactsManagement({ variant = "default", courseId }: ContactsMa
   const [isOpen, setIsOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  const handleToggleAssignment = async (contactId: string, currentlyAssigned: boolean) => {
+  const handleToggleAssignment = async (contactId: string, isCurrentlyAssigned: boolean) => {
     if (!courseId) {
       toast.error('No course selected');
       return;
     }
 
     try {
-      if (currentlyAssigned) {
+      if (isCurrentlyAssigned) {
         // If currently assigned, we want to unassign
         const { error } = await supabase
           .from('course_assignments')
@@ -66,7 +66,7 @@ export function ContactsManagement({ variant = "default", courseId }: ContactsMa
       queryClient.invalidateQueries({ queryKey: ['course_assignments', courseId] });
       queryClient.invalidateQueries({ queryKey: ['courses'] });
     } catch (error: any) {
-      toast.error(`Failed to ${currentlyAssigned ? 'unassign' : 'assign'} contact: ${error.message}`);
+      toast.error(`Failed to ${isCurrentlyAssigned ? 'unassign' : 'assign'} contact: ${error.message}`);
     }
   };
 
