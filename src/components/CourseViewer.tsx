@@ -19,6 +19,7 @@ export function CourseViewer() {
         .single();
       
       if (error) throw error;
+      console.log('Course data:', data); // Debug log
       return data;
     }
   });
@@ -32,9 +33,8 @@ export function CourseViewer() {
         .from('scorm_packages')
         .getPublicUrl(course.package_path);
       
-      // The SCORM package is a zip file, we need to get the index.html inside it
-      const basePath = data.publicUrl.split('.zip')[0];
-      return `${basePath}/index.html`;
+      console.log('Storage URL:', data.publicUrl); // Debug log
+      return data.publicUrl;
     }
   });
 
