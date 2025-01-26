@@ -21,6 +21,16 @@ export function ScormInitializer({ courseId }: ScormInitializerProps) {
         console.log('ScormInitializer: Current window.API_1484_11 status:', !!window.API_1484_11);
         
         try {
+          // Clean up any existing API instances
+          if (window.API) {
+            console.log('ScormInitializer: Cleaning up existing SCORM 1.2 API');
+            delete window.API;
+          }
+          if (window.API_1484_11) {
+            console.log('ScormInitializer: Cleaning up existing SCORM 2004 API');
+            delete window.API_1484_11;
+          }
+
           const api = new ScormAPI(courseId, true); // Enable debug mode
           console.log('ScormInitializer: SCORM API instance created');
           
@@ -49,7 +59,7 @@ export function ScormInitializer({ courseId }: ScormInitializerProps) {
             
             toast({
               title: "Initialization Failed",
-              description: "Failed to initialize course tracking",
+              description: "Failed to initialize course tracking. Please refresh the page and try again.",
               variant: "destructive",
             });
           }
@@ -62,7 +72,7 @@ export function ScormInitializer({ courseId }: ScormInitializerProps) {
           
           toast({
             title: "Initialization Error",
-            description: error.message,
+            description: `Failed to initialize course: ${error.message}. Please refresh the page and try again.`,
             variant: "destructive",
           });
         }
