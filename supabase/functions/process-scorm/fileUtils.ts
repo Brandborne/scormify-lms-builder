@@ -21,6 +21,10 @@ export function getContentType(filename: string): string {
     'wav': 'audio/wav',
     'pdf': 'application/pdf',
     'zip': 'application/zip',
+    'woff': 'font/woff',
+    'woff2': 'font/woff2',
+    'ttf': 'font/ttf',
+    'eot': 'application/vnd.ms-fontobject',
   }
   
   return contentTypes[ext] || 'application/octet-stream'
@@ -57,7 +61,9 @@ export async function uploadFile(
     .from('scorm_packages')
     .upload(path, content, {
       contentType,
-      upsert: true
+      upsert: true,
+      cacheControl: '3600',
+      duplex: 'half'
     })
 
   if (uploadError) {
@@ -65,5 +71,20 @@ export async function uploadFile(
     throw uploadError
   }
 
-  console.log('Successfully uploaded file:', path)
+  // After upload, ensure the file is publicly accessible
+  const { error: updateError } = await supabase
+    .storage
+    .from('scorm_packages')
+    .update(path, content, {
+      contentType,
+      cacheControl: '3600',
+      upsert: true
+    })
+
+  if (updateError) {
+    console.error('Error updating file permissions:', path, updateError)
+    throw updateError
+  }
+
+  console.log('Successfully uploaded and configured file:', path)
 }
