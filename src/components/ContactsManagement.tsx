@@ -17,23 +17,43 @@ export function ContactsManagement({ variant = "default" }: ContactsManagementPr
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No user found");
 
-      const contacts = [
+      const sampleContacts = [
         { name: "John Doe", email: "john@example.com" },
         { name: "Jane Smith", email: "jane@example.com" }
       ];
 
+      // Check for existing contacts first
+      const { data: existingContacts } = await supabase
+        .from('contacts')
+        .select('email')
+        .in('email', sampleContacts.map(c => c.email));
+
+      const existingEmails = new Set(existingContacts?.map(c => c.email));
+      
+      // Filter out contacts that already exist
+      const newContacts = sampleContacts.filter(contact => !existingEmails.has(contact.email));
+
+      if (newContacts.length === 0) {
+        toast.info('All sample contacts already exist');
+        return;
+      }
+
       const { error } = await supabase
         .from('contacts')
-        .insert(contacts.map(contact => ({
+        .insert(newContacts.map(contact => ({
           ...contact,
           created_by: user.id
         })));
 
       if (error) throw error;
       
-      toast.success('Contacts imported successfully');
+      toast.success(`Successfully imported ${newContacts.length} contacts`);
     } catch (error: any) {
-      toast.error('Failed to import contacts: ' + error.message);
+      if (error.code === '23505') {
+        toast.error('One or more contacts already exist');
+      } else {
+        toast.error('Failed to import contacts: ' + error.message);
+      }
     } finally {
       setIsLoading(false);
     }
