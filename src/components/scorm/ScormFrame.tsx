@@ -12,7 +12,7 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
     <iframe
       ref={iframeRef}
       src={url}
-      className="w-full h-[600px] border-0"
+      className="w-full min-h-[800px] border-0 bg-white"
       title={title}
       sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-downloads allow-modals"
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
