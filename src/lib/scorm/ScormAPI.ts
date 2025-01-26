@@ -18,7 +18,12 @@ class ScormAPI {
   constructor(courseId: string) {
     this.courseId = courseId;
     this.startTime = Date.now();
-    this.userId = supabase.auth.getUser()?.data?.user?.id;
+    this.initializeUserId();
+  }
+
+  private async initializeUserId() {
+    const { data: { user } } = await supabase.auth.getUser();
+    this.userId = user?.id;
   }
 
   async initialize(): Promise<boolean> {
