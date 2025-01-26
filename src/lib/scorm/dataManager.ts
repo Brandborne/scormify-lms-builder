@@ -1,18 +1,21 @@
 import { supabase } from "@/integrations/supabase/client";
 import { ScormData } from './types';
 import { validateCompletionStatus } from './validation';
+import { ScormLoggingService } from './services/LoggingService';
 
 export class ScormDataManager {
   constructor(
     private courseId: string,
     private userId: string | undefined,
-    private startTime: number
+    private startTime: number,
+    private logger: ScormLoggingService
   ) {}
 
   async loadInitialData(existingData: any): Promise<ScormData> {
     const data: ScormData = { cmi: {} };
     
     if (existingData) {
+      this.logger.info('Loading existing runtime data', existingData);
       data.cmi = {
         completion_status: validateCompletionStatus(existingData.completion_status || 'unknown'),
         progress_measure: existingData.progress,
@@ -25,6 +28,7 @@ export class ScormDataManager {
         total_time: existingData.total_time?.toString()
       };
     } else {
+      this.logger.info('Creating initial runtime data');
       await this.createInitialRecord();
       data.cmi = {
         completion_status: 'not attempted',
@@ -46,7 +50,10 @@ export class ScormDataManager {
   }
 
   private async createInitialRecord(): Promise<void> {
-    if (!this.userId) return;
+    if (!this.userId) {
+      this.logger.error('Cannot create initial record: No user ID');
+      return;
+    }
     
     const { error } = await supabase
       .from('scorm_runtime_data')
@@ -57,11 +64,17 @@ export class ScormDataManager {
         progress: 0
       });
 
-    if (error) throw error;
+    if (error) {
+      this.logger.error('Failed to create initial runtime record', error);
+      throw error;
+    }
   }
 
   async saveData(data: ScormData): Promise<void> {
-    if (!this.userId) return;
+    if (!this.userId) {
+      this.logger.error('Cannot save data: No user ID');
+      return;
+    }
 
     const totalTime = Math.floor((Date.now() - this.startTime) / 1000);
     
@@ -78,6 +91,11 @@ export class ScormDataManager {
         location: data.cmi?.location
       });
 
-    if (error) throw error;
+    if (error) {
+      this.logger.error('Failed to save runtime data', error);
+      throw error;
+    }
+
+    this.logger.info('Runtime data saved successfully');
   }
 }
