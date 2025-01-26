@@ -13,6 +13,17 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
     if (iframe) {
       iframe.onload = () => {
         console.log('SCORM content frame loaded:', url);
+        
+        // Try to access iframe content to check if it's loading properly
+        try {
+          const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+          if (iframeDoc) {
+            console.log('Content type:', iframeDoc.contentType);
+            console.log('Document ready state:', iframeDoc.readyState);
+          }
+        } catch (error) {
+          console.error('Error accessing iframe content:', error);
+        }
       };
     }
   }, [url]);
