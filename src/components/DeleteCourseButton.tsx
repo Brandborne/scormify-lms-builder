@@ -33,13 +33,13 @@ export function DeleteCourseButton({ id, onDelete }: DeleteCourseButtonProps) {
 
   return (
     <Button
-      variant="ghost"
-      size="icon"
+      variant="secondary"
       onClick={handleDelete}
       disabled={isDeleting}
-      className="h-8 w-8 text-destructive hover:text-destructive"
+      className="w-full"
     >
       <Trash2 className="h-4 w-4" />
+      Delete Course
     </Button>
   );
 }
