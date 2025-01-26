@@ -113,7 +113,7 @@ class ScormAPI {
 
       if (existingData) {
         this.data.cmi = {
-          completion_status: existingData.completion_status,
+          completion_status: this.validateCompletionStatus(existingData.completion_status || 'unknown'),
           progress_measure: existingData.progress,
           score: {
             scaled: existingData.score,
