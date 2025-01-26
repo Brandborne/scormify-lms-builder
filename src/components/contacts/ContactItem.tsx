@@ -52,7 +52,7 @@ export function ContactItem({
         {courseId && onToggleAssignment && (
           <Switch
             checked={isAssigned}
-            onCheckedChange={(checked) => onToggleAssignment(contact.id, !checked)}
+            onCheckedChange={() => onToggleAssignment(contact.id, isAssigned)}
           />
         )}
         <Button
