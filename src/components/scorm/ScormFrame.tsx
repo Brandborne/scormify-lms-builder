@@ -24,7 +24,7 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
           try {
             const meta = document.createElement('meta');
             meta.httpEquiv = 'Content-Security-Policy';
-            meta.content = "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; style-src * 'unsafe-inline';";
+            meta.content = "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval';";
             
             if (iframe.contentDocument?.head) {
               iframe.contentDocument.head.appendChild(meta);
@@ -74,7 +74,7 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
       src={url}
       className="w-full min-h-[800px] border-0 bg-white"
       title={title}
-      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-storage-access-by-user-activation allow-presentation"
+      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-storage-access-by-user-activation"
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; clipboard-write; fullscreen; microphone; camera; display-capture; web-share"
       loading="eager"
       referrerPolicy="origin"
