@@ -186,6 +186,56 @@ export type Database = {
         }
         Relationships: []
       }
+      scorm_runtime_data: {
+        Row: {
+          completion_status: string | null
+          course_id: string
+          created_at: string
+          id: string
+          location: string | null
+          progress: number | null
+          score: number | null
+          suspend_data: string | null
+          total_time: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completion_status?: string | null
+          course_id: string
+          created_at?: string
+          id?: string
+          location?: string | null
+          progress?: number | null
+          score?: number | null
+          suspend_data?: string | null
+          total_time?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completion_status?: string | null
+          course_id?: string
+          created_at?: string
+          id?: string
+          location?: string | null
+          progress?: number | null
+          score?: number | null
+          suspend_data?: string | null
+          total_time?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scorm_runtime_data_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

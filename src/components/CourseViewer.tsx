@@ -1,14 +1,17 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "./ui/button";
 import { ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { CourseManifestData } from "@/types/course";
+import { useEffect, useRef } from "react";
+import ScormAPI from "@/lib/scorm/ScormAPI";
+import { toast } from "sonner";
 
 export function CourseViewer() {
   const { courseId } = useParams();
   const navigate = useNavigate();
+  const scormApiRef = useRef<ScormAPI | null>(null);
 
   const { data: course, isLoading } = useQuery({
     queryKey: ['course', courseId],
@@ -17,13 +20,13 @@ export function CourseViewer() {
         .from('courses')
         .select('*')
         .eq('id', courseId)
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
       console.log('Course data:', data);
       return {
         ...data,
-        manifest_data: data.manifest_data as CourseManifestData
+        manifest_data: data?.manifest_data as CourseManifestData
       };
     }
   });
@@ -41,6 +44,31 @@ export function CourseViewer() {
       return data.publicUrl;
     }
   });
+
+  useEffect(() => {
+    if (courseId && !scormApiRef.current) {
+      const initScormApi = async () => {
+        const api = new ScormAPI(courseId);
+        const success = await api.initialize();
+        
+        if (success) {
+          scormApiRef.current = api;
+          console.log('SCORM API initialized');
+        } else {
+          toast.error('Failed to initialize SCORM tracking');
+        }
+      };
+
+      initScormApi();
+    }
+
+    return () => {
+      if (scormApiRef.current) {
+        scormApiRef.current.terminate();
+        scormApiRef.current = null;
+      }
+    };
+  }, [courseId]);
 
   if (isLoading) {
     return <div>Loading course...</div>;
