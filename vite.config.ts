@@ -9,21 +9,30 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   plugins: [
-    react(),
+    react({
+      jsxRuntime: 'automatic',
+      jsxImportSource: 'react',
+      babel: {
+        plugins: [
+          ['@babel/plugin-transform-react-jsx', { runtime: 'automatic' }]
+        ]
+      }
+    }),
     mode === 'development' &&
     componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-    },
+    }
   },
   optimizeDeps: {
-    include: ['jszip']
+    include: ['jszip', 'react', 'react-dom']
   },
   build: {
     commonjsOptions: {
-      include: [/jszip/]
+      include: [/jszip/, /node_modules/],
+      transformMixedEsModules: true
     }
   }
 }));
