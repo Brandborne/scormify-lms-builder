@@ -7,12 +7,24 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-async function downloadZipFile(zipUrl: string): Promise<ArrayBuffer> {
-  const response = await fetch(zipUrl)
-  if (!response.ok) {
-    throw new Error(`Failed to download ZIP: ${response.statusText}`)
+async function downloadZipFile(supabase: any, filePath: string): Promise<ArrayBuffer> {
+  console.log('Attempting to download file:', filePath)
+  
+  const { data, error } = await supabase
+    .storage
+    .from('scorm_packages')
+    .download(filePath)
+
+  if (error) {
+    console.error('Error downloading file:', error)
+    throw new Error(`Failed to download file: ${error.message}`)
   }
-  return await response.arrayBuffer()
+
+  if (!data) {
+    throw new Error('No data received from storage')
+  }
+
+  return await data.arrayBuffer()
 }
 
 async function processZipContent(
@@ -107,18 +119,10 @@ serve(async (req) => {
     }
 
     console.log('Found course:', course.title)
-
-    // Get the zip file URL
-    const { data: zipData } = supabase
-      .storage
-      .from('scorm_packages')
-      .getPublicUrl(course.package_path)
-
-    const zipUrl = zipData.publicUrl
-    console.log('Downloading ZIP from:', zipUrl)
+    console.log('Package path:', course.package_path)
 
     // Download and process the zip file
-    const zipBuffer = await downloadZipFile(zipUrl)
+    const zipBuffer = await downloadZipFile(supabase, course.package_path)
     console.log('ZIP file downloaded, size:', zipBuffer.byteLength)
 
     const zip = new JSZip()
