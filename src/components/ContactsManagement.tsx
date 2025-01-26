@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Users, Plus } from "lucide-react";
+import { Users, Plus, ArrowRight, ArrowLeft, Trash } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -23,9 +23,10 @@ interface Contact {
 
 interface ContactsManagementProps {
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  courseId?: string;
 }
 
-export function ContactsManagement({ variant = "default" }: ContactsManagementProps) {
+export function ContactsManagement({ variant = "default", courseId }: ContactsManagementProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [newContact, setNewContact] = useState({ name: "", email: "" });
   const [isOpen, setIsOpen] = useState(false);
@@ -77,6 +78,68 @@ export function ContactsManagement({ variant = "default" }: ContactsManagementPr
       toast.error('Failed to add contact: ' + error.message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleAssignContact = async (contactId: string) => {
+    if (!courseId) {
+      toast.error('No course selected');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('course_assignments')
+        .insert([{
+          course_id: courseId,
+          contact_id: contactId,
+        }]);
+
+      if (error) {
+        if (error.code === '23505') {
+          toast.error('Contact is already assigned to this course');
+        } else {
+          throw error;
+        }
+      } else {
+        toast.success('Contact assigned to course successfully');
+      }
+    } catch (error: any) {
+      toast.error('Failed to assign contact: ' + error.message);
+    }
+  };
+
+  const handleUnassignContact = async (contactId: string) => {
+    if (!courseId) {
+      toast.error('No course selected');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('course_assignments')
+        .delete()
+        .match({ course_id: courseId, contact_id: contactId });
+
+      if (error) throw error;
+      toast.success('Contact unassigned from course successfully');
+    } catch (error: any) {
+      toast.error('Failed to unassign contact: ' + error.message);
+    }
+  };
+
+  const handleDeleteContact = async (contactId: string) => {
+    try {
+      const { error } = await supabase
+        .from('contacts')
+        .delete()
+        .eq('id', contactId);
+
+      if (error) throw error;
+      toast.success('Contact deleted successfully');
+      refetch();
+    } catch (error: any) {
+      toast.error('Failed to delete contact: ' + error.message);
     }
   };
 
@@ -132,6 +195,34 @@ export function ContactsManagement({ variant = "default" }: ContactsManagementPr
                   <div>
                     <p className="font-medium">{contact.name}</p>
                     <p className="text-sm text-muted-foreground">{contact.email}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    {courseId && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleAssignContact(contact.id)}
+                        >
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleUnassignContact(contact.id)}
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => handleDeleteContact(contact.id)}
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               ))}
