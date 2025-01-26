@@ -13,7 +13,7 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
     const iframe = iframeRef.current;
     if (!iframe) return;
 
-    // Set comprehensive sandbox permissions needed for SCORM
+    // Set essential sandbox permissions needed for SCORM
     const sandboxPermissions = [
       'allow-same-origin',
       'allow-scripts',
@@ -22,8 +22,7 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
       'allow-modals',
       'allow-downloads',
       'allow-pointer-lock',
-      'allow-top-navigation',
-      'allow-popups-to-escape-sandbox'
+      'allow-top-navigation'
     ].join(' ');
     
     iframe.setAttribute('sandbox', sandboxPermissions);
@@ -48,16 +47,14 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
       }
     }, 300);
 
-    iframe.onload = handleLoad;
-    iframe.onerror = (event) => {
+    iframe.addEventListener('load', handleLoad);
+    iframe.addEventListener('error', (event) => {
       console.error('Iframe loading error:', event);
-    };
+    });
 
     return () => {
-      if (iframe) {
-        iframe.onload = null;
-        iframe.onerror = null;
-      }
+      iframe.removeEventListener('load', handleLoad);
+      iframe.removeEventListener('error', () => {});
     };
   }, [url]);
 
@@ -67,7 +64,7 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
       src={url}
       className="w-full min-h-[800px] border-0 bg-white"
       title={title}
-      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-pointer-lock allow-top-navigation allow-popups-to-escape-sandbox"
+      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-pointer-lock allow-top-navigation"
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; clipboard-write; fullscreen; microphone; camera; display-capture; web-share"
       loading="eager"
     />
