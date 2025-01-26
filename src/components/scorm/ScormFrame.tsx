@@ -1,5 +1,6 @@
 import { useRef, useEffect } from "react";
 import { debounce } from "lodash";
+import { generateNonce } from "@/lib/utils";
 
 interface ScormFrameProps {
   url: string;
@@ -8,6 +9,7 @@ interface ScormFrameProps {
 
 export function ScormFrame({ url, title }: ScormFrameProps) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const nonce = generateNonce(); // Generate a unique nonce for this render
 
   useEffect(() => {
     const iframe = iframeRef.current;
@@ -20,22 +22,27 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
         if (iframe.contentWindow) {
           console.log('Successfully accessed iframe content window');
           
-          // Add CSP meta tag to allow necessary resources
           if (iframe.contentDocument?.head) {
             // Remove any existing CSP meta tags
             const existingCspTags = iframe.contentDocument.head.querySelectorAll('meta[http-equiv="Content-Security-Policy"]');
             existingCspTags.forEach(tag => tag.remove());
             
-            // Add new CSP meta tag with required permissions
+            // Add new CSP meta tag with nonce
             const meta = document.createElement('meta');
             meta.httpEquiv = 'Content-Security-Policy';
-            meta.content = "default-src * 'self' blob: data:; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:;";
+            meta.content = `default-src * 'self' blob: data:; style-src * 'nonce-${nonce}'; script-src * 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:;`;
             iframe.contentDocument.head.appendChild(meta);
             
             // Add base target for relative URLs
             const base = document.createElement('base');
             base.target = '_self';
             iframe.contentDocument.head.appendChild(base);
+
+            // Add nonce to all style tags
+            const styleTags = iframe.contentDocument.getElementsByTagName('style');
+            Array.from(styleTags).forEach(style => {
+              style.nonce = nonce;
+            });
           }
 
           // Log SCORM API availability for debugging
@@ -62,7 +69,7 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
       iframe.removeEventListener('load', handleLoad);
       iframe.removeEventListener('error', () => {});
     };
-  }, [url]);
+  }, [url, nonce]);
 
   return (
     <iframe
