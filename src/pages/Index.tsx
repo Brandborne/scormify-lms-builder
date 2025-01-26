@@ -2,12 +2,14 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { LMSSidebar } from "@/components/LMSSidebar";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { CourseCard } from "@/components/CourseCard";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ScormUploader } from "@/components/ScormUploader";
 import { toast } from "sonner";
 
 const Index = () => {
+  const queryClient = useQueryClient();
+  
   const { data: courses, isLoading } = useQuery({
     queryKey: ['courses'],
     queryFn: async () => {
@@ -25,6 +27,10 @@ const Index = () => {
     toast.info("Course viewer will be implemented in the next iteration");
   };
 
+  const handleCourseDelete = () => {
+    queryClient.invalidateQueries({ queryKey: ['courses'] });
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -40,9 +46,11 @@ const Index = () => {
               {courses?.map((course) => (
                 <CourseCard
                   key={course.id}
+                  id={course.id}
                   title={course.title}
                   description={course.description || "SCORM Course"}
                   onStart={handleStartCourse}
+                  onDelete={handleCourseDelete}
                 />
               ))}
             </div>
