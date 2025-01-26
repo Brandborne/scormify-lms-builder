@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "./ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { CourseManifestData } from "@/types/course";
 
 export function CourseViewer() {
   const { courseId } = useParams();
@@ -20,7 +21,10 @@ export function CourseViewer() {
       
       if (error) throw error;
       console.log('Course data:', data);
-      return data;
+      return {
+        ...data,
+        manifest_data: data.manifest_data as CourseManifestData
+      };
     }
   });
 
@@ -31,7 +35,7 @@ export function CourseViewer() {
       const { data } = supabase
         .storage
         .from('scorm_packages')
-        .getPublicUrl(course.manifest_data.index_path);
+        .getPublicUrl(course.manifest_data.index_path!);
       
       console.log('Storage URL:', data.publicUrl);
       return data.publicUrl;
