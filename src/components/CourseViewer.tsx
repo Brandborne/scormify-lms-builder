@@ -20,7 +20,13 @@ export function CourseViewer() {
     queryKey: ['course', courseId],
     queryFn: async () => {
       console.log('Fetching course data for ID:', courseId);
-      const { data, error } = await supabase
+      
+      if (!courseId) {
+        console.error('No course ID provided');
+        throw new Error('Course ID is required');
+      }
+
+      const { data: courseData, error } = await supabase
         .from('courses')
         .select('*')
         .eq('id', courseId)
@@ -31,15 +37,16 @@ export function CourseViewer() {
         throw error;
       }
       
-      if (!data) {
+      console.log('Course data retrieved:', courseData);
+      
+      if (!courseData) {
         console.error('No course found with ID:', courseId);
         throw new Error('Course not found');
       }
-      
-      console.log('Course data retrieved:', data);
+
       return {
-        ...data,
-        manifest_data: data?.manifest_data as CourseManifestData
+        ...courseData,
+        manifest_data: courseData.manifest_data as CourseManifestData
       };
     }
   });
