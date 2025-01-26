@@ -11,7 +11,7 @@ interface Contact {
 
 interface ContactListProps {
   courseId?: string;
-  onToggleAssignment?: (contactId: string, isAssigned: boolean) => void;
+  onToggleAssignment?: (contactId: string) => void;
   onContactDeleted: () => void;
 }
 
