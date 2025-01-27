@@ -17,33 +17,31 @@ export function ContactsView() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <>
       <LMSSidebar />
-      <main className="flex-1 overflow-y-auto bg-background">
-        <div className="h-full w-full p-8">
-          <DashboardHeader title="Contacts">
-            <div className="flex items-center gap-4">
-              <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    New Contact
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add New Contact</DialogTitle>
-                  </DialogHeader>
-                  <ContactForm onSuccess={() => setIsOpen(false)} />
-                </DialogContent>
-              </Dialog>
-            </div>
-          </DashboardHeader>
-          <div className="mt-8">
-            <ContactsManagement />
+      <main className="flex-1 p-8">
+        <DashboardHeader title="Contacts">
+          <div className="flex items-center gap-4">
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Contact
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Contact</DialogTitle>
+                </DialogHeader>
+                <ContactForm onSuccess={() => setIsOpen(false)} />
+              </DialogContent>
+            </Dialog>
           </div>
+        </DashboardHeader>
+        <div className="mt-8">
+          <ContactsManagement />
         </div>
       </main>
-    </div>
+    </>
   );
 }
