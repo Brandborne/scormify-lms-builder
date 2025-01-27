@@ -66,7 +66,7 @@ export function ContactList({
       if (error) throw error;
       return data.map(a => a.contact_id);
     },
-    enabled: !!courseId
+    enabled: Boolean(courseId) // Only run the query if courseId is defined
   });
 
   const handleSort = (field: 'name' | 'email') => {
