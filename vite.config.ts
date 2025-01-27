@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => ({
     }
   },
   optimizeDeps: {
-    include: ['jszip', 'react', 'react-dom']
+    include: ['jszip', 'react', 'react-dom', 'react-router-dom']
   },
   build: {
     commonjsOptions: {
