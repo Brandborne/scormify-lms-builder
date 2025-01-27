@@ -7,23 +7,23 @@ import { ErrorState, LoadingState } from "./table/PersonTableStates";
 import { usePeople } from "@/hooks/people/use-people";
 import { useCourseAssignments } from "@/hooks/people/use-course-assignments";
 
-export function PersonList({ 
-  courseId, 
-  onToggleAssignment, 
-  onPersonDeleted 
+export function PersonList({
+  courseId,
+  onToggleAssignment,
+  onPersonDeleted
 }: PersonListProps) {
   const [sortField, setSortField] = useState<'name' | 'email'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  const { 
-    data: people, 
-    isLoading: isLoadingPeople, 
-    error: peopleError 
+  const {
+    data: people,
+    isLoading: isLoadingPeople,
+    error: peopleError
   } = usePeople(sortField, sortDirection);
 
-  const { 
-    data: assignments, 
-    isLoading: isLoadingAssignments 
+  const {
+    data: assignments,
+    isLoading: isLoadingAssignments
   } = useCourseAssignments(courseId);
 
   const handleSort = (field: 'name' | 'email') => {

@@ -5,6 +5,7 @@ export interface Person {
   phone: string | null;
   notes: string | null;
   created_at: string;
+  created_by: string;
 }
 
 export interface CourseAssignment {
@@ -36,21 +37,4 @@ export interface PersonRowProps {
 export interface PersonActionsProps {
   personId: string;
   onEdit: () => void;
-}
-
-export interface EditableFieldProps {
-  value: string;
-  isEditing: boolean;
-  onChange: (value: string) => void;
-}
-
-export interface PersonProgressProps {
-  assignments?: CourseAssignment[];
-  onOpenDetails: () => void;
-}
-
-export interface PersonEditorProps {
-  person: Person;
-  onSave: () => void;
-  onCancel: () => void;
 }
