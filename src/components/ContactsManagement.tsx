@@ -21,6 +21,7 @@ import { ContactForm } from "./contacts/ContactForm";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -261,6 +262,9 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add New Contact</DialogTitle>
+              <DialogDescription>
+                Add a new contact to your contacts list.
+              </DialogDescription>
             </DialogHeader>
             <ContactForm onSuccess={() => {
               setIsNewContactModalOpen(false);
