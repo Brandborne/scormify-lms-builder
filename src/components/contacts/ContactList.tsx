@@ -3,49 +3,22 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableCell,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Trash, Edit2, Check, X } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
-import { toast } from "sonner";
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
+import { ContactListProps, ContactWithAssignments } from "./types";
+import { ContactRow } from "./ContactRow";
 
-interface Contact {
-  id: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  notes: string | null;
-  created_at: string;
-}
-
-interface CourseAssignment {
-  course_title: string;
-  status: 'pending' | 'in_progress' | 'completed';
-  assigned_at: string;
-  completed_at: string | null;
-}
-
-interface ContactWithAssignments extends Contact {
-  assignments?: CourseAssignment[];
-}
-
-interface ContactListProps {
-  courseId?: string;
-  onToggleAssignment?: (contactId: string) => void;
-  onContactDeleted: () => void;
-}
-
-export function ContactList({ courseId, onToggleAssignment, onContactDeleted }: ContactListProps) {
+export function ContactList({ 
+  courseId, 
+  onToggleAssignment, 
+  onContactDeleted 
+}: ContactListProps) {
   const [sortField, setSortField] = useState<'name' | 'email' | 'created_at'>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [editingContact, setEditingContact] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<Partial<Contact>>({});
 
   const { data: contacts, isLoading } = useQuery({
     queryKey: ['contacts', sortField, sortDirection],
@@ -105,75 +78,9 @@ export function ContactList({ courseId, onToggleAssignment, onContactDeleted }: 
     }
   };
 
-  const handleDeleteContact = async (contactId: string) => {
-    try {
-      const { error } = await supabase
-        .from('contacts')
-        .delete()
-        .eq('id', contactId);
-
-      if (error) throw error;
-      toast.success('Contact deleted successfully');
-      onContactDeleted();
-    } catch (error: any) {
-      console.error('Delete contact error:', error);
-      toast.error('Failed to delete contact: ' + error.message);
-    }
-  };
-
-  const startEditing = (contact: Contact) => {
-    setEditingContact(contact.id);
-    setEditValues({
-      name: contact.name,
-      email: contact.email,
-      phone: contact.phone,
-      notes: contact.notes,
-    });
-  };
-
-  const cancelEditing = () => {
-    setEditingContact(null);
-    setEditValues({});
-  };
-
-  const saveEditing = async () => {
-    if (!editingContact || !editValues.name || !editValues.email) return;
-
-    try {
-      const { error } = await supabase
-        .from('contacts')
-        .update({
-          name: editValues.name,
-          email: editValues.email,
-          phone: editValues.phone,
-          notes: editValues.notes,
-        })
-        .eq('id', editingContact);
-
-      if (error) throw error;
-      toast.success('Contact updated successfully');
-      setEditingContact(null);
-      setEditValues({});
-    } catch (error: any) {
-      console.error('Update contact error:', error);
-      toast.error('Failed to update contact: ' + error.message);
-    }
-  };
-
   if (isLoading) {
     return <div>Loading contacts...</div>;
   }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'text-green-600';
-      case 'in_progress':
-        return 'text-blue-600';
-      default:
-        return 'text-gray-600';
-    }
-  };
 
   return (
     <div className="space-y-4">
@@ -207,125 +114,15 @@ export function ContactList({ courseId, onToggleAssignment, onContactDeleted }: 
             </TableRow>
           </TableHeader>
           <TableBody>
-            {contacts?.map((contact) => {
-              const isAssigned = assignments?.includes(contact.id);
-              const isEditing = editingContact === contact.id;
-
-              return (
-                <TableRow key={contact.id}>
-                  <TableCell>
-                    {isEditing ? (
-                      <Input
-                        value={editValues.name || ''}
-                        onChange={(e) => setEditValues(prev => ({ ...prev, name: e.target.value }))}
-                        className="max-w-[200px]"
-                      />
-                    ) : (
-                      contact.name
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {isEditing ? (
-                      <Input
-                        value={editValues.email || ''}
-                        onChange={(e) => setEditValues(prev => ({ ...prev, email: e.target.value }))}
-                        className="max-w-[200px]"
-                      />
-                    ) : (
-                      contact.email
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {isEditing ? (
-                      <Input
-                        value={editValues.phone || ''}
-                        onChange={(e) => setEditValues(prev => ({ ...prev, phone: e.target.value }))}
-                        className="max-w-[150px]"
-                      />
-                    ) : (
-                      contact.phone || '-'
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {isEditing ? (
-                      <Input
-                        value={editValues.notes || ''}
-                        onChange={(e) => setEditValues(prev => ({ ...prev, notes: e.target.value }))}
-                        className="max-w-[200px]"
-                      />
-                    ) : (
-                      contact.notes || '-'
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      {contact.assignments && contact.assignments.length > 0 ? (
-                        contact.assignments.map((assignment, index) => (
-                          <div key={index} className="text-sm">
-                            <span className="font-medium">{assignment.course_title}</span>
-                            <span className={`ml-2 ${getStatusColor(assignment.status)}`}>
-                              ({assignment.status.replace('_', ' ')})
-                            </span>
-                          </div>
-                        ))
-                      ) : (
-                        <span className="text-muted-foreground text-sm">No courses assigned</span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {new Date(contact.created_at).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end items-center gap-2">
-                      {onToggleAssignment && (
-                        <Switch
-                          checked={isAssigned}
-                          onCheckedChange={() => onToggleAssignment(contact.id)}
-                          aria-label={`Toggle assignment for ${contact.name}`}
-                        />
-                      )}
-                      {isEditing ? (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={saveEditing}
-                            className="text-green-600 hover:text-green-700"
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={cancelEditing}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing(contact)}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleDeleteContact(contact.id)}
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {contacts?.map((contact) => (
+              <ContactRow
+                key={contact.id}
+                contact={contact}
+                isAssigned={assignments?.includes(contact.id)}
+                onToggleAssignment={onToggleAssignment}
+                onContactDeleted={onContactDeleted}
+              />
+            ))}
             {!contacts?.length && (
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-muted-foreground">
