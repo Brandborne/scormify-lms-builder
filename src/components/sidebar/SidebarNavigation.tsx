@@ -1,4 +1,4 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -8,6 +8,7 @@ import { menuItems } from "@/config/menuItems";
 
 export function SidebarNavigation() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isActive = (path: string) => {
     if (path === '/index' && location.pathname === '/index') return true;
