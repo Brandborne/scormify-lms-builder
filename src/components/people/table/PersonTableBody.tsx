@@ -10,7 +10,6 @@ interface PersonTableBodyProps {
   assignedPersonIds?: string[];
   onToggleAssignment?: (personId: string) => void;
   onPersonDeleted: () => void;
-  hideActions?: boolean;
   showCourseProgress?: boolean;
 }
 
@@ -19,49 +18,44 @@ export function PersonTableBody({
   assignedPersonIds = [],
   onToggleAssignment,
   onPersonDeleted,
-  hideActions = false,
   showCourseProgress = false
 }: PersonTableBodyProps) {
   const [selectedPerson, setSelectedPerson] = useState<PersonWithAssignments | null>(null);
 
   return (
-    <>
-      <TableBody>
-        {people.map((person) => (
-          <TableRow key={person.id}>
-            <TableCell>{person.name}</TableCell>
-            <TableCell>{person.email}</TableCell>
-            <TableCell>
-              <ContactProgress 
-                assignments={person.assignments}
-                onOpenDetails={() => setSelectedPerson(person)}
-                showCourseProgress={showCourseProgress}
-              />
-            </TableCell>
-            {!hideActions && (
-              <TableCell className="text-right">
-                <PersonActions
-                  personId={person.id}
-                  onEdit={() => setSelectedPerson(person)}
-                />
-              </TableCell>
-            )}
-          </TableRow>
-        ))}
-      </TableBody>
+    <TableBody>
+      {people.map((person) => (
+        <TableRow key={person.id}>
+          <TableCell>{person.name}</TableCell>
+          <TableCell>{person.email}</TableCell>
+          <TableCell>
+            <ContactProgress 
+              assignments={person.assignments}
+              onOpenDetails={() => setSelectedPerson(person)}
+              showCourseProgress={showCourseProgress}
+            />
+          </TableCell>
+          <TableCell>
+            <PersonActions
+              personId={person.id}
+              onEdit={() => setSelectedPerson(person)}
+            />
+          </TableCell>
+        </TableRow>
+      ))}
 
       {selectedPerson && (
         <PersonDetailsModal
           person={selectedPerson}
-          isOpen={!!selectedPerson}
+          isOpen={true}
           onClose={() => setSelectedPerson(null)}
-          onDelete={onPersonDeleted}
-          onUpdate={() => {
-            setSelectedPerson(null);
+          onDelete={() => {
             onPersonDeleted();
+            setSelectedPerson(null);
           }}
+          onUpdate={onPersonDeleted}
         />
       )}
-    </>
+    </TableBody>
   );
 }
