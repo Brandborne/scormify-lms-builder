@@ -46,7 +46,7 @@ const Index = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
-  
+
   const { data: courses, isLoading, error } = useQuery({
     queryKey: ['courses'],
     queryFn: async () => {
@@ -84,12 +84,14 @@ const Index = () => {
             <ScormUploader />
           </DashboardHeader>
           {error && (
-            <div className="text-red-500">Error loading courses: {error.message}</div>
+            <div className="text-red-500 rounded-lg bg-red-50 p-4 mb-6">
+              Error loading courses: {error.message}
+            </div>
           )}
           {isLoading ? (
-            <div>Loading courses...</div>
+            <div className="text-center text-muted-foreground">Loading courses...</div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fade-in">
               {courses?.map((course) => (
                 <CourseCard
                   key={course.id}
@@ -101,6 +103,11 @@ const Index = () => {
                   stats={course.manifest_data?.stats}
                 />
               ))}
+              {courses?.length === 0 && (
+                <div className="col-span-full text-center text-muted-foreground py-12">
+                  No courses yet. Upload your first SCORM package to get started!
+                </div>
+              )}
             </div>
           )}
         </main>
