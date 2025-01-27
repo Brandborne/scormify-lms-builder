@@ -1,3 +1,4 @@
+import { Navigate } from "react-router-dom";
 import { CourseViewer } from "@/components/CourseViewer";
 import { LibraryView } from "@/components/LibraryView";
 import { ContactsView } from "@/components/ContactsView";
