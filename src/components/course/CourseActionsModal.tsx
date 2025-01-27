@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Edit, Trash2, Users, X } from "lucide-react";
+import { Edit, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -115,7 +115,9 @@ export function CourseActionsModal({
             </div>
           </TabsContent>
           <TabsContent value="contacts">
-            <ContactsManagement variant="default" courseId={id} />
+            <div className="pt-2">
+              <ContactsManagement courseId={id} />
+            </div>
           </TabsContent>
           <TabsContent value="danger" className="space-y-4">
             <div className="rounded-lg border-2 border-destructive/50 p-4">
