@@ -7,7 +7,7 @@ import { useDocument } from "@/hooks/use-document";
 import { EditorHeader } from "./editor/EditorHeader";
 import { EditorToolbar } from "./editor/EditorToolbar";
 
-export function DocumentEditor() {
+const DocumentEditor = () => {
   const { id } = useParams();
   const { title, saving, setTitle, loadDocument, debouncedSave } = useDocument(id);
 
@@ -60,4 +60,6 @@ export function DocumentEditor() {
       </div>
     </div>
   );
-}
+};
+
+export default DocumentEditor;
