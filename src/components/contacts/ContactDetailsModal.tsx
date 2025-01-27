@@ -34,7 +34,9 @@ export function ContactDetailsModal({
           />
           <CourseAssignmentList
             assignments={contact.assignments || []}
+            contactId={contact.id}
             onAssignmentChange={onAssignmentChange}
+            onRefetch={onAssignmentChange}
           />
         </div>
       </DialogContent>
