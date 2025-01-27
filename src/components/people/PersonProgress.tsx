@@ -19,7 +19,7 @@ export function ContactProgress({
   showCourseProgress = false
 }: ContactProgressProps) {
   if (showCourseProgress && assignments.length > 0) {
-    const assignment = assignments[0]; // Show progress for the current course
+    const assignment = assignments[0];
     const getProgressColor = () => {
       if (assignment.status === 'completed') return 'bg-green-500';
       if (assignment.status === 'in_progress') return 'bg-blue-500';

@@ -3,8 +3,8 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PersonActions } from "./PersonActions";
-import { PersonDetailsModal } from "./person-details/PersonDetailsModal";
-import { PersonProgress } from "./person-details/PersonProgress";
+import { PersonDetailsModal } from "./PersonDetailsModal";
+import { ContactProgress } from "./PersonProgress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CourseAssignmentForm } from "./course-assignments/CourseAssignmentForm";
 import { CourseAssignmentList } from "./course-assignments/CourseAssignmentList";
@@ -47,7 +47,7 @@ export function PersonRow({
         </div>
       </TableCell>
       <TableCell>
-        <PersonProgress
+        <ContactProgress
           assignments={person.assignments}
           onOpenDetails={() => setIsAssignModalOpen(true)}
         />
@@ -58,6 +58,7 @@ export function PersonRow({
           onEdit={() => setIsDetailsModalOpen(true)}
         />
       </TableCell>
+
       <PersonDetailsModal
         person={person}
         isOpen={isDetailsModalOpen}
@@ -65,6 +66,7 @@ export function PersonRow({
         onDelete={handleDelete}
         onUpdate={onPersonDeleted}
       />
+
       <Dialog open={isAssignModalOpen} onOpenChange={setIsAssignModalOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
