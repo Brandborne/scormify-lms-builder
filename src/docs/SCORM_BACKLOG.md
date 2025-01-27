@@ -5,12 +5,15 @@
 - [ ] Implement better error reporting in Edge Functions
 - [ ] Add validation for SCORM package structure
 - [ ] Improve error messages for end users
+- [ ] Add more comprehensive error boundaries
+- [ ] Implement retry logic for failed operations
 
 ## Logging Enhancements
 - [ ] Add detailed logging for SCORM runtime operations
 - [ ] Implement logging for package processing steps
 - [ ] Add debugging information for development
 - [ ] Create logging system for tracking API communication
+- [ ] Add more detailed logging for contact operations
 
 ## SCORM Version Support
 - [ ] Add support for SCORM 1.2
@@ -41,9 +44,21 @@
 - [ ] Improve runtime data storage efficiency
 - [ ] Enhance loading times for SCORM content
 - [ ] Optimize database queries for runtime data
+- [ ] Implement pagination for large datasets
+- [ ] Add virtual scrolling for contact lists
+- [ ] Optimize state updates in contact management
 
 ## Documentation
 - [ ] Create detailed API documentation
 - [ ] Add implementation guides
 - [ ] Document SCORM version compatibility
 - [ ] Create troubleshooting guides
+
+## Component Improvements
+- [ ] Break down ContactRow into smaller sub-components
+- [ ] Add more detailed comments for complex logic
+- [ ] Add prop validation for optional props
+- [ ] Enhance form validation feedback
+- [ ] Improve success message handling
+- [ ] Enhance loading state UI
+- [ ] Implement optimistic updates for better UX
