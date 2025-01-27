@@ -10,17 +10,20 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { CourseAssignment } from "../types";
 
 interface CourseAssignmentFormProps {
   contactId: string;
   onAssignmentChange: () => void;
   onRefetch: () => void;
+  assignments?: CourseAssignment[];
 }
 
 export function CourseAssignmentForm({ 
   contactId, 
   onAssignmentChange,
-  onRefetch 
+  onRefetch,
+  assignments = []
 }: CourseAssignmentFormProps) {
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
 
@@ -34,6 +37,11 @@ export function CourseAssignmentForm({
       return data;
     },
   });
+
+  // Filter out already assigned courses
+  const availableCourses = courses?.filter(course => 
+    !assignments.some(assignment => assignment.course_id === course.id)
+  );
 
   const handleAssignCourse = async () => {
     if (!selectedCourseId) {
@@ -81,7 +89,7 @@ export function CourseAssignmentForm({
             <SelectValue placeholder="Select a course" />
           </SelectTrigger>
           <SelectContent>
-            {courses?.map((course) => (
+            {availableCourses?.map((course) => (
               <SelectItem key={course.id} value={course.id}>
                 {course.title}
               </SelectItem>
