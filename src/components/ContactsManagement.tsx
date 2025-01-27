@@ -210,44 +210,42 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
                 </Button>
               </div>
             ) : (
-              <div className="bg-popover">
-                <Command>
-                  <CommandInput placeholder="Search contacts..." />
-                  <CommandEmpty>
-                    No contact found.
-                    <Button 
-                      variant="ghost" 
-                      className="mt-2 w-full"
-                      onClick={() => {
-                        setIsNewContactModalOpen(true);
+              <Command>
+                <CommandInput placeholder="Search contacts..." />
+                <CommandEmpty>
+                  No contact found.
+                  <Button 
+                    variant="ghost" 
+                    className="mt-2 w-full"
+                    onClick={() => {
+                      setIsNewContactModalOpen(true);
+                      setOpen(false);
+                    }}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add new contact
+                  </Button>
+                </CommandEmpty>
+                <CommandGroup>
+                  {unassignedContacts.map((contact) => (
+                    <CommandItem
+                      key={contact.id}
+                      onSelect={() => {
+                        handleAssignContacts(contact.id);
                         setOpen(false);
                       }}
                     >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add new contact
-                    </Button>
-                  </CommandEmpty>
-                  <CommandGroup>
-                    {unassignedContacts.map((contact) => (
-                      <CommandItem
-                        key={contact.id}
-                        onSelect={() => {
-                          handleAssignContacts(contact.id);
-                          setOpen(false);
-                        }}
-                      >
-                        <Check className="mr-2 h-4 w-4 opacity-0" />
-                        <div className="flex flex-col">
-                          <span>{contact.name}</span>
-                          <span className="text-sm text-muted-foreground">
-                            {contact.email}
-                          </span>
-                        </div>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </Command>
-              </div>
+                      <Check className="mr-2 h-4 w-4 opacity-0" />
+                      <div className="flex flex-col">
+                        <span>{contact.name}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {contact.email}
+                        </span>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
             )}
           </PopoverContent>
         </Popover>
