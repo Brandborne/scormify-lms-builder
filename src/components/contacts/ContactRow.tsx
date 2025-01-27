@@ -43,12 +43,10 @@ export function ContactRow({
             onCancel={() => setIsEditing(false)}
           />
         ) : (
-          <>
-            <TableCell>{contact.name}</TableCell>
-            <TableCell>{contact.email}</TableCell>
-            <TableCell>{contact.phone || '-'}</TableCell>
-            <TableCell>{contact.notes || '-'}</TableCell>
-          </>
+          <div>
+            <p className="font-medium">{contact.name}</p>
+            <p className="text-sm text-muted-foreground">{contact.email}</p>
+          </div>
         )}
       </TableCell>
       <TableCell>

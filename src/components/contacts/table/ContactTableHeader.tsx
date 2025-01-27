@@ -16,23 +16,13 @@ export function ContactTableHeader({
     <TableHeader>
       <TableRow>
         <TableHead 
-          className="cursor-pointer"
+          className="w-[300px] cursor-pointer"
           onClick={() => onSort('name')}
         >
-          Name {sortField === 'name' && (
+          Contact Details {sortField === 'name' && (
             sortDirection === 'asc' ? <ArrowUp className="inline h-4 w-4" /> : <ArrowDown className="inline h-4 w-4" />
           )}
         </TableHead>
-        <TableHead 
-          className="cursor-pointer"
-          onClick={() => onSort('email')}
-        >
-          Email {sortField === 'email' && (
-            sortDirection === 'asc' ? <ArrowUp className="inline h-4 w-4" /> : <ArrowDown className="inline h-4 w-4" />
-          )}
-        </TableHead>
-        <TableHead>Phone</TableHead>
-        <TableHead>Notes</TableHead>
         <TableHead>Course Progress</TableHead>
         <TableHead className="text-right">Actions</TableHead>
       </TableRow>

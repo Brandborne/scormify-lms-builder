@@ -27,7 +27,7 @@ export function ContactProgress({ assignments = [], onOpenDetails }: ContactProg
   if (totalCourses === 0) {
     return (
       <div className="flex items-center gap-2">
-        <span className="text-muted-foreground text-sm">No courses assigned</span>
+        <span className="text-muted-foreground text-sm">None assigned</span>
         <Button
           variant="ghost"
           size="sm"
