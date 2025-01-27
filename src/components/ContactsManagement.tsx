@@ -174,7 +174,7 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
           <PopoverContent className="w-[300px] p-0" align="start" side="bottom">
             {!isLoadingContacts && (
               <div className="relative">
-                {unassignedContacts.length > 0 ? (
+                {unassignedContacts && unassignedContacts.length > 0 ? (
                   <Command>
                     <CommandInput placeholder="Search contacts..." />
                     <CommandEmpty>
@@ -182,7 +182,10 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
                       <Button 
                         variant="ghost" 
                         className="mt-2 w-full"
-                        onClick={() => setIsNewContactModalOpen(true)}
+                        onClick={() => {
+                          setIsNewContactModalOpen(true);
+                          setOpen(false);
+                        }}
                       >
                         <Plus className="mr-2 h-4 w-4" />
                         Add new contact
@@ -214,7 +217,10 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
                     <Button 
                       variant="ghost" 
                       className="mt-2 w-full"
-                      onClick={() => setIsNewContactModalOpen(true)}
+                      onClick={() => {
+                        setIsNewContactModalOpen(true);
+                        setOpen(false);
+                      }}
                     >
                       <Plus className="mr-2 h-4 w-4" />
                       Add new contact
