@@ -3,23 +3,10 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { 
-  ArrowLeft, 
-  Loader2, 
-  Bold, 
-  Italic, 
-  List, 
-  ListOrdered, 
-  Heading1, 
-  Heading2, 
-  Heading3,
-  Quote 
-} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useDebounce } from "@/hooks/use-debounce";
-import { cn } from "@/lib/utils";
+import { EditorHeader } from "./editor/EditorHeader";
+import { EditorToolbar } from "./editor/EditorToolbar";
 
 export function DocumentEditor() {
   const { id } = useParams();
@@ -127,107 +114,20 @@ export function DocumentEditor() {
     }
   };
 
-  const ToolbarButton = ({ 
-    isActive = false, 
-    onClick, 
-    children 
-  }: { 
-    isActive?: boolean, 
-    onClick: () => void, 
-    children: React.ReactNode 
-  }) => (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={onClick}
-      className={cn(
-        "h-8 w-8 p-0",
-        isActive && "bg-muted text-muted-foreground"
-      )}
-    >
-      {children}
-    </Button>
-  );
+  const handleTitleChange = (newTitle: string) => {
+    setTitle(newTitle);
+    debouncedSave(editor?.getHTML() || "");
+  };
 
   return (
     <div className="max-w-[850px] mx-auto">
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-        <div className="flex items-center gap-4 p-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/documents")}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <Input
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
-              debouncedSave(editor?.getHTML() || "");
-            }}
-            className="text-xl font-semibold bg-transparent border-none focus-visible:ring-0 px-0 h-auto"
-            placeholder="Untitled Document"
-          />
-          {saving && (
-            <div className="flex items-center text-sm text-muted-foreground gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Saving...
-            </div>
-          )}
-        </div>
-        <div className="border-t flex items-center gap-1 p-2">
-          <ToolbarButton
-            onClick={() => editor?.chain().focus().toggleBold().run()}
-            isActive={editor?.isActive("bold")}
-          >
-            <Bold className="h-4 w-4" />
-          </ToolbarButton>
-          <ToolbarButton
-            onClick={() => editor?.chain().focus().toggleItalic().run()}
-            isActive={editor?.isActive("italic")}
-          >
-            <Italic className="h-4 w-4" />
-          </ToolbarButton>
-          <div className="w-px h-4 bg-border mx-2" />
-          <ToolbarButton
-            onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
-            isActive={editor?.isActive("heading", { level: 1 })}
-          >
-            <Heading1 className="h-4 w-4" />
-          </ToolbarButton>
-          <ToolbarButton
-            onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
-            isActive={editor?.isActive("heading", { level: 2 })}
-          >
-            <Heading2 className="h-4 w-4" />
-          </ToolbarButton>
-          <ToolbarButton
-            onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}
-            isActive={editor?.isActive("heading", { level: 3 })}
-          >
-            <Heading3 className="h-4 w-4" />
-          </ToolbarButton>
-          <div className="w-px h-4 bg-border mx-2" />
-          <ToolbarButton
-            onClick={() => editor?.chain().focus().toggleBulletList().run()}
-            isActive={editor?.isActive("bulletList")}
-          >
-            <List className="h-4 w-4" />
-          </ToolbarButton>
-          <ToolbarButton
-            onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-            isActive={editor?.isActive("orderedList")}
-          >
-            <ListOrdered className="h-4 w-4" />
-          </ToolbarButton>
-          <ToolbarButton
-            onClick={() => editor?.chain().focus().toggleBlockquote().run()}
-            isActive={editor?.isActive("blockquote")}
-          >
-            <Quote className="h-4 w-4" />
-          </ToolbarButton>
-        </div>
+        <EditorHeader
+          title={title}
+          saving={saving}
+          onTitleChange={handleTitleChange}
+        />
+        <EditorToolbar editor={editor} />
       </div>
       <div className="min-h-screen bg-white dark:bg-zinc-900">
         <EditorContent
