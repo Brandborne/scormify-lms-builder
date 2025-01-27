@@ -3,11 +3,11 @@ import { PersonList } from "../people/PersonList";
 import { usePersonMutations } from "@/hooks/people/use-person-mutations";
 import { CourseSelectionAlert } from "../people/alerts/CourseSelectionAlert";
 
-interface CourseContactsManagementProps {
+interface CoursePeopleManagementProps {
   courseId?: string;
 }
 
-export function CourseContactsManagement({ courseId }: CourseContactsManagementProps) {
+export function CoursePeopleManagement({ courseId }: CoursePeopleManagementProps) {
   const queryClient = useQueryClient();
   const { toggleAssignment } = usePersonMutations();
 
