@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -19,6 +20,7 @@ import { Contact, CourseAssignment } from "./types";
 import { format } from "date-fns";
 import { Badge } from "../ui/badge";
 import { toast } from "sonner";
+import { Trash2 } from "lucide-react";
 
 interface ContactDetailsModalProps {
   contact: Contact;
@@ -92,6 +94,27 @@ export function ContactDetailsModal({
     }
   };
 
+  const handleRemoveCourse = async (courseId: string) => {
+    try {
+      const { error } = await supabase
+        .from("course_assignments")
+        .delete()
+        .match({ 
+          course_id: courseId,
+          contact_id: contact.id 
+        });
+
+      if (error) throw error;
+      
+      toast.success("Course removed successfully");
+      refetchAssignments();
+      onAssignmentChange();
+    } catch (error: any) {
+      console.error("Remove course error:", error);
+      toast.error("Failed to remove course");
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
@@ -108,6 +131,9 @@ export function ContactDetailsModal({
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>{contact.name}'s Course Assignments</DialogTitle>
+          <DialogDescription>
+            Manage course assignments for this contact
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -147,13 +173,23 @@ export function ContactDetailsModal({
                       Assigned: {format(new Date(assignment.assigned_at), "PPp")}
                     </p>
                   </div>
-                  <Badge
-                    className={`${getStatusColor(
-                      assignment.status
-                    )} text-white capitalize`}
-                  >
-                    {assignment.status?.replace("_", " ")}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      className={`${getStatusColor(
+                        assignment.status
+                      )} text-white capitalize`}
+                    >
+                      {assignment.status?.replace("_", " ")}
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => handleRemoveCourse(assignment.course_id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
               {(!assignments || assignments.length === 0) && (
