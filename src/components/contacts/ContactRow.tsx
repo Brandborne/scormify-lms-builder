@@ -7,6 +7,11 @@ import { ContactRowProps } from "./types";
 import { ContactActions } from "./ContactActions";
 import { Button } from "@/components/ui/button";
 import { Check, X } from "lucide-react";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 export function ContactRow({
   contact,
@@ -63,6 +68,13 @@ export function ContactRow({
   const completedCourses = contact.assignments?.filter(a => a.status === 'completed').length || 0;
   const inProgressCourses = contact.assignments?.filter(a => a.status === 'in_progress').length || 0;
 
+  const getProgressColor = () => {
+    if (totalCourses === 0) return 'bg-gray-200';
+    if (completedCourses === totalCourses) return 'bg-green-500';
+    if (completedCourses > 0 || inProgressCourses > 0) return 'bg-blue-500';
+    return 'bg-gray-400';
+  };
+
   return (
     <TableRow>
       <TableCell>
@@ -110,17 +122,40 @@ export function ContactRow({
         )}
       </TableCell>
       <TableCell>
-        <div className="space-y-1">
-          {totalCourses > 0 ? (
-            <div className="text-sm space-y-1">
-              <div>Total Courses: <span className="font-medium">{totalCourses}</span></div>
-              <div>Completed: <span className="text-green-600 font-medium">{completedCourses}</span></div>
-              <div>In Progress: <span className="text-blue-600 font-medium">{inProgressCourses}</span></div>
-            </div>
-          ) : (
-            <span className="text-muted-foreground text-sm">No courses assigned</span>
-          )}
-        </div>
+        {totalCourses > 0 ? (
+          <HoverCard>
+            <HoverCardTrigger asChild>
+              <div className="flex items-center gap-2">
+                <div className="h-2 flex-1 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full ${getProgressColor()} transition-all`}
+                    style={{ 
+                      width: `${(completedCourses / totalCourses) * 100}%`
+                    }}
+                  />
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  {completedCourses}/{totalCourses}
+                </span>
+              </div>
+            </HoverCardTrigger>
+            <HoverCardContent className="w-64">
+              <div className="space-y-2">
+                <h4 className="text-sm font-semibold">Course Progress</h4>
+                <div className="grid grid-cols-2 gap-1 text-sm">
+                  <span className="text-muted-foreground">Total Courses:</span>
+                  <span className="font-medium">{totalCourses}</span>
+                  <span className="text-muted-foreground">Completed:</span>
+                  <span className="text-green-600 font-medium">{completedCourses}</span>
+                  <span className="text-muted-foreground">In Progress:</span>
+                  <span className="text-blue-600 font-medium">{inProgressCourses}</span>
+                </div>
+              </div>
+            </HoverCardContent>
+          </HoverCard>
+        ) : (
+          <span className="text-muted-foreground text-sm">No courses assigned</span>
+        )}
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end items-center gap-2">
