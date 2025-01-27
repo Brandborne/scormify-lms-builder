@@ -1,10 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { EditableTitle } from "./EditableTitle";
-import { DeleteCourseButton } from "./DeleteCourseButton";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { ContactsManagement } from "./ContactsManagement";
+import { CourseActionsModal } from "./course/CourseActionsModal";
 
 interface CourseCardProps {
   id: string;
@@ -37,8 +35,14 @@ export function CourseCard({
   return (
     <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
       <CardHeader className="pb-2">
-        <CardTitle>
-          <EditableTitle id={id} initialTitle={title} />
+        <CardTitle className="flex items-center justify-between">
+          <span>{title}</span>
+          <CourseActionsModal
+            id={id}
+            initialTitle={title}
+            initialDescription={description}
+            onDelete={onDelete}
+          />
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -56,12 +60,10 @@ export function CourseCard({
             </div>
           </div>
         )}
-        <div className="flex flex-col gap-2 pt-2">
+        <div className="pt-2">
           <Button onClick={handleStart} className="w-full">
             Start Course
           </Button>
-          <ContactsManagement variant="secondary" courseId={id} />
-          <DeleteCourseButton id={id} onDelete={onDelete} variant="ghost" />
         </div>
       </CardContent>
     </Card>
