@@ -49,17 +49,36 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
     }
   });
 
-  // Fetch assigned contacts with their progress
+  // Fetch assigned contacts with their progress and details
   const { data: assignedContacts, refetch: refetchAssignments } = useQuery({
     queryKey: ['course_assignments', courseId],
     queryFn: async () => {
       if (!courseId) return [];
       const { data, error } = await supabase
-        .from('contact_course_progress')
-        .select('*')
-        .eq('course_id', courseId);
+        .from('contacts')
+        .select(`
+          id,
+          name,
+          email,
+          course_assignments!inner(
+            status,
+            assigned_at,
+            completed_at
+          )
+        `)
+        .eq('course_assignments.course_id', courseId);
+
       if (error) throw error;
-      return data;
+      
+      // Transform the data to match the expected format
+      return data.map(contact => ({
+        contact_id: contact.id,
+        contact_name: contact.name,
+        contact_email: contact.email,
+        status: contact.course_assignments[0].status,
+        assigned_at: contact.course_assignments[0].assigned_at,
+        completed_at: contact.course_assignments[0].completed_at
+      }));
     },
     enabled: !!courseId
   });
