@@ -1,7 +1,5 @@
-import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ContactForm } from "./contacts/ContactForm";
 import { ContactList } from "./contacts/ContactList";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -86,9 +84,6 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
 
   return (
     <div className="space-y-6">
-      <ContactForm onSuccess={() => {
-        queryClient.invalidateQueries({ queryKey: ['contacts'] });
-      }} />
       <ContactList 
         courseId={courseId}
         onToggleAssignment={handleToggleAssignment}

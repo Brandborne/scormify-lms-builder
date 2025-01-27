@@ -17,8 +17,8 @@ export function ContactList({
   onToggleAssignment, 
   onContactDeleted 
 }: ContactListProps) {
-  const [sortField, setSortField] = useState<'name' | 'email' | 'created_at'>('created_at');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [sortField, setSortField] = useState<'name' | 'email'>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const { data: contacts, isLoading } = useQuery({
     queryKey: ['contacts', sortField, sortDirection],
@@ -69,7 +69,7 @@ export function ContactList({
     enabled: !!courseId
   });
 
-  const handleSort = (field: 'name' | 'email' | 'created_at') => {
+  const handleSort = (field: 'name' | 'email') => {
     if (field === sortField) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
@@ -83,56 +83,47 @@ export function ContactList({
   }
 
   return (
-    <div className="space-y-4">
-      <h4 className="text-sm font-medium">Existing Contacts</h4>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead 
+              className="cursor-pointer"
+              onClick={() => handleSort('name')}
+            >
+              Name {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}
+            </TableHead>
+            <TableHead 
+              className="cursor-pointer"
+              onClick={() => handleSort('email')}
+            >
+              Email {sortField === 'email' && (sortDirection === 'asc' ? '↑' : '↓')}
+            </TableHead>
+            <TableHead>Phone</TableHead>
+            <TableHead>Notes</TableHead>
+            <TableHead>Course Progress</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {contacts?.map((contact) => (
+            <ContactRow
+              key={contact.id}
+              contact={contact}
+              isAssigned={assignments?.includes(contact.id)}
+              onToggleAssignment={onToggleAssignment}
+              onContactDeleted={onContactDeleted}
+            />
+          ))}
+          {!contacts?.length && (
             <TableRow>
-              <TableHead 
-                className="cursor-pointer"
-                onClick={() => handleSort('name')}
-              >
-                Name {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer"
-                onClick={() => handleSort('email')}
-              >
-                Email {sortField === 'email' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Notes</TableHead>
-              <TableHead>Assigned Courses</TableHead>
-              <TableHead 
-                className="cursor-pointer"
-                onClick={() => handleSort('created_at')}
-              >
-                Created At {sortField === 'created_at' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableCell colSpan={6} className="text-center text-muted-foreground">
+                No contacts found
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {contacts?.map((contact) => (
-              <ContactRow
-                key={contact.id}
-                contact={contact}
-                isAssigned={assignments?.includes(contact.id)}
-                onToggleAssignment={onToggleAssignment}
-                onContactDeleted={onContactDeleted}
-              />
-            ))}
-            {!contacts?.length && (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
-                  No contacts found
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 }

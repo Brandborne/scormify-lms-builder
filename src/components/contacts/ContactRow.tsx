@@ -5,9 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ContactRowProps } from "./types";
 import { ContactActions } from "./ContactActions";
-import { getStatusColor, formatDate } from "./utils/contactUtils";
 import { Button } from "@/components/ui/button";
-import { Edit2, Check, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 
 export function ContactRow({
   contact,
@@ -60,6 +59,10 @@ export function ContactRow({
     }
   };
 
+  const totalCourses = contact.assignments?.length || 0;
+  const completedCourses = contact.assignments?.filter(a => a.status === 'completed').length || 0;
+  const inProgressCourses = contact.assignments?.filter(a => a.status === 'in_progress').length || 0;
+
   return (
     <TableRow>
       <TableCell>
@@ -108,22 +111,16 @@ export function ContactRow({
       </TableCell>
       <TableCell>
         <div className="space-y-1">
-          {contact.assignments && contact.assignments.length > 0 ? (
-            contact.assignments.map((assignment, index) => (
-              <div key={index} className="text-sm">
-                <span className="font-medium">{assignment.course_title}</span>
-                <span className={`ml-2 ${getStatusColor(assignment.status)}`}>
-                  ({assignment.status.replace('_', ' ')})
-                </span>
-              </div>
-            ))
+          {totalCourses > 0 ? (
+            <div className="text-sm space-y-1">
+              <div>Total Courses: <span className="font-medium">{totalCourses}</span></div>
+              <div>Completed: <span className="text-green-600 font-medium">{completedCourses}</span></div>
+              <div>In Progress: <span className="text-blue-600 font-medium">{inProgressCourses}</span></div>
+            </div>
           ) : (
             <span className="text-muted-foreground text-sm">No courses assigned</span>
           )}
         </div>
-      </TableCell>
-      <TableCell>
-        {formatDate(contact.created_at)}
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end items-center gap-2">
@@ -149,8 +146,6 @@ export function ContactRow({
           ) : (
             <ContactActions
               contactId={contact.id}
-              isAssigned={isAssigned}
-              onToggleAssignment={onToggleAssignment}
               onDelete={handleDelete}
               onEdit={() => setIsEditing(true)}
             />

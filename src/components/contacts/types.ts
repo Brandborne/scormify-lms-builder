@@ -33,8 +33,6 @@ export interface ContactRowProps {
 
 export interface ContactActionsProps {
   contactId: string;
-  isAssigned?: boolean;
-  onToggleAssignment?: (contactId: string) => void;
   onDelete: () => void;
   onEdit: () => void;
 }
