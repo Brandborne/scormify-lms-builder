@@ -12,7 +12,7 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <BrowserRouter basename="/">
+    <BrowserRouter>
       <TooltipProvider>
         <SidebarProvider>
           <div className="flex min-h-screen w-full">
