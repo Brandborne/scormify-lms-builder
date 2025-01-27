@@ -8,10 +8,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ContactsManagement } from "../ContactsManagement";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CourseEditForm } from "./CourseEditForm";
 import { CourseDangerZone } from "./CourseDangerZone";
+import { CourseContactsManagement } from "./CourseContactsManagement";
 
 interface CourseActionsModalProps {
   id: string;
@@ -55,7 +55,7 @@ export function CourseActionsModal({
           </TabsContent>
           <TabsContent value="contacts">
             <div className="pt-2">
-              <ContactsManagement courseId={id} />
+              <CourseContactsManagement courseId={id} />
             </div>
           </TabsContent>
           <TabsContent value="danger" className="space-y-4">
