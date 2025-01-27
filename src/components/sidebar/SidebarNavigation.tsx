@@ -29,7 +29,7 @@ export function SidebarNavigation() {
           <SidebarMenuButton 
             onClick={() => navigate(item.path)}
             data-active={isActive(item.path)}
-            className="relative flex items-center w-full gap-2 px-2 py-2 text-sm transition-colors rounded-md outline-none ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 data-[active=true]:bg-sidebar-accent/10 data-[active=true]:text-sidebar-primary data-[active=true]:font-medium before:absolute before:left-0 before:top-0 before:h-full before:w-1 before:bg-sidebar-primary before:opacity-0 data-[active=true]:before:opacity-100 before:transition-opacity"
+            className="relative flex items-center w-full gap-2 px-2 py-2 text-sm transition-colors rounded-md outline-none ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 data-[active=true]:bg-sidebar-accent/20 data-[active=true]:text-sidebar-primary data-[active=true]:font-semibold before:absolute before:left-0 before:top-0 before:h-full before:w-1.5 before:bg-sidebar-primary before:opacity-0 data-[active=true]:before:opacity-100 before:transition-opacity after:absolute after:inset-0 after:rounded-md after:ring-2 after:ring-sidebar-primary/10 after:opacity-0 data-[active=true]:after:opacity-100 after:transition-opacity"
           >
             <item.icon className="h-5 w-5" />
             <span>{item.title}</span>
