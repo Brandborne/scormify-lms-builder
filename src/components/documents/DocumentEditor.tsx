@@ -20,7 +20,7 @@ export function DocumentEditor() {
     content: "",
     editorProps: {
       attributes: {
-        class: "prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[500px] px-8 py-4",
+        class: "prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none min-h-[500px] px-8 py-4",
       },
     },
     onUpdate: ({ editor }) => {
@@ -120,20 +120,19 @@ export function DocumentEditor() {
   };
 
   return (
-    <div className="max-w-[850px] mx-auto">
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-        <EditorHeader
-          title={title}
-          saving={saving}
-          onTitleChange={handleTitleChange}
-        />
-        <EditorToolbar editor={editor} />
-      </div>
-      <div className="min-h-screen bg-white dark:bg-zinc-900">
-        <EditorContent
-          editor={editor}
-          className="prose-sm sm:prose lg:prose-lg xl:prose-2xl max-w-none"
-        />
+    <div className="container mx-auto p-8">
+      <EditorHeader
+        title={title}
+        saving={saving}
+        onTitleChange={handleTitleChange}
+      />
+      <div className="bg-card border rounded-lg">
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+          <EditorToolbar editor={editor} />
+        </div>
+        <div className="min-h-screen bg-white dark:bg-zinc-900">
+          <EditorContent editor={editor} />
+        </div>
       </div>
     </div>
   );
