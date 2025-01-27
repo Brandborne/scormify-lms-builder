@@ -74,6 +74,15 @@ export function usePersonMutations() {
 
   const deletePerson = useMutation({
     mutationFn: async (personId: string) => {
+      // First delete all course assignments for this person
+      const { error: assignmentsError } = await supabase
+        .from('course_assignments')
+        .delete()
+        .eq('person_id', personId);
+
+      if (assignmentsError) throw assignmentsError;
+
+      // Then delete the person
       const { error } = await supabase
         .from('people')
         .delete()
