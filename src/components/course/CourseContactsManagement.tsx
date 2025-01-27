@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { ContactList } from "../contacts/ContactList";
-import { useContactMutations } from "@/hooks/contacts/use-contact-mutations";
-import { CourseSelectionAlert } from "../contacts/alerts/CourseSelectionAlert";
+import { PersonList } from "../people/PersonList";
+import { usePersonMutations } from "@/hooks/people/use-person-mutations";
+import { CourseSelectionAlert } from "../people/alerts/CourseSelectionAlert";
 
 interface CourseContactsManagementProps {
   courseId?: string;
@@ -9,15 +9,15 @@ interface CourseContactsManagementProps {
 
 export function CourseContactsManagement({ courseId }: CourseContactsManagementProps) {
   const queryClient = useQueryClient();
-  const { toggleAssignment } = useContactMutations();
+  const { toggleAssignment } = usePersonMutations();
 
-  const handleToggleAssignment = async (contactId: string) => {
-    if (!courseId || !contactId) return;
-    await toggleAssignment.mutateAsync({ contactId, courseId });
+  const handleToggleAssignment = async (personId: string) => {
+    if (!courseId || !personId) return;
+    await toggleAssignment.mutateAsync({ personId, courseId });
   };
 
-  const handleContactDeleted = () => {
-    queryClient.invalidateQueries({ queryKey: ['contacts'] });
+  const handlePersonDeleted = () => {
+    queryClient.invalidateQueries({ queryKey: ['people'] });
   };
 
   if (!courseId) {
@@ -26,10 +26,10 @@ export function CourseContactsManagement({ courseId }: CourseContactsManagementP
 
   return (
     <div className="space-y-6">
-      <ContactList 
+      <PersonList 
         courseId={courseId}
         onToggleAssignment={handleToggleAssignment}
-        onContactDeleted={handleContactDeleted}
+        onPersonDeleted={handlePersonDeleted}
       />
     </div>
   );

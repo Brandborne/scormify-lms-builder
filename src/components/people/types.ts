@@ -38,3 +38,14 @@ export interface PersonActionsProps {
   personId: string;
   onEdit: () => void;
 }
+
+export interface PersonProgressProps {
+  assignments?: CourseAssignment[];
+  onOpenDetails: () => void;
+}
+
+export interface PersonEditorProps {
+  person: Person;
+  onSave: () => void;
+  onCancel: () => void;
+}
