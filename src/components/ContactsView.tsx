@@ -19,8 +19,8 @@ export function ContactsView() {
   return (
     <div className="flex h-screen overflow-hidden">
       <LMSSidebar />
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-8">
+      <main className="flex-1 overflow-y-auto bg-background">
+        <div className="container py-8">
           <DashboardHeader title="Contacts">
             <div className="flex items-center gap-4">
               <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -39,7 +39,7 @@ export function ContactsView() {
               </Dialog>
             </div>
           </DashboardHeader>
-          <div className="max-w-[1400px] mx-auto">
+          <div className="mt-8">
             <ContactsManagement />
           </div>
         </div>
