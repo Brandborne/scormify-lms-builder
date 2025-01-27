@@ -11,6 +11,8 @@ import { CourseViewer } from "./components/CourseViewer";
 import { LibraryView } from "./components/LibraryView";
 import { ContactsView } from "./components/ContactsView";
 import { DocumentsView } from "./components/DocumentsView";
+import { MyCoursesView } from "./components/MyCoursesView";
+import { SettingsView } from "./components/SettingsView";
 import { SidebarProvider } from "./components/ui/sidebar";
 
 const queryClient = new QueryClient();
@@ -63,10 +65,10 @@ const App = () => (
                 }
               />
               <Route
-                path="/courses"
+                path="/my-courses"
                 element={
                   <ProtectedRoute>
-                    <Index />
+                    <MyCoursesView />
                   </ProtectedRoute>
                 }
               />
@@ -106,7 +108,7 @@ const App = () => (
                 path="/settings"
                 element={
                   <ProtectedRoute>
-                    <Index />
+                    <SettingsView />
                   </ProtectedRoute>
                 }
               />

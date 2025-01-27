@@ -30,7 +30,7 @@ export function LMSSidebar() {
 
   const menuItems = [
     { title: "Dashboard", icon: Home, path: "/" },
-    { title: "My Courses", icon: BookOpen, path: "/courses" },
+    { title: "My Courses", icon: BookOpen, path: "/my-courses" },
     { title: "Library", icon: Library, path: "/library" },
     { title: "Contacts", icon: Users, path: "/contacts" },
     { title: "Documents", icon: FileText, path: "/documents" },
