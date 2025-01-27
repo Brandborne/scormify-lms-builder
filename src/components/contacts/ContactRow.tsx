@@ -6,12 +6,16 @@ import { ContactRowProps } from "./types";
 import { ContactActions } from "./ContactActions";
 import { ContactDetailsModal } from "./contact-details/ContactDetailsModal";
 import { ContactProgress } from "./contact-details/ContactProgress";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { CourseAssignmentForm } from "./course-assignments/CourseAssignmentForm";
+import { CourseAssignmentList } from "./course-assignments/CourseAssignmentList";
 
 export function ContactRow({
   contact,
   onContactDeleted
 }: ContactRowProps) {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
   const handleDelete = async () => {
     try {
@@ -41,7 +45,7 @@ export function ContactRow({
       <TableCell>
         <ContactProgress
           assignments={contact.assignments}
-          onOpenDetails={() => setIsDetailsModalOpen(true)}
+          onOpenDetails={() => setIsAssignModalOpen(true)}
         />
       </TableCell>
       <TableCell className="text-right">
@@ -56,6 +60,30 @@ export function ContactRow({
         onClose={() => setIsDetailsModalOpen(false)}
         onDelete={handleDelete}
       />
+      <Dialog open={isAssignModalOpen} onOpenChange={setIsAssignModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Course Assignments - {contact.name}</DialogTitle>
+            <DialogDescription>
+              Manage course assignments for this contact
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <CourseAssignmentForm
+              contactId={contact.id}
+              onAssignmentChange={() => {}}
+              onRefetch={() => {}}
+              assignments={contact.assignments}
+            />
+            <CourseAssignmentList
+              assignments={contact.assignments || []}
+              contactId={contact.id}
+              onAssignmentChange={() => {}}
+              onRefetch={() => {}}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </TableRow>
   );
 }
