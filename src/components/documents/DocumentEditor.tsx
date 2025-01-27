@@ -1,19 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { useDebounce } from "@/hooks/use-debounce";
+import { useParams } from "react-router-dom";
+import { useDocument } from "@/hooks/use-document";
 import { EditorHeader } from "./editor/EditorHeader";
 import { EditorToolbar } from "./editor/EditorToolbar";
 
 export function DocumentEditor() {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [title, setTitle] = useState("");
-  const [saving, setSaving] = useState(false);
+  const { title, saving, setTitle, loadDocument, debouncedSave } = useDocument(id);
 
   const editor = useEditor({
     extensions: [StarterKit],
@@ -29,90 +24,13 @@ export function DocumentEditor() {
     },
   });
 
-  const debouncedSave = useDebounce(async (content: string) => {
-    if (!id) return;
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from("documents")
-        .update({ content, title })
-        .eq("id", id);
-
-      if (error) throw error;
-    } catch (error) {
-      toast({
-        title: "Error saving document",
-        description: "Please try again",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  }, 1000);
-
   useEffect(() => {
-    if (id === "new") {
-      createNewDocument();
-    } else {
-      loadDocument();
+    if (id && id !== "new") {
+      loadDocument().then((content) => {
+        editor?.commands.setContent(content);
+      });
     }
   }, [id]);
-
-  const createNewDocument = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      toast({
-        title: "Error creating document",
-        description: "You must be logged in to create documents",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from("documents")
-        .insert({
-          title: "Untitled Document",
-          content: "",
-          category: "general",
-          status: "draft",
-          created_by: user.id
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      navigate(`/documents/${data.id}`, { replace: true });
-    } catch (error) {
-      toast({
-        title: "Error creating document",
-        description: "Please try again",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const loadDocument = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("documents")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-      if (error) throw error;
-      setTitle(data.title);
-      editor?.commands.setContent(data.content || "");
-    } catch (error) {
-      toast({
-        title: "Error loading document",
-        description: "Please try again",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle);
