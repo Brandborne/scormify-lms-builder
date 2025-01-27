@@ -172,48 +172,27 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-[300px] p-0" align="start" side="bottom">
-            {!isLoadingContacts && (
-              <div className="relative">
-                {unassignedContacts && unassignedContacts.length > 0 ? (
-                  <Command>
-                    <CommandInput placeholder="Search contacts..." />
-                    <CommandEmpty>
-                      No contact found.
-                      <Button 
-                        variant="ghost" 
-                        className="mt-2 w-full"
-                        onClick={() => {
-                          setIsNewContactModalOpen(true);
-                          setOpen(false);
-                        }}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add new contact
-                      </Button>
-                    </CommandEmpty>
-                    <CommandGroup>
-                      {unassignedContacts.map((contact) => (
-                        <CommandItem
-                          key={contact.id}
-                          onSelect={() => {
-                            handleAssignContacts(contact.id);
-                            setOpen(false);
-                          }}
-                        >
-                          <Check className="mr-2 h-4 w-4 opacity-0" />
-                          <div className="flex flex-col">
-                            <span>{contact.name}</span>
-                            <span className="text-sm text-muted-foreground">
-                              {contact.email}
-                            </span>
-                          </div>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </Command>
-                ) : (
-                  <div className="p-4 text-center text-sm text-muted-foreground">
-                    No contacts available to assign.
+            <div className="relative">
+              {!unassignedContacts?.length ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  No contacts available to assign.
+                  <Button 
+                    variant="ghost" 
+                    className="mt-2 w-full"
+                    onClick={() => {
+                      setIsNewContactModalOpen(true);
+                      setOpen(false);
+                    }}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add new contact
+                  </Button>
+                </div>
+              ) : (
+                <Command>
+                  <CommandInput placeholder="Search contacts..." />
+                  <CommandEmpty>
+                    No contact found.
                     <Button 
                       variant="ghost" 
                       className="mt-2 w-full"
@@ -225,10 +204,29 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
                       <Plus className="mr-2 h-4 w-4" />
                       Add new contact
                     </Button>
-                  </div>
-                )}
-              </div>
-            )}
+                  </CommandEmpty>
+                  <CommandGroup>
+                    {unassignedContacts.map((contact) => (
+                      <CommandItem
+                        key={contact.id}
+                        onSelect={() => {
+                          handleAssignContacts(contact.id);
+                          setOpen(false);
+                        }}
+                      >
+                        <Check className="mr-2 h-4 w-4 opacity-0" />
+                        <div className="flex flex-col">
+                          <span>{contact.name}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {contact.email}
+                          </span>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </Command>
+              )}
+            </div>
           </PopoverContent>
         </Popover>
 
