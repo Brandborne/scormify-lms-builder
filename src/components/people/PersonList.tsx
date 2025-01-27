@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ListChecks } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function PersonList({
   courseId,
@@ -20,6 +21,7 @@ export function PersonList({
   const [sortField, setSortField] = useState<'name' | 'email'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [selectedPersonId, setSelectedPersonId] = useState<string>("");
+  const queryClient = useQueryClient();
 
   const {
     data: people,
@@ -56,7 +58,9 @@ export function PersonList({
       
       toast.success('Person assigned to course successfully');
       setSelectedPersonId("");
-      // Remove the onToggleAssignment call here since it's causing duplicate assignments
+      // Invalidate both queries to refresh the lists
+      queryClient.invalidateQueries({ queryKey: ['course_assignments', courseId] });
+      queryClient.invalidateQueries({ queryKey: ['people'] });
     } catch (error: any) {
       console.error('Assignment error:', error);
       toast.error('Failed to assign person to course');
