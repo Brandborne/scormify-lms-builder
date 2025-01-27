@@ -41,13 +41,13 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         break;
       case 'small':
         editor.chain().focus().setParagraph().run();
-        editor.chain().focus().setTextStyle({ class: 'text-sm' }).run();
+        editor.chain().focus().setMark('textStyle', { class: 'text-sm' }).run();
         break;
     }
   };
 
   const handleLineHeightChange = (value: string) => {
-    editor.chain().focus().setTextStyle({ class: `leading-${value}` }).run();
+    editor.chain().focus().setMark('textStyle', { class: `leading-${value}` }).run();
   };
 
   return (
