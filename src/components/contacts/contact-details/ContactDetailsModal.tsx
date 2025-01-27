@@ -41,6 +41,7 @@ export function ContactDetailsModal({
 
       if (error) throw error;
       toast.success('Contact updated successfully');
+      onDelete(); // This will trigger a refetch of the contacts list
       onClose();
     } catch (error: any) {
       console.error('Update contact error:', error);
