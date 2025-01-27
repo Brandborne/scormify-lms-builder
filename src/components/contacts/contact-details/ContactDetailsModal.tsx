@@ -23,7 +23,6 @@ export function ContactDetailsModal({
   onDelete,
   onUpdate
 }: ContactDetailsModalProps) {
-  const [isEditing, setIsEditing] = useState(false);
   const [editValues, setEditValues] = useState({
     name: contact.name,
     email: contact.email,
@@ -43,7 +42,7 @@ export function ContactDetailsModal({
 
       if (error) throw error;
       toast.success('Contact updated successfully');
-      onUpdate(); // Use onUpdate instead of onDelete for refreshing after updates
+      onUpdate(); // Call onUpdate instead of onDelete for refreshing after updates
       onClose();
     } catch (error: any) {
       console.error('Update contact error:', error);
