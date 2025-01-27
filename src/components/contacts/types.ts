@@ -12,6 +12,8 @@ export interface CourseAssignment {
   status: 'pending' | 'in_progress' | 'completed';
   assigned_at: string;
   completed_at: string | null;
+  course_id: string;
+  contact_id: string;
 }
 
 export interface ContactWithAssignments extends Contact {

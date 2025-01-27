@@ -6,12 +6,13 @@ import { toast } from "sonner";
 import { ContactRowProps } from "./types";
 import { ContactActions } from "./ContactActions";
 import { Button } from "@/components/ui/button";
-import { Check, X } from "lucide-react";
+import { Check, X, ListFilter } from "lucide-react";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { ContactDetailsModal } from "./ContactDetailsModal";
 
 export function ContactRow({
   contact,
@@ -20,6 +21,7 @@ export function ContactRow({
   onContactDeleted
 }: ContactRowProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [editValues, setEditValues] = useState({
     name: contact.name,
     email: contact.email,
@@ -134,6 +136,13 @@ export function ContactRow({
                     }}
                   />
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsDetailsModalOpen(true)}
+                >
+                  <ListFilter className="h-4 w-4" />
+                </Button>
                 <span className="text-sm text-muted-foreground">
                   {completedCourses}/{totalCourses}
                 </span>
@@ -154,7 +163,16 @@ export function ContactRow({
             </HoverCardContent>
           </HoverCard>
         ) : (
-          <span className="text-muted-foreground text-sm">No courses assigned</span>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground text-sm">No courses assigned</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsDetailsModalOpen(true)}
+            >
+              <ListFilter className="h-4 w-4" />
+            </Button>
+          </div>
         )}
       </TableCell>
       <TableCell className="text-right">
@@ -187,6 +205,12 @@ export function ContactRow({
           )}
         </div>
       </TableCell>
+      <ContactDetailsModal
+        contact={contact}
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        onAssignmentChange={onContactDeleted}
+      />
     </TableRow>
   );
 }
