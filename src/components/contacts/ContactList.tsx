@@ -1,18 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-  TableCell,
-} from "@/components/ui/table";
+import { Table } from "@/components/ui/table";
 import { useState } from "react";
 import { ContactListProps, ContactWithAssignments } from "./types";
-import { ContactRow } from "./ContactRow";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, LoaderCircle } from "lucide-react";
+import { ContactTableHeader } from "./table/ContactTableHeader";
+import { ContactTableBody } from "./table/ContactTableBody";
+import { ErrorState, LoadingState } from "./table/ContactTableStates";
 
 export function ContactList({ 
   courseId, 
@@ -81,65 +74,27 @@ export function ContactList({
   };
 
   if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          Error loading contacts: {error.message}
-        </AlertDescription>
-      </Alert>
-    );
+    return <ErrorState message={error.message} />;
   }
 
   if (isLoading || isLoadingAssignments) {
-    return (
-      <div className="flex justify-center items-center p-8">
-        <LoaderCircle className="h-8 w-8 animate-spin" />
-      </div>
-    );
+    return <LoadingState />;
   }
 
   return (
     <div className="rounded-md border">
       <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead 
-              className="cursor-pointer"
-              onClick={() => handleSort('name')}
-            >
-              Name {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}
-            </TableHead>
-            <TableHead 
-              className="cursor-pointer"
-              onClick={() => handleSort('email')}
-            >
-              Email {sortField === 'email' && (sortDirection === 'asc' ? '↑' : '↓')}
-            </TableHead>
-            <TableHead>Phone</TableHead>
-            <TableHead>Notes</TableHead>
-            <TableHead>Course Progress</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {contacts?.map((contact) => (
-            <ContactRow
-              key={contact.id}
-              contact={contact}
-              isAssigned={assignments?.includes(contact.id)}
-              onToggleAssignment={onToggleAssignment}
-              onContactDeleted={onContactDeleted}
-            />
-          ))}
-          {!contacts?.length && (
-            <TableRow>
-              <TableCell colSpan={6} className="text-center text-muted-foreground">
-                No contacts found
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
+        <ContactTableHeader
+          sortField={sortField}
+          sortDirection={sortDirection}
+          onSort={handleSort}
+        />
+        <ContactTableBody
+          contacts={contacts}
+          assignedContactIds={assignments}
+          onToggleAssignment={onToggleAssignment}
+          onContactDeleted={onContactDeleted}
+        />
       </Table>
     </div>
   );
