@@ -11,6 +11,8 @@ import {
 import { useState } from "react";
 import { ContactListProps, ContactWithAssignments } from "./types";
 import { ContactRow } from "./ContactRow";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, LoaderCircle } from "lucide-react";
 
 export function ContactList({ 
   courseId, 
@@ -20,7 +22,7 @@ export function ContactList({
   const [sortField, setSortField] = useState<'name' | 'email'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  const { data: contacts, isLoading } = useQuery({
+  const { data: contacts, isLoading, error } = useQuery({
     queryKey: ['contacts', sortField, sortDirection],
     queryFn: async () => {
       const { data: contactsData, error: contactsError } = await supabase
@@ -35,7 +37,7 @@ export function ContactList({
         contactsData.map(async (contact) => {
           const { data: assignments, error: assignmentsError } = await supabase
             .from('contact_course_progress')
-            .select('course_title, status, assigned_at, completed_at')
+            .select('course_title, status, assigned_at, completed_at, course_id')
             .eq('contact_id', contact.id);
           
           if (assignmentsError) {
@@ -54,7 +56,7 @@ export function ContactList({
     }
   });
 
-  const { data: assignments } = useQuery({
+  const { data: assignments, isLoading: isLoadingAssignments } = useQuery({
     queryKey: ['course_assignments', courseId],
     queryFn: async () => {
       if (!courseId) return [];
@@ -66,7 +68,7 @@ export function ContactList({
       if (error) throw error;
       return data.map(a => a.contact_id);
     },
-    enabled: Boolean(courseId) // Only run the query if courseId is defined
+    enabled: Boolean(courseId)
   });
 
   const handleSort = (field: 'name' | 'email') => {
@@ -78,8 +80,23 @@ export function ContactList({
     }
   };
 
-  if (isLoading) {
-    return <div>Loading contacts...</div>;
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Error loading contacts: {error.message}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (isLoading || isLoadingAssignments) {
+    return (
+      <div className="flex justify-center items-center p-8">
+        <LoaderCircle className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   return (

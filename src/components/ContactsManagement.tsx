@@ -2,6 +2,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ContactList } from "./contacts/ContactList";
 import { useQueryClient } from "@tanstack/react-query";
+import { Alert, AlertDescription } from "./ui/alert";
+import { AlertCircle } from "lucide-react";
 
 interface ContactsManagementProps {
   courseId?: string;
@@ -86,6 +88,17 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
   const handleContactDeleted = () => {
     queryClient.invalidateQueries({ queryKey: ['contacts'] });
   };
+
+  if (!courseId) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Please select a course to manage contacts
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <div className="space-y-6">
