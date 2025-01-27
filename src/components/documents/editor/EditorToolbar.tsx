@@ -95,34 +95,39 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBold().run()}
         isActive={editor.isActive("bold")}
-        icon={<Bold className="h-4 w-4" />}
-      />
+      >
+        <Bold className="h-4 w-4" />
+      </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleItalic().run()}
         isActive={editor.isActive("italic")}
-        icon={<Italic className="h-4 w-4" />}
-      />
+      >
+        <Italic className="h-4 w-4" />
+      </ToolbarButton>
 
       <Separator orientation="vertical" className="h-6" />
 
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBulletList().run()}
         isActive={editor.isActive("bulletList")}
-        icon={<List className="h-4 w-4" />}
-      />
+      >
+        <List className="h-4 w-4" />
+      </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
         isActive={editor.isActive("orderedList")}
-        icon={<ListOrdered className="h-4 w-4" />}
-      />
+      >
+        <ListOrdered className="h-4 w-4" />
+      </ToolbarButton>
 
       <Separator orientation="vertical" className="h-6" />
 
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
         isActive={editor.isActive("blockquote")}
-        icon={<Quote className="h-4 w-4" />}
-      />
+      >
+        <Quote className="h-4 w-4" />
+      </ToolbarButton>
     </div>
   );
 }
