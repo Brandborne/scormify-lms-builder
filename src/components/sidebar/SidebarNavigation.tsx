@@ -11,7 +11,9 @@ export function SidebarNavigation() {
   const navigate = useNavigate();
 
   const isActive = (path: string) => {
+    // Special case for index route
     if (path === '/index' && location.pathname === '/index') return true;
+    // For other routes, check if the pathname starts with the path
     if (path !== '/index' && location.pathname.startsWith(path)) return true;
     return false;
   };
