@@ -44,3 +44,14 @@ export interface EditableFieldProps {
   isEditing: boolean;
   onChange: (value: string) => void;
 }
+
+export interface ContactProgressProps {
+  assignments?: CourseAssignment[];
+  onOpenDetails: () => void;
+}
+
+export interface ContactEditorProps {
+  contact: Contact;
+  onSave: () => void;
+  onCancel: () => void;
+}
