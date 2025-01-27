@@ -147,20 +147,14 @@ export function ContactRow({
               </Button>
             </>
           ) : (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setIsEditing(true)}
-            >
-              <Edit2 className="h-4 w-4" />
-            </Button>
+            <ContactActions
+              contactId={contact.id}
+              isAssigned={isAssigned}
+              onToggleAssignment={onToggleAssignment}
+              onDelete={handleDelete}
+              onEdit={() => setIsEditing(true)}
+            />
           )}
-          <ContactActions
-            contactId={contact.id}
-            isAssigned={isAssigned}
-            onToggleAssignment={onToggleAssignment}
-            onDelete={handleDelete}
-          />
         </div>
       </TableCell>
     </TableRow>

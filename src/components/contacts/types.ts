@@ -36,6 +36,7 @@ export interface ContactActionsProps {
   isAssigned?: boolean;
   onToggleAssignment?: (contactId: string) => void;
   onDelete: () => void;
+  onEdit: () => void;
 }
 
 export interface EditableFieldProps {
