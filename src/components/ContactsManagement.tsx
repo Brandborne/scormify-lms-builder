@@ -35,7 +35,7 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
             contact_id: contactId 
           });
         
-        toast.success('Contact unassigned from course');
+        toast.success('Contact unassigned');
       } else {
         const { error: insertError } = await supabase
           .from('course_assignments')
@@ -46,19 +46,19 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
 
         if (insertError) {
           if (insertError.code === '23505') {
-            toast.error('Contact is already assigned to this course');
+            toast.error('Contact already assigned');
           } else {
             throw insertError;
           }
         } else {
-          toast.success('Contact assigned to course');
+          toast.success('Contact assigned');
         }
       }
       
       await queryClient.invalidateQueries({ queryKey: ['course_assignments', courseId] });
       await queryClient.invalidateQueries({ queryKey: ['courses'] });
     } catch (error: any) {
-      toast.error(`Failed to toggle contact assignment: ${error.message}`);
+      toast.error(`Failed to update assignment: ${error.message}`);
     }
   };
 
@@ -67,7 +67,7 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <ContactList 
         courseId={courseId}
         onToggleAssignment={handleToggleAssignment}
