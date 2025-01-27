@@ -189,27 +189,27 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-[300px] p-0" align="start" side="bottom">
-            <div className="bg-popover">
-              {isLoadingContacts ? (
-                <div className="p-4 text-center text-sm text-muted-foreground">
-                  Loading contacts...
-                </div>
-              ) : !unassignedContacts?.length ? (
-                <div className="p-4 text-center text-sm text-muted-foreground">
-                  No contacts available to assign.
-                  <Button 
-                    variant="ghost" 
-                    className="mt-2 w-full"
-                    onClick={() => {
-                      setIsNewContactModalOpen(true);
-                      setOpen(false);
-                    }}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add new contact
-                  </Button>
-                </div>
-              ) : (
+            {isLoadingContacts ? (
+              <div className="p-4 text-center text-sm text-muted-foreground">
+                Loading contacts...
+              </div>
+            ) : !unassignedContacts?.length ? (
+              <div className="p-4 text-center text-sm text-muted-foreground">
+                No contacts available to assign.
+                <Button 
+                  variant="ghost" 
+                  className="mt-2 w-full"
+                  onClick={() => {
+                    setIsNewContactModalOpen(true);
+                    setOpen(false);
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add new contact
+                </Button>
+              </div>
+            ) : (
+              <div className="bg-popover">
                 <Command>
                   <CommandInput placeholder="Search contacts..." />
                   <CommandEmpty>
@@ -246,8 +246,8 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
                     ))}
                   </CommandGroup>
                 </Command>
-              )}
-            </div>
+              </div>
+            )}
           </PopoverContent>
         </Popover>
 
