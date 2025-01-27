@@ -7,6 +7,7 @@ import { LibraryView } from "@/components/LibraryView";
 import { ContactsView } from "@/components/ContactsView";
 import { DocumentsView } from "@/components/DocumentsView";
 import { SettingsView } from "@/components/SettingsView";
+import { CourseViewer } from "@/components/CourseViewer";
 
 const DocumentEditor = lazy(() => import("@/components/documents/DocumentEditor"));
 
@@ -49,6 +50,11 @@ const routes = [
   {
     path: "/settings",
     element: <SettingsView />,
+    protected: true,
+  },
+  {
+    path: "/courses/:courseId",
+    element: <CourseViewer />,
     protected: true,
   },
   {
