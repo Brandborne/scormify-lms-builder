@@ -1,25 +1,20 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { format } from "date-fns";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { UserMinus } from "lucide-react";
-import { usePersonMutations } from "@/hooks/people/use-person-mutations";
-import { format } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { CourseAssignment } from "../types";
 
 interface CourseAssignmentListProps {
   personId: string;
+  onRemoveFromCourse?: (courseId: string) => void;
 }
 
-export function CourseAssignmentList({ personId }: CourseAssignmentListProps) {
-  const { toggleAssignment } = usePersonMutations();
-
+export function CourseAssignmentList({ 
+  personId,
+  onRemoveFromCourse 
+}: CourseAssignmentListProps) {
   const { data: assignments, isLoading } = useQuery({
     queryKey: ["person_assignments", personId],
     queryFn: async () => {
@@ -41,19 +36,27 @@ export function CourseAssignmentList({ personId }: CourseAssignmentListProps) {
     },
   });
 
-  const handleRemove = async (courseId: string) => {
-    await toggleAssignment.mutateAsync({
-      personId,
-      courseId,
-    });
-  };
-
   if (isLoading) {
-    return <div>Loading assignments...</div>;
+    return (
+      <TableRow>
+        <TableCell colSpan={4} className="text-center py-8">
+          <div className="flex justify-center items-center space-x-2">
+            <div className="animate-spin h-4 w-4 border-2 border-primary rounded-full border-t-transparent" />
+            <span className="text-muted-foreground">Loading assignments...</span>
+          </div>
+        </TableCell>
+      </TableRow>
+    );
   }
 
   if (!assignments?.length) {
-    return <div>No courses assigned</div>;
+    return (
+      <TableRow>
+        <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+          No courses assigned
+        </TableCell>
+      </TableRow>
+    );
   }
 
   return (
@@ -81,14 +84,16 @@ export function CourseAssignmentList({ personId }: CourseAssignmentListProps) {
                 : "-"}
             </TableCell>
             <TableCell>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleRemove(assignment.course_id)}
-                className="h-8 w-8"
-              >
-                <UserMinus className="h-4 w-4" />
-              </Button>
+              {onRemoveFromCourse && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onRemoveFromCourse(assignment.course_id)}
+                  className="h-8 w-8"
+                >
+                  <UserMinus className="h-4 w-4" />
+                </Button>
+              )}
             </TableCell>
           </TableRow>
         ))}

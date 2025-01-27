@@ -7,6 +7,8 @@ import { PersonWithAssignments } from "./types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Trash } from "lucide-react";
+import { CourseAssignmentForm } from "./course-assignments/CourseAssignmentForm";
+import { CourseAssignmentList } from "./course-assignments/CourseAssignmentList";
 
 interface PersonDetailsModalProps {
   person: PersonWithAssignments;
@@ -52,40 +54,49 @@ export function PersonDetailsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Person Details</DialogTitle>
           <DialogDescription>
             View and edit person information
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              value={editValues.name}
-              onChange={(e) => setEditValues(prev => ({ ...prev, name: e.target.value }))}
-            />
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={editValues.name}
+                onChange={(e) => setEditValues(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={editValues.email}
+                onChange={(e) => setEditValues(prev => ({ ...prev, email: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={editValues.phone}
+                onChange={(e) => setEditValues(prev => ({ ...prev, phone: e.target.value }))}
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={editValues.email}
-              onChange={(e) => setEditValues(prev => ({ ...prev, email: e.target.value }))}
-            />
+
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Course Assignments</h3>
+            <CourseAssignmentForm personId={person.id} />
+            <CourseAssignmentList personId={person.id} />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone</Label>
-            <Input
-              id="phone"
-              type="tel"
-              value={editValues.phone}
-              onChange={(e) => setEditValues(prev => ({ ...prev, phone: e.target.value }))}
-            />
-          </div>
+
           <div className="flex justify-between pt-4">
             <Button
               variant="destructive"
