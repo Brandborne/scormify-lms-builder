@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ContactFormProps {
   onSuccess: () => void;
@@ -13,6 +14,7 @@ interface ContactFormProps {
 export function ContactForm({ onSuccess }: ContactFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [newContact, setNewContact] = useState({ name: "", email: "" });
+  const queryClient = useQueryClient();
 
   const handleAddContact = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +45,8 @@ export function ContactForm({ onSuccess }: ContactFormProps) {
       
       toast.success('Contact added successfully');
       setNewContact({ name: "", email: "" });
+      // Invalidate contacts query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
       onSuccess();
     } catch (error: any) {
       toast.error('Failed to add contact: ' + error.message);
