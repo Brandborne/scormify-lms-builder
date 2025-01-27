@@ -1,19 +1,19 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { ContactList } from "./contacts/ContactList";
-import { useContactMutations } from "@/hooks/contacts/use-contact-mutations";
+import { PersonList } from "./people/PersonList";
+import { usePersonMutations } from "@/hooks/people/use-person-mutations";
 
-export function ContactsManagement() {
+export function PeopleManagement() {
   const queryClient = useQueryClient();
-  const { deleteContact } = useContactMutations();
+  const { deletePerson } = usePersonMutations();
 
-  const handleContactDeleted = () => {
-    queryClient.invalidateQueries({ queryKey: ['contacts'] });
+  const handlePersonDeleted = () => {
+    queryClient.invalidateQueries({ queryKey: ['people'] });
   };
 
   return (
     <div className="w-full">
-      <ContactList 
-        onContactDeleted={handleContactDeleted}
+      <PersonList 
+        onPersonDeleted={handlePersonDeleted}
       />
     </div>
   );

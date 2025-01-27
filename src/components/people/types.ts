@@ -1,4 +1,4 @@
-export interface Contact {
+export interface Person {
   id: string;
   name: string;
   email: string;
@@ -13,28 +13,28 @@ export interface CourseAssignment {
   assigned_at: string;
   completed_at: string | null;
   course_id: string;
-  contact_id: string;
+  person_id: string;
 }
 
-export interface ContactWithAssignments extends Contact {
+export interface PersonWithAssignments extends Person {
   assignments?: CourseAssignment[];
 }
 
-export interface ContactListProps {
+export interface PersonListProps {
   courseId?: string;
-  onToggleAssignment?: (contactId: string) => void;
-  onContactDeleted: () => void;
+  onToggleAssignment?: (personId: string) => void;
+  onPersonDeleted: () => void;
 }
 
-export interface ContactRowProps {
-  contact: ContactWithAssignments;
+export interface PersonRowProps {
+  person: PersonWithAssignments;
   isAssigned?: boolean;
-  onToggleAssignment?: (contactId: string) => void;
-  onContactDeleted: () => void;
+  onToggleAssignment?: (personId: string) => void;
+  onPersonDeleted: () => void;
 }
 
-export interface ContactActionsProps {
-  contactId: string;
+export interface PersonActionsProps {
+  personId: string;
   onEdit: () => void;
 }
 
@@ -44,13 +44,13 @@ export interface EditableFieldProps {
   onChange: (value: string) => void;
 }
 
-export interface ContactProgressProps {
+export interface PersonProgressProps {
   assignments?: CourseAssignment[];
   onOpenDetails: () => void;
 }
 
-export interface ContactEditorProps {
-  contact: Contact;
+export interface PersonEditorProps {
+  person: Person;
   onSave: () => void;
   onCancel: () => void;
 }
