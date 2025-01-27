@@ -1,25 +1,25 @@
 import { useState } from "react";
 import { Table } from "@/components/ui/table";
-import { ContactListProps } from "./types";
-import { ContactTableHeader } from "./table/ContactTableHeader";
-import { ContactTableBody } from "./table/ContactTableBody";
-import { ErrorState, LoadingState } from "./table/ContactTableStates";
-import { useContacts } from "@/hooks/contacts/use-contacts";
-import { useCourseAssignments } from "@/hooks/contacts/use-course-assignments";
+import { PersonListProps } from "./types";
+import { PersonTableHeader } from "./table/PersonTableHeader";
+import { PersonTableBody } from "./table/PersonTableBody";
+import { ErrorState, LoadingState } from "./table/PersonTableStates";
+import { usePeople } from "@/hooks/people/use-people";
+import { useCourseAssignments } from "@/hooks/people/use-course-assignments";
 
-export function ContactList({ 
+export function PersonList({ 
   courseId, 
   onToggleAssignment, 
-  onContactDeleted 
-}: ContactListProps) {
+  onPersonDeleted 
+}: PersonListProps) {
   const [sortField, setSortField] = useState<'name' | 'email'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const { 
-    data: contacts, 
-    isLoading: isLoadingContacts, 
-    error: contactsError 
-  } = useContacts(sortField, sortDirection);
+    data: people, 
+    isLoading: isLoadingPeople, 
+    error: peopleError 
+  } = usePeople(sortField, sortDirection);
 
   const { 
     data: assignments, 
@@ -35,27 +35,27 @@ export function ContactList({
     }
   };
 
-  if (contactsError) {
-    return <ErrorState message={contactsError.message} />;
+  if (peopleError) {
+    return <ErrorState message={peopleError.message} />;
   }
 
-  if (isLoadingContacts || isLoadingAssignments) {
+  if (isLoadingPeople || isLoadingAssignments) {
     return <LoadingState />;
   }
 
   return (
     <div className="w-full rounded-md border">
       <Table>
-        <ContactTableHeader
+        <PersonTableHeader
           sortField={sortField}
           sortDirection={sortDirection}
           onSort={handleSort}
         />
-        <ContactTableBody
-          contacts={contacts}
-          assignedContactIds={assignments}
+        <PersonTableBody
+          people={people}
+          assignedPersonIds={assignments}
           onToggleAssignment={onToggleAssignment}
-          onContactDeleted={onContactDeleted}
+          onPersonDeleted={onPersonDeleted}
         />
       </Table>
     </div>
