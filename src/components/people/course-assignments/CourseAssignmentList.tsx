@@ -91,7 +91,7 @@ export function CourseAssignmentList({ personId }: CourseAssignmentListProps) {
               </Button>
             </TableCell>
           </TableRow>
-        </TableBody>
+        ))}
       </TableBody>
     </Table>
   );
