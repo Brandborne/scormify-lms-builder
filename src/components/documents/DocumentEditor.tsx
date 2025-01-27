@@ -73,7 +73,7 @@ export function DocumentEditor() {
           title: "Untitled Document",
           content: "",
           category: "general", // Using a valid category from our constraint
-          status: "draft",
+          status: "draft", // Using a valid status from our constraint
           created_by: user.id
         })
         .select()
