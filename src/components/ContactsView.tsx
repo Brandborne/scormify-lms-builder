@@ -20,7 +20,7 @@ export function ContactsView() {
     <div className="flex h-screen overflow-hidden">
       <LMSSidebar />
       <main className="flex-1 overflow-y-auto bg-background">
-        <div className="container py-8">
+        <div className="h-full w-full p-8">
           <DashboardHeader title="Contacts">
             <div className="flex items-center gap-4">
               <Dialog open={isOpen} onOpenChange={setIsOpen}>
