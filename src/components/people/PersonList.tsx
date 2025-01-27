@@ -56,9 +56,7 @@ export function PersonList({
       
       toast.success('Person assigned to course successfully');
       setSelectedPersonId("");
-      if (onToggleAssignment) {
-        onToggleAssignment(selectedPersonId);
-      }
+      // Remove the onToggleAssignment call here since it's causing duplicate assignments
     } catch (error: any) {
       console.error('Assignment error:', error);
       toast.error('Failed to assign person to course');
