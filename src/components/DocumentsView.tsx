@@ -8,6 +8,10 @@ export function DocumentsView() {
   const location = useLocation();
   const isEditing = location.pathname.includes("/documents/");
 
+  if (isEditing) {
+    return <DocumentEditor />;
+  }
+
   return (
     <>
       <LMSSidebar />
@@ -17,7 +21,7 @@ export function DocumentsView() {
             {/* Add document-specific actions here */}
           </div>
         </DashboardHeader>
-        {isEditing ? <DocumentEditor /> : <DocumentList />}
+        <DocumentList />
       </main>
     </>
   );
