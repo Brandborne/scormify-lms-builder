@@ -13,13 +13,15 @@ interface ContactDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onDelete: () => void;
+  onUpdate: () => void;
 }
 
 export function ContactDetailsModal({
   contact,
   isOpen,
   onClose,
-  onDelete
+  onDelete,
+  onUpdate
 }: ContactDetailsModalProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValues, setEditValues] = useState({
@@ -41,7 +43,7 @@ export function ContactDetailsModal({
 
       if (error) throw error;
       toast.success('Contact updated successfully');
-      onDelete(); // This is actually being used to refresh the list, not delete
+      onUpdate(); // Use onUpdate instead of onDelete for refreshing after updates
       onClose();
     } catch (error: any) {
       console.error('Update contact error:', error);

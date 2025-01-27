@@ -63,6 +63,7 @@ export function ContactRow({
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
         onDelete={handleDelete}
+        onUpdate={onContactDeleted}
       />
       <Dialog open={isAssignModalOpen} onOpenChange={setIsAssignModalOpen}>
         <DialogContent className="max-w-2xl">
