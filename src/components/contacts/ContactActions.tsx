@@ -1,10 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { Edit2, Trash } from "lucide-react";
+import { Edit2 } from "lucide-react";
 import { ContactActionsProps } from "./types";
 
 export function ContactActions({ 
   contactId,
-  onDelete,
   onEdit
 }: ContactActionsProps) {
   return (
@@ -15,14 +14,6 @@ export function ContactActions({
         onClick={onEdit}
       >
         <Edit2 className="h-4 w-4" />
-      </Button>
-      <Button
-        size="sm"
-        variant="ghost"
-        className="text-destructive hover:text-destructive"
-        onClick={onDelete}
-      >
-        <Trash className="h-4 w-4" />
       </Button>
     </div>
   );

@@ -26,16 +26,14 @@ export function ContactProgress({ assignments = [], onOpenDetails }: ContactProg
 
   if (totalCourses === 0) {
     return (
-      <div className="flex items-center gap-2">
-        <span className="text-muted-foreground text-sm">None assigned</span>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onOpenDetails}
-        >
-          <ListFilter className="h-4 w-4" />
-        </Button>
-      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onOpenDetails}
+      >
+        <ListFilter className="h-4 w-4 mr-2" />
+        Assign Course
+      </Button>
     );
   }
 

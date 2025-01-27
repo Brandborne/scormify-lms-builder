@@ -35,7 +35,6 @@ export interface ContactRowProps {
 
 export interface ContactActionsProps {
   contactId: string;
-  onDelete: () => void;
   onEdit: () => void;
 }
 

@@ -4,17 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ContactRowProps } from "./types";
 import { ContactActions } from "./ContactActions";
-import { ContactDetailsModal } from "./ContactDetailsModal";
+import { ContactDetailsModal } from "./contact-details/ContactDetailsModal";
 import { ContactProgress } from "./contact-details/ContactProgress";
-import { ContactEditor } from "./contact-details/ContactEditor";
 
 export function ContactRow({
   contact,
-  isAssigned,
-  onToggleAssignment,
   onContactDeleted
 }: ContactRowProps) {
-  const [isEditing, setIsEditing] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const handleDelete = async () => {
@@ -27,6 +23,7 @@ export function ContactRow({
       if (error) throw error;
       toast.success('Contact deleted successfully');
       onContactDeleted();
+      setIsDetailsModalOpen(false);
     } catch (error: any) {
       console.error('Delete contact error:', error);
       toast.error('Failed to delete contact: ' + error.message);
@@ -36,18 +33,10 @@ export function ContactRow({
   return (
     <TableRow>
       <TableCell>
-        {isEditing ? (
-          <ContactEditor
-            contact={contact}
-            onSave={() => setIsEditing(false)}
-            onCancel={() => setIsEditing(false)}
-          />
-        ) : (
-          <div>
-            <p className="font-medium">{contact.name}</p>
-            <p className="text-sm text-muted-foreground">{contact.email}</p>
-          </div>
-        )}
+        <div>
+          <p className="font-medium">{contact.name}</p>
+          <p className="text-sm text-muted-foreground">{contact.email}</p>
+        </div>
       </TableCell>
       <TableCell>
         <ContactProgress
@@ -56,19 +45,16 @@ export function ContactRow({
         />
       </TableCell>
       <TableCell className="text-right">
-        {!isEditing && (
-          <ContactActions
-            contactId={contact.id}
-            onDelete={handleDelete}
-            onEdit={() => setIsEditing(true)}
-          />
-        )}
+        <ContactActions
+          contactId={contact.id}
+          onEdit={() => setIsDetailsModalOpen(true)}
+        />
       </TableCell>
       <ContactDetailsModal
         contact={contact}
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
-        onAssignmentChange={onContactDeleted}
+        onDelete={handleDelete}
       />
     </TableRow>
   );
