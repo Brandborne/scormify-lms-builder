@@ -40,6 +40,11 @@ export const routes = [
     protected: true,
   },
   {
+    path: "/documents/:id",
+    element: <DocumentsView />,
+    protected: true,
+  },
+  {
     path: "/settings",
     element: <SettingsView />,
     protected: true,
