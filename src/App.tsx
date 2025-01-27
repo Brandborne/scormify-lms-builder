@@ -3,49 +3,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { supabase } from "./integrations/supabase/client";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import { CourseViewer } from "./components/CourseViewer";
-import { LibraryView } from "./components/LibraryView";
-import { ContactsView } from "./components/ContactsView";
-import { DocumentsView } from "./components/DocumentsView";
-import { MyCoursesView } from "./components/MyCoursesView";
-import { SettingsView } from "./components/SettingsView";
 import { SidebarProvider } from "./components/ui/sidebar";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { routes } from "./routes";
 
 const queryClient = new QueryClient();
-
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const [session, setSession] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!session) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  return <>{children}</>;
-};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -56,64 +18,19 @@ const App = () => (
             <Toaster />
             <Sonner />
             <Routes>
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <Index />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/my-courses"
-                element={
-                  <ProtectedRoute>
-                    <MyCoursesView />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/courses/:courseId"
-                element={
-                  <ProtectedRoute>
-                    <CourseViewer />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/library"
-                element={
-                  <ProtectedRoute>
-                    <LibraryView />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/contacts"
-                element={
-                  <ProtectedRoute>
-                    <ContactsView />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/documents"
-                element={
-                  <ProtectedRoute>
-                    <DocumentsView />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute>
-                    <SettingsView />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
+              {routes.map((route) => (
+                <Route
+                  key={route.path}
+                  path={route.path}
+                  element={
+                    route.protected ? (
+                      <ProtectedRoute>{route.element}</ProtectedRoute>
+                    ) : (
+                      route.element
+                    )
+                  }
+                />
+              ))}
             </Routes>
           </div>
         </SidebarProvider>
