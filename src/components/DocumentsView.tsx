@@ -1,7 +1,7 @@
 import { DashboardHeader } from "./DashboardHeader";
 import { LMSSidebar } from "./LMSSidebar";
 import { DocumentList } from "./documents/DocumentList";
-import { DocumentEditor } from "./documents/DocumentEditor";
+import DocumentEditor from "./documents/DocumentEditor";
 import { useLocation } from "react-router-dom";
 
 export function DocumentsView() {
