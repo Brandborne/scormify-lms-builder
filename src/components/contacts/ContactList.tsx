@@ -1,11 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Table } from "@/components/ui/table";
 import { useState } from "react";
-import { ContactListProps, ContactWithAssignments } from "./types";
+import { Table } from "@/components/ui/table";
+import { ContactListProps } from "./types";
 import { ContactTableHeader } from "./table/ContactTableHeader";
 import { ContactTableBody } from "./table/ContactTableBody";
 import { ErrorState, LoadingState } from "./table/ContactTableStates";
+import { useContacts } from "@/hooks/contacts/use-contacts";
+import { useCourseAssignments } from "@/hooks/contacts/use-course-assignments";
 
 export function ContactList({ 
   courseId, 
@@ -15,54 +15,16 @@ export function ContactList({
   const [sortField, setSortField] = useState<'name' | 'email'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  const { data: contacts, isLoading, error } = useQuery({
-    queryKey: ['contacts', sortField, sortDirection],
-    queryFn: async () => {
-      const { data: contactsData, error: contactsError } = await supabase
-        .from('contacts')
-        .select('*')
-        .order(sortField, { ascending: sortDirection === 'asc' });
-      
-      if (contactsError) throw contactsError;
+  const { 
+    data: contacts, 
+    isLoading: isLoadingContacts, 
+    error: contactsError 
+  } = useContacts(sortField, sortDirection);
 
-      // Fetch course assignments for each contact
-      const contactsWithAssignments = await Promise.all(
-        contactsData.map(async (contact) => {
-          const { data: assignments, error: assignmentsError } = await supabase
-            .from('contact_course_progress')
-            .select('course_title, status, assigned_at, completed_at, course_id')
-            .eq('contact_id', contact.id);
-          
-          if (assignmentsError) {
-            console.error('Error fetching assignments:', assignmentsError);
-            return contact;
-          }
-
-          return {
-            ...contact,
-            assignments: assignments || [],
-          };
-        })
-      );
-      
-      return contactsWithAssignments as ContactWithAssignments[];
-    }
-  });
-
-  const { data: assignments, isLoading: isLoadingAssignments } = useQuery({
-    queryKey: ['course_assignments', courseId],
-    queryFn: async () => {
-      if (!courseId) return [];
-      const { data, error } = await supabase
-        .from('course_assignments')
-        .select('contact_id')
-        .eq('course_id', courseId);
-      
-      if (error) throw error;
-      return data.map(a => a.contact_id);
-    },
-    enabled: Boolean(courseId)
-  });
+  const { 
+    data: assignments, 
+    isLoading: isLoadingAssignments 
+  } = useCourseAssignments(courseId);
 
   const handleSort = (field: 'name' | 'email') => {
     if (field === sortField) {
@@ -73,11 +35,11 @@ export function ContactList({
     }
   };
 
-  if (error) {
-    return <ErrorState message={error.message} />;
+  if (contactsError) {
+    return <ErrorState message={contactsError.message} />;
   }
 
-  if (isLoading || isLoadingAssignments) {
+  if (isLoadingContacts || isLoadingAssignments) {
     return <LoadingState />;
   }
 
