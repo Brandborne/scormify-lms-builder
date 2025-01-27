@@ -1,45 +1,30 @@
 import { TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowUpDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowDown, ArrowUp } from "lucide-react";
 
 interface PersonTableHeaderProps {
   sortField: 'name' | 'email';
   sortDirection: 'asc' | 'desc';
   onSort: (field: 'name' | 'email') => void;
-  hideActions?: boolean;
 }
 
 export function PersonTableHeader({ 
   sortField, 
-  sortDirection,
-  onSort,
-  hideActions = false
+  sortDirection, 
+  onSort 
 }: PersonTableHeaderProps) {
   return (
     <TableHeader>
       <TableRow>
-        <TableHead>
-          <Button
-            variant="ghost"
-            onClick={() => onSort('name')}
-            className="font-medium"
-          >
-            Name
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        </TableHead>
-        <TableHead>
-          <Button
-            variant="ghost"
-            onClick={() => onSort('email')}
-            className="font-medium"
-          >
-            Email
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
+        <TableHead 
+          className="w-[300px] cursor-pointer"
+          onClick={() => onSort('name')}
+        >
+          Person Details {sortField === 'name' && (
+            sortDirection === 'asc' ? <ArrowUp className="inline h-4 w-4" /> : <ArrowDown className="inline h-4 w-4" />
+          )}
         </TableHead>
         <TableHead>Course Progress</TableHead>
-        {!hideActions && <TableHead className="text-right">Actions</TableHead>}
+        <TableHead className="text-right">Actions</TableHead>
       </TableRow>
     </TableHeader>
   );

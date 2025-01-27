@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { format, isValid, parseISO } from "date-fns";
 import { CourseActionsModal } from "./course/CourseActionsModal";
-import { Settings } from "lucide-react";
 
 interface CourseCardProps {
   id: string;
