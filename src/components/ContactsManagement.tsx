@@ -36,20 +36,28 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
   const [open, setOpen] = useState(false);
   const [isNewContactModalOpen, setIsNewContactModalOpen] = useState(false);
 
-  // Fetch all contacts
+  // Fetch all contacts with better error handling and debugging
   const { data: allContacts = [], isLoading: isLoadingContacts } = useQuery({
     queryKey: ['contacts'],
     queryFn: async () => {
+      console.log('Fetching all contacts...');
       const { data, error } = await supabase
         .from('contacts')
         .select('*')
         .order('name');
-      if (error) throw error;
+      
+      if (error) {
+        console.error('Error fetching contacts:', error);
+        toast.error('Failed to fetch contacts');
+        throw error;
+      }
+      
+      console.log('Contacts fetched:', data);
       return data || [];
     }
   });
 
-  // Fetch assigned contacts with their progress and details
+  // Fetch assigned contacts with better error handling
   const { 
     data: assignedContacts = [], 
     isLoading: isLoadingAssignments,
@@ -58,6 +66,8 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
     queryKey: ['course_assignments', courseId],
     queryFn: async () => {
       if (!courseId) return [];
+      
+      console.log('Fetching assigned contacts for course:', courseId);
       const { data, error } = await supabase
         .from('contacts')
         .select(`
@@ -72,7 +82,13 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
         `)
         .eq('course_assignments.course_id', courseId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching assigned contacts:', error);
+        toast.error('Failed to fetch assigned contacts');
+        throw error;
+      }
+
+      console.log('Assigned contacts fetched:', data);
       
       return (data || []).map(contact => ({
         contact_id: contact.id,
@@ -86,12 +102,13 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
     enabled: !!courseId
   });
 
-  // Filter out already assigned contacts
+  // Filter out already assigned contacts with debugging
   const unassignedContacts = allContacts.filter(
     contact => !assignedContacts.some(
       assigned => assigned.contact_id === contact.id
     )
   );
+  console.log('Unassigned contacts:', unassignedContacts);
 
   const handleAssignContacts = async (contactId: string) => {
     if (!courseId) {
