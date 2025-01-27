@@ -50,7 +50,11 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
   });
 
   // Fetch assigned contacts with their progress and details
-  const { data: assignedContacts, isLoading: isLoadingAssignments } = useQuery({
+  const { 
+    data: assignedContacts, 
+    isLoading: isLoadingAssignments,
+    refetch: refetchAssignments 
+  } = useQuery({
     queryKey: ['course_assignments', courseId],
     queryFn: async () => {
       if (!courseId) return [];
