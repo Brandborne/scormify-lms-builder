@@ -1,7 +1,7 @@
 import { TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { PersonWithAssignments } from "../types";
 import { PersonActions } from "../PersonActions";
-import { PersonProgress } from "../PersonProgress";
+import { ContactProgress } from "../PersonProgress";
 import { useState } from "react";
 import { PersonDetailsModal } from "../person-details/PersonDetailsModal";
 
@@ -32,7 +32,7 @@ export function PersonTableBody({
             <TableCell>{person.name}</TableCell>
             <TableCell>{person.email}</TableCell>
             <TableCell>
-              <PersonProgress 
+              <ContactProgress 
                 assignments={person.assignments}
                 onOpenDetails={() => setSelectedPerson(person)}
                 showCourseProgress={showCourseProgress}
