@@ -24,6 +24,17 @@ interface Contact {
   created_at: string;
 }
 
+interface CourseAssignment {
+  course_title: string;
+  status: 'pending' | 'in_progress' | 'completed';
+  assigned_at: string;
+  completed_at: string | null;
+}
+
+interface ContactWithAssignments extends Contact {
+  assignments?: CourseAssignment[];
+}
+
 interface ContactListProps {
   courseId?: string;
   onToggleAssignment?: (contactId: string) => void;
@@ -39,13 +50,34 @@ export function ContactList({ courseId, onToggleAssignment, onContactDeleted }: 
   const { data: contacts, isLoading } = useQuery({
     queryKey: ['contacts', sortField, sortDirection],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: contactsData, error: contactsError } = await supabase
         .from('contacts')
         .select('*')
         .order(sortField, { ascending: sortDirection === 'asc' });
       
-      if (error) throw error;
-      return data as Contact[];
+      if (contactsError) throw contactsError;
+
+      // Fetch course assignments for each contact
+      const contactsWithAssignments = await Promise.all(
+        contactsData.map(async (contact) => {
+          const { data: assignments, error: assignmentsError } = await supabase
+            .from('contact_course_progress')
+            .select('course_title, status, assigned_at, completed_at')
+            .eq('contact_id', contact.id);
+          
+          if (assignmentsError) {
+            console.error('Error fetching assignments:', assignmentsError);
+            return contact;
+          }
+
+          return {
+            ...contact,
+            assignments: assignments || [],
+          };
+        })
+      );
+      
+      return contactsWithAssignments as ContactWithAssignments[];
     }
   });
 
@@ -132,6 +164,17 @@ export function ContactList({ courseId, onToggleAssignment, onContactDeleted }: 
     return <div>Loading contacts...</div>;
   }
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'text-green-600';
+      case 'in_progress':
+        return 'text-blue-600';
+      default:
+        return 'text-gray-600';
+    }
+  };
+
   return (
     <div className="space-y-4">
       <h4 className="text-sm font-medium">Existing Contacts</h4>
@@ -153,6 +196,7 @@ export function ContactList({ courseId, onToggleAssignment, onContactDeleted }: 
               </TableHead>
               <TableHead>Phone</TableHead>
               <TableHead>Notes</TableHead>
+              <TableHead>Assigned Courses</TableHead>
               <TableHead 
                 className="cursor-pointer"
                 onClick={() => handleSort('created_at')}
@@ -214,6 +258,22 @@ export function ContactList({ courseId, onToggleAssignment, onContactDeleted }: 
                     )}
                   </TableCell>
                   <TableCell>
+                    <div className="space-y-1">
+                      {contact.assignments && contact.assignments.length > 0 ? (
+                        contact.assignments.map((assignment, index) => (
+                          <div key={index} className="text-sm">
+                            <span className="font-medium">{assignment.course_title}</span>
+                            <span className={`ml-2 ${getStatusColor(assignment.status)}`}>
+                              ({assignment.status.replace('_', ' ')})
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-muted-foreground text-sm">No courses assigned</span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
                     {new Date(contact.created_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">
@@ -268,7 +328,7 @@ export function ContactList({ courseId, onToggleAssignment, onContactDeleted }: 
             })}
             {!contacts?.length && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                <TableCell colSpan={7} className="text-center text-muted-foreground">
                   No contacts found
                 </TableCell>
               </TableRow>
