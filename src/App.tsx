@@ -8,6 +8,9 @@ import { supabase } from "./integrations/supabase/client";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import { CourseViewer } from "./components/CourseViewer";
+import { LibraryView } from "./components/LibraryView";
+import { ContactsView } from "./components/ContactsView";
+import { DocumentsView } from "./components/DocumentsView";
 
 const queryClient = new QueryClient();
 
@@ -76,7 +79,23 @@ const App = () => (
             path="/library"
             element={
               <ProtectedRoute>
-                <Index />
+                <LibraryView />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/contacts"
+            element={
+              <ProtectedRoute>
+                <ContactsView />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/documents"
+            element={
+              <ProtectedRoute>
+                <DocumentsView />
               </ProtectedRoute>
             }
           />
