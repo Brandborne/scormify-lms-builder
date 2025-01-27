@@ -1,37 +1,30 @@
 import { TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowDown, ArrowUp } from "lucide-react";
 
 interface PersonTableHeaderProps {
   sortField: 'name' | 'email';
   sortDirection: 'asc' | 'desc';
   onSort: (field: 'name' | 'email') => void;
-  icon?: React.ReactNode;
 }
 
-export function PersonTableHeader({
-  sortField,
-  sortDirection,
-  onSort,
-  icon
+export function PersonTableHeader({ 
+  sortField, 
+  sortDirection, 
+  onSort 
 }: PersonTableHeaderProps) {
   return (
     <TableHeader>
       <TableRow>
-        <TableHead>
-          <div className="flex items-center gap-2">
-            {icon}
-            <Button
-              variant="ghost"
-              onClick={() => onSort('name')}
-              className="hover:bg-transparent"
-            >
-              Name
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
+        <TableHead 
+          className="w-[300px] cursor-pointer"
+          onClick={() => onSort('name')}
+        >
+          Person Details {sortField === 'name' && (
+            sortDirection === 'asc' ? <ArrowUp className="inline h-4 w-4" /> : <ArrowDown className="inline h-4 w-4" />
+          )}
         </TableHead>
-        <TableHead>Progress</TableHead>
+        <TableHead>Course Progress</TableHead>
+        <TableHead className="text-right">Actions</TableHead>
       </TableRow>
     </TableHeader>
   );

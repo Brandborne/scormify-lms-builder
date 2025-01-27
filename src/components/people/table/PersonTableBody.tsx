@@ -7,15 +7,13 @@ interface PersonTableBodyProps {
   assignedPersonIds?: string[];
   onToggleAssignment?: (personId: string) => void;
   onPersonDeleted: () => void;
-  onRemoveFromCourse?: (personId: string) => void;
 }
 
 export function PersonTableBody({
   people,
   assignedPersonIds = [],
   onToggleAssignment,
-  onPersonDeleted,
-  onRemoveFromCourse
+  onPersonDeleted
 }: PersonTableBodyProps) {
   if (!people?.length) {
     return (
@@ -38,7 +36,6 @@ export function PersonTableBody({
           isAssigned={assignedPersonIds.includes(person.id)}
           onToggleAssignment={onToggleAssignment}
           onPersonDeleted={onPersonDeleted}
-          onRemoveFromCourse={onRemoveFromCourse}
         />
       ))}
     </TableBody>

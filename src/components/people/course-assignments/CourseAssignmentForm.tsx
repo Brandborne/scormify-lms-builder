@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -8,77 +7,97 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { usePersonMutations } from "@/hooks/people/use-person-mutations";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { CourseAssignment } from "../types";
 
 interface CourseAssignmentFormProps {
   personId: string;
+  onAssignmentChange: () => void;
+  onRefetch: () => void;
+  assignments?: CourseAssignment[];
 }
 
-export function CourseAssignmentForm({ personId }: CourseAssignmentFormProps) {
+export function CourseAssignmentForm({ 
+  personId, 
+  onAssignmentChange,
+  onRefetch,
+  assignments = []
+}: CourseAssignmentFormProps) {
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
-  const { toggleAssignment } = usePersonMutations();
 
-  const { data: courses, isLoading } = useQuery({
-    queryKey: ["available_courses", personId],
+  const { data: courses } = useQuery({
+    queryKey: ["courses"],
     queryFn: async () => {
-      const { data: assignments } = await supabase
-        .from("course_assignments")
-        .select("course_id")
-        .eq("person_id", personId);
-
-      const assignedCourseIds = assignments?.map((a) => a.course_id) || [];
-
-      const { data: courses, error } = await supabase
+      const { data, error } = await supabase
         .from("courses")
-        .select("id, title")
-        .not("id", "in", `(${assignedCourseIds.join(",")})`);
-
+        .select("id, title");
       if (error) throw error;
-      return courses;
+      return data;
     },
   });
 
-  const handleAssign = async () => {
+  // Filter out already assigned courses
+  const availableCourses = courses?.filter(course => 
+    !assignments?.some(assignment => assignment.course_id === course.id)
+  );
+
+  const handleAssignCourse = async () => {
     if (!selectedCourseId) {
       toast.error("Please select a course");
       return;
     }
 
-    await toggleAssignment.mutateAsync({
-      personId,
-      courseId: selectedCourseId,
-    });
+    try {
+      const { error } = await supabase
+        .from("course_assignments")
+        .insert([
+          {
+            course_id: selectedCourseId,
+            person_id: personId,
+          },
+        ]);
 
-    setSelectedCourseId("");
+      if (error) {
+        if (error.code === "23505") {
+          toast.error("Person is already assigned to this course");
+        } else {
+          throw error;
+        }
+      } else {
+        toast.success("Course assigned successfully");
+        setSelectedCourseId("");
+        onRefetch();
+        onAssignmentChange();
+      }
+    } catch (error: any) {
+      console.error("Assignment error:", error);
+      toast.error("Failed to assign course");
+    }
   };
 
-  if (isLoading) {
-    return <div>Loading available courses...</div>;
-  }
-
-  if (!courses?.length) {
-    return <div>No courses available for assignment</div>;
-  }
-
   return (
-    <div className="flex gap-4">
-      <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
-        <SelectTrigger className="w-[300px]">
-          <SelectValue placeholder="Select a course to assign" />
-        </SelectTrigger>
-        <SelectContent>
-          {courses.map((course) => (
-            <SelectItem key={course.id} value={course.id}>
-              {course.title}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Button onClick={handleAssign} disabled={!selectedCourseId}>
-        Assign Course
-      </Button>
+    <div className="space-y-4">
+      <h4 className="text-sm font-medium">Assign New Course</h4>
+      <div className="flex gap-2">
+        <Select
+          value={selectedCourseId}
+          onValueChange={setSelectedCourseId}
+        >
+          <SelectTrigger className="w-[300px]">
+            <SelectValue placeholder="Select a course" />
+          </SelectTrigger>
+          <SelectContent>
+            {availableCourses?.map((course) => (
+              <SelectItem key={course.id} value={course.id}>
+                {course.title}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button onClick={handleAssignCourse}>Assign</Button>
+      </div>
     </div>
   );
 }

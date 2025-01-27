@@ -1,103 +1,96 @@
 import { format } from "date-fns";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { UserMinus } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { Trash2 } from "lucide-react";
 import { CourseAssignment } from "../types";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface CourseAssignmentListProps {
+  assignments: CourseAssignment[];
   personId: string;
-  onRemoveFromCourse?: (courseId: string) => void;
+  onAssignmentChange: () => void;
+  onRefetch: () => void;
 }
 
-export function CourseAssignmentList({ 
+export function CourseAssignmentList({
+  assignments,
   personId,
-  onRemoveFromCourse 
+  onAssignmentChange,
+  onRefetch
 }: CourseAssignmentListProps) {
-  const { data: assignments, isLoading } = useQuery({
-    queryKey: ["person_assignments", personId],
-    queryFn: async () => {
-      const { data, error } = await supabase
+  const handleRemoveCourse = async (courseId: string) => {
+    try {
+      const { error } = await supabase
         .from("course_assignments")
-        .select(`
-          course_id,
-          courses (
-            title
-          ),
-          status,
-          assigned_at,
-          completed_at
-        `)
-        .eq("person_id", personId);
+        .delete()
+        .match({ 
+          course_id: courseId,
+          person_id: personId 
+        });
 
       if (error) throw error;
-      return data;
-    },
-  });
+      
+      toast.success("Course removed successfully");
+      onRefetch();
+      onAssignmentChange();
+    } catch (error: any) {
+      console.error("Remove course error:", error);
+      toast.error("Failed to remove course");
+    }
+  };
 
-  if (isLoading) {
-    return (
-      <TableRow>
-        <TableCell colSpan={4} className="text-center py-8">
-          <div className="flex justify-center items-center space-x-2">
-            <div className="animate-spin h-4 w-4 border-2 border-primary rounded-full border-t-transparent" />
-            <span className="text-muted-foreground">Loading assignments...</span>
-          </div>
-        </TableCell>
-      </TableRow>
-    );
-  }
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "completed":
+        return "bg-green-500";
+      case "in_progress":
+        return "bg-blue-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
 
-  if (!assignments?.length) {
+  if (!assignments || assignments.length === 0) {
     return (
-      <TableRow>
-        <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-          No courses assigned
-        </TableCell>
-      </TableRow>
+      <p className="text-muted-foreground text-sm">
+        No courses assigned yet
+      </p>
     );
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Course</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Assigned</TableHead>
-          <TableHead>Completed</TableHead>
-          <TableHead></TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {assignments.map((assignment) => (
-          <TableRow key={assignment.course_id}>
-            <TableCell>{assignment.courses.title}</TableCell>
-            <TableCell className="capitalize">{assignment.status}</TableCell>
-            <TableCell>
-              {format(new Date(assignment.assigned_at), "MMM d, yyyy")}
-            </TableCell>
-            <TableCell>
-              {assignment.completed_at
-                ? format(new Date(assignment.completed_at), "MMM d, yyyy")
-                : "-"}
-            </TableCell>
-            <TableCell>
-              {onRemoveFromCourse && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onRemoveFromCourse(assignment.course_id)}
-                  className="h-8 w-8"
-                >
-                  <UserMinus className="h-4 w-4" />
-                </Button>
-              )}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <div className="space-y-2">
+      {assignments.map((assignment) => (
+        <div
+          key={assignment.course_id}
+          className="flex items-center justify-between p-3 bg-secondary rounded-lg"
+        >
+          <div>
+            <p className="font-medium">{assignment.course_title}</p>
+            <p className="text-sm text-muted-foreground">
+              Assigned: {format(new Date(assignment.assigned_at), "PPp")}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge
+              className={`${getStatusColor(
+                assignment.status
+              )} text-white capitalize`}
+            >
+              {assignment.status?.replace("_", " ")}
+            </Badge>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-destructive hover:text-destructive"
+              onClick={() => handleRemoveCourse(assignment.course_id)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }

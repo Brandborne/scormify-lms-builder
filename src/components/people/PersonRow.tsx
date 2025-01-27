@@ -1,85 +1,94 @@
-import { useState } from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { PersonRowProps } from "./types";
-import { PersonProgress } from "./person-details/PersonProgress";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { PersonActions } from "./PersonActions";
 import { PersonDetailsModal } from "./person-details/PersonDetailsModal";
-import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Trash2 } from "lucide-react";
-import { usePersonMutations } from "@/hooks/people/use-person-mutations";
+import { PersonProgress } from "./person-details/PersonProgress";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { CourseAssignmentForm } from "./course-assignments/CourseAssignmentForm";
+import { CourseAssignmentList } from "./course-assignments/CourseAssignmentList";
+import { PersonRowProps } from "./types";
 
 export function PersonRow({
   person,
-  onPersonDeleted,
+  onPersonDeleted
 }: PersonRowProps) {
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const { deletePerson } = usePersonMutations();
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
   const handleDelete = async () => {
-    await deletePerson.mutateAsync(person.id);
-    onPersonDeleted();
+    try {
+      const { error } = await supabase
+        .from('people')
+        .delete()
+        .eq('id', person.id);
+
+      if (error) throw error;
+      toast.success('Person deleted successfully');
+      onPersonDeleted();
+      setIsDetailsModalOpen(false);
+    } catch (error: any) {
+      console.error('Delete person error:', error);
+      toast.error('Failed to delete person: ' + error.message);
+    }
+  };
+
+  const handleAssignmentChange = () => {
+    onPersonDeleted(); // This will trigger a refetch of the people list
   };
 
   return (
     <TableRow>
       <TableCell>
-        <div className="flex items-center gap-4">
-          <div>
-            <div className="font-medium">{person.name}</div>
-            <div className="text-sm text-muted-foreground">
-              {person.email}
-            </div>
-          </div>
+        <div>
+          <p className="font-medium">{person.name}</p>
+          <p className="text-sm text-muted-foreground">{person.email}</p>
         </div>
       </TableCell>
       <TableCell>
-        <PersonProgress 
+        <PersonProgress
           assignments={person.assignments}
-          onOpenDetails={() => setIsDetailsOpen(true)}
+          onOpenDetails={() => setIsAssignModalOpen(true)}
         />
       </TableCell>
-      <TableCell className="w-[100px]">
-        <div className="flex justify-end">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-destructive"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Person</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete {person.name}? This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
+      <TableCell className="text-right">
+        <PersonActions
+          personId={person.id}
+          onEdit={() => setIsDetailsModalOpen(true)}
+        />
       </TableCell>
       <PersonDetailsModal
         person={person}
-        open={isDetailsOpen}
-        onOpenChange={setIsDetailsOpen}
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        onDelete={handleDelete}
+        onUpdate={onPersonDeleted}
       />
+      <Dialog open={isAssignModalOpen} onOpenChange={setIsAssignModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Course Assignments - {person.name}</DialogTitle>
+            <DialogDescription>
+              Manage course assignments for this person
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <CourseAssignmentForm
+              personId={person.id}
+              onAssignmentChange={handleAssignmentChange}
+              onRefetch={handleAssignmentChange}
+              assignments={person.assignments}
+            />
+            <CourseAssignmentList
+              assignments={person.assignments || []}
+              personId={person.id}
+              onAssignmentChange={handleAssignmentChange}
+              onRefetch={handleAssignmentChange}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </TableRow>
   );
 }

@@ -32,7 +32,6 @@ export interface PersonRowProps {
   isAssigned?: boolean;
   onToggleAssignment?: (personId: string) => void;
   onPersonDeleted: () => void;
-  onRemoveFromCourse?: (personId: string) => void;
 }
 
 export interface PersonActionsProps {

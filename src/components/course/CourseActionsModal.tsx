@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
+import { Edit } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -32,20 +32,20 @@ export function CourseActionsModal({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon">
-          <Settings className="h-4 w-4" />
+          <Edit className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Course Actions</DialogTitle>
         </DialogHeader>
-        <Tabs defaultValue="details" className="w-full">
+        <Tabs defaultValue="edit" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="edit">Edit</TabsTrigger>
             <TabsTrigger value="people">People</TabsTrigger>
             <TabsTrigger value="danger">Danger</TabsTrigger>
           </TabsList>
-          <TabsContent value="details">
+          <TabsContent value="edit">
             <CourseEditForm
               id={id}
               initialTitle={initialTitle}
