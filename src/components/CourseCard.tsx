@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { format } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 import { CourseActionsModal } from "./course/CourseActionsModal";
 
 interface CourseCardProps {
@@ -30,7 +30,15 @@ export function CourseCard({
     navigate(`/courses/${id}`);
   };
 
-  const formattedDate = format(new Date(createdAt), "PPp");
+  const formattedDate = (() => {
+    try {
+      const date = parseISO(createdAt);
+      return isValid(date) ? format(date, "PPp") : "Invalid date";
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Invalid date";
+    }
+  })();
 
   return (
     <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
