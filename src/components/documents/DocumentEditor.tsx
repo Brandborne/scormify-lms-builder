@@ -5,7 +5,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useDebounce } from "@/hooks/use-debounce";
 
@@ -19,6 +19,11 @@ export function DocumentEditor() {
   const editor = useEditor({
     extensions: [StarterKit],
     content: "",
+    editorProps: {
+      attributes: {
+        class: "prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[500px] px-8 py-4",
+      },
+    },
     onUpdate: ({ editor }) => {
       const content = editor.getHTML();
       debouncedSave(content);
@@ -72,8 +77,8 @@ export function DocumentEditor() {
         .insert({
           title: "Untitled Document",
           content: "",
-          category: "general", // Using a valid category from our constraint
-          status: "draft", // Using a valid status from our constraint
+          category: "general",
+          status: "draft",
           created_by: user.id
         })
         .select()
@@ -111,32 +116,39 @@ export function DocumentEditor() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-4 flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate("/documents")}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <Input
-          value={title}
-          onChange={(e) => {
-            setTitle(e.target.value);
-            debouncedSave(editor?.getHTML() || "");
-          }}
-          className="text-xl font-semibold"
-          placeholder="Untitled Document"
-        />
-        {saving && (
-          <span className="text-sm text-muted-foreground">Saving...</span>
-        )}
+    <div className="max-w-[850px] mx-auto">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <div className="flex items-center gap-4 p-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/documents")}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <Input
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              debouncedSave(editor?.getHTML() || "");
+            }}
+            className="text-xl font-semibold bg-transparent border-none focus-visible:ring-0 px-0 h-auto"
+            placeholder="Untitled Document"
+          />
+          {saving && (
+            <div className="flex items-center text-sm text-muted-foreground gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Saving...
+            </div>
+          )}
+        </div>
       </div>
-      <EditorContent
-        editor={editor}
-        className="prose prose-sm max-w-none"
-      />
+      <div className="min-h-screen bg-white dark:bg-zinc-900">
+        <EditorContent
+          editor={editor}
+          className="prose-sm sm:prose lg:prose-lg xl:prose-2xl max-w-none"
+        />
+      </div>
     </div>
   );
 }
