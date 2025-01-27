@@ -33,90 +33,50 @@ export type Database = {
         }
         Relationships: []
       }
-      contacts: {
-        Row: {
-          created_at: string
-          created_by: string
-          email: string
-          id: string
-          is_archived: boolean | null
-          name: string
-          notes: string | null
-          phone: string | null
-        }
-        Insert: {
-          created_at?: string
-          created_by: string
-          email: string
-          id?: string
-          is_archived?: boolean | null
-          name: string
-          notes?: string | null
-          phone?: string | null
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          email?: string
-          id?: string
-          is_archived?: boolean | null
-          name?: string
-          notes?: string | null
-          phone?: string | null
-        }
-        Relationships: []
-      }
       course_assignments: {
         Row: {
           access_token: string
           assigned_at: string
           completed_at: string | null
-          contact_id: string
           course_id: string
           id: string
           last_position: string | null
+          person_id: string
           status: Database["public"]["Enums"]["assignment_status"]
         }
         Insert: {
           access_token?: string
           assigned_at?: string
           completed_at?: string | null
-          contact_id: string
           course_id: string
           id?: string
           last_position?: string | null
+          person_id: string
           status?: Database["public"]["Enums"]["assignment_status"]
         }
         Update: {
           access_token?: string
           assigned_at?: string
           completed_at?: string | null
-          contact_id?: string
           course_id?: string
           id?: string
           last_position?: string | null
+          person_id?: string
           status?: Database["public"]["Enums"]["assignment_status"]
         }
         Relationships: [
-          {
-            foreignKeyName: "course_assignments_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "course_assignments_course_id_fkey"
-            columns: ["course_id"]
-            isOneToOne: false
-            referencedRelation: "contact_course_progress"
-            referencedColumns: ["course_id"]
-          },
           {
             foreignKeyName: "course_assignments_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_assignments_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
         ]
@@ -217,6 +177,39 @@ export type Database = {
           severity?: string
           status?: string
           title?: string
+        }
+        Relationships: []
+      }
+      people: {
+        Row: {
+          created_at: string
+          created_by: string
+          email: string
+          id: string
+          is_archived: boolean | null
+          name: string
+          notes: string | null
+          phone: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          email: string
+          id?: string
+          is_archived?: boolean | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          email?: string
+          id?: string
+          is_archived?: boolean | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
         }
         Relationships: []
       }
@@ -322,13 +315,6 @@ export type Database = {
             foreignKeyName: "scorm_runtime_data_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
-            referencedRelation: "contact_course_progress"
-            referencedColumns: ["course_id"]
-          },
-          {
-            foreignKeyName: "scorm_runtime_data_course_id_fkey"
-            columns: ["course_id"]
-            isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
           },
@@ -336,22 +322,29 @@ export type Database = {
       }
     }
     Views: {
-      contact_course_progress: {
+      person_course_progress: {
         Row: {
           assigned_at: string | null
           completed_at: string | null
-          contact_id: string | null
           course_id: string | null
           course_title: string | null
+          person_id: string | null
           progress_status: string | null
           status: Database["public"]["Enums"]["assignment_status"] | null
         }
         Relationships: [
           {
-            foreignKeyName: "course_assignments_contact_id_fkey"
-            columns: ["contact_id"]
+            foreignKeyName: "course_assignments_course_id_fkey"
+            columns: ["course_id"]
             isOneToOne: false
-            referencedRelation: "contacts"
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_assignments_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
         ]

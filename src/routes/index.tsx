@@ -4,7 +4,7 @@ import Auth from "@/pages/Auth";
 import { Navigate } from "react-router-dom";
 import { MyCoursesView } from "@/components/MyCoursesView";
 import { LibraryView } from "@/components/LibraryView";
-import { ContactsView } from "@/components/ContactsView";
+import { PeopleView } from "@/components/PeopleView";
 import { DocumentsView } from "@/components/DocumentsView";
 import { SettingsView } from "@/components/SettingsView";
 import { CourseViewer } from "@/components/CourseViewer";
@@ -33,8 +33,8 @@ const routes = [
     protected: true,
   },
   {
-    path: "/contacts",
-    element: <ContactsView />,
+    path: "/people",
+    element: <PeopleView />,
     protected: true,
   },
   {
@@ -56,6 +56,11 @@ const routes = [
     path: "/courses/:courseId",
     element: <CourseViewer />,
     protected: true,
+  },
+  {
+    path: "/contacts",
+    element: <Navigate to="/people" replace />,
+    protected: false,
   },
   {
     path: "*",
