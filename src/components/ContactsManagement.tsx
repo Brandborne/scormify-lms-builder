@@ -1,26 +1,15 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { ContactForm } from "./contacts/ContactForm";
 import { ContactList } from "./contacts/ContactList";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface ContactsManagementProps {
-  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
   courseId?: string;
 }
 
-export function ContactsManagement({ variant = "default", courseId }: ContactsManagementProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function ContactsManagement({ courseId }: ContactsManagementProps) {
   const queryClient = useQueryClient();
 
   const handleToggleAssignment = async (contactId: string) => {
@@ -96,28 +85,15 @@ export function ContactsManagement({ variant = "default", courseId }: ContactsMa
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant={variant} className="w-full">
-          <Users className="h-4 w-4 mr-2" />
-          Manage Contacts
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Contact Management</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-6">
-          <ContactForm onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ['contacts'] });
-          }} />
-          <ContactList 
-            courseId={courseId}
-            onToggleAssignment={handleToggleAssignment}
-            onContactDeleted={handleContactDeleted}
-          />
-        </div>
-      </DialogContent>
-    </Dialog>
+    <div className="space-y-6">
+      <ContactForm onSuccess={() => {
+        queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      }} />
+      <ContactList 
+        courseId={courseId}
+        onToggleAssignment={handleToggleAssignment}
+        onContactDeleted={handleContactDeleted}
+      />
+    </div>
   );
 }
