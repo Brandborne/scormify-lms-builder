@@ -96,15 +96,13 @@ export function CoursePeopleList({
             sortField={sortField}
             sortDirection={sortDirection}
             onSort={handleSort}
-            hideActions
           />
           <PersonTableBody
             people={assignedPeople}
             assignedPersonIds={assignments}
             onToggleAssignment={onToggleAssignment}
             onPersonDeleted={onPersonDeleted}
-            hideActions
-            showCourseProgress
+            showCourseProgress={true}
           />
         </Table>
       </div>
