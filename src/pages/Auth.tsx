@@ -50,8 +50,8 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-[400px]">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
+      <Card className="w-full max-w-[400px] mx-4">
         <CardHeader>
           <CardTitle>{isSignUp ? "Create an account" : "Welcome back"}</CardTitle>
           <CardDescription>
