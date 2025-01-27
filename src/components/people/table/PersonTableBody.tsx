@@ -1,43 +1,67 @@
 import { TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { PersonWithAssignments } from "../types";
-import { PersonRow } from "../PersonRow";
+import { PersonActions } from "../PersonActions";
+import { PersonProgress } from "../PersonProgress";
+import { useState } from "react";
+import { PersonDetailsModal } from "../person-details/PersonDetailsModal";
 
 interface PersonTableBodyProps {
-  people?: PersonWithAssignments[];
+  people: PersonWithAssignments[];
   assignedPersonIds?: string[];
   onToggleAssignment?: (personId: string) => void;
   onPersonDeleted: () => void;
+  hideActions?: boolean;
+  showCourseProgress?: boolean;
 }
 
 export function PersonTableBody({
   people,
   assignedPersonIds = [],
   onToggleAssignment,
-  onPersonDeleted
+  onPersonDeleted,
+  hideActions = false,
+  showCourseProgress = false
 }: PersonTableBodyProps) {
-  if (!people?.length) {
-    return (
-      <TableBody>
-        <TableRow>
-          <TableCell colSpan={6} className="text-center text-muted-foreground">
-            No people found
-          </TableCell>
-        </TableRow>
-      </TableBody>
-    );
-  }
+  const [selectedPerson, setSelectedPerson] = useState<PersonWithAssignments | null>(null);
 
   return (
-    <TableBody>
-      {people.map((person) => (
-        <PersonRow
-          key={person.id}
-          person={person}
-          isAssigned={assignedPersonIds.includes(person.id)}
-          onToggleAssignment={onToggleAssignment}
-          onPersonDeleted={onPersonDeleted}
+    <>
+      <TableBody>
+        {people.map((person) => (
+          <TableRow key={person.id}>
+            <TableCell>{person.name}</TableCell>
+            <TableCell>{person.email}</TableCell>
+            <TableCell>
+              <PersonProgress 
+                assignments={person.assignments}
+                onOpenDetails={() => setSelectedPerson(person)}
+                showCourseProgress={showCourseProgress}
+              />
+            </TableCell>
+            {!hideActions && (
+              <TableCell className="text-right">
+                <PersonActions
+                  personId={person.id}
+                  onEdit={() => setSelectedPerson(person)}
+                />
+              </TableCell>
+            )}
+          </TableRow>
+        ))}
+      </TableBody>
+
+      {selectedPerson && (
+        <PersonDetailsModal
+          person={selectedPerson}
+          isOpen={!!selectedPerson}
+          onClose={() => setSelectedPerson(null)}
+          onDelete={onPersonDeleted}
+          onUpdate={() => {
+            setSelectedPerson(null);
+            onPersonDeleted();
+          }}
         />
-      ))}
-    </TableBody>
+      )}
+    </>
   );
 }
