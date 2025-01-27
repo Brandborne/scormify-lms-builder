@@ -55,6 +55,17 @@ export function DocumentEditor() {
   }, [id]);
 
   const createNewDocument = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      toast({
+        title: "Error creating document",
+        description: "You must be logged in to create documents",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from("documents")
@@ -63,6 +74,7 @@ export function DocumentEditor() {
           content: "",
           category: "general",
           status: "draft",
+          created_by: user.id
         })
         .select()
         .single();
