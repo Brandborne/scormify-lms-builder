@@ -19,7 +19,6 @@ import { Contact, CourseAssignment } from "./types";
 import { format } from "date-fns";
 import { Badge } from "../ui/badge";
 import { toast } from "sonner";
-import { X } from "lucide-react";
 
 interface ContactDetailsModalProps {
   contact: Contact;
@@ -93,25 +92,6 @@ export function ContactDetailsModal({
     }
   };
 
-  const handleRemoveCourse = async (courseId: string) => {
-    try {
-      const { error } = await supabase
-        .from("course_assignments")
-        .delete()
-        .eq("contact_id", contact.id)
-        .eq("course_id", courseId);
-
-      if (error) throw error;
-      
-      toast.success("Course removed successfully");
-      refetchAssignments();
-      onAssignmentChange();
-    } catch (error: any) {
-      console.error("Remove course error:", error);
-      toast.error("Failed to remove course");
-    }
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
@@ -122,13 +102,6 @@ export function ContactDetailsModal({
         return "bg-gray-500";
     }
   };
-
-  // Filter out already assigned courses
-  const availableCourses = courses?.filter(
-    course => !assignments?.some(
-      assignment => assignment.course_id === course.id
-    )
-  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -149,7 +122,7 @@ export function ContactDetailsModal({
                   <SelectValue placeholder="Select a course" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableCourses?.map((course) => (
+                  {courses?.map((course) => (
                     <SelectItem key={course.id} value={course.id}>
                       {course.title}
                     </SelectItem>
@@ -174,23 +147,13 @@ export function ContactDetailsModal({
                       Assigned: {format(new Date(assignment.assigned_at), "PPp")}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      className={`${getStatusColor(
-                        assignment.status
-                      )} text-white capitalize`}
-                    >
-                      {assignment.status?.replace("_", " ")}
-                    </Badge>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleRemoveCourse(assignment.course_id)}
-                      className="text-destructive hover:text-destructive/90"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Badge
+                    className={`${getStatusColor(
+                      assignment.status
+                    )} text-white capitalize`}
+                  >
+                    {assignment.status?.replace("_", " ")}
+                  </Badge>
                 </div>
               ))}
               {(!assignments || assignments.length === 0) && (
