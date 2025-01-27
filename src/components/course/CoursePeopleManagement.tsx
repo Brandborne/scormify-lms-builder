@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { PersonList } from "../people/PersonList";
 import { usePersonMutations } from "@/hooks/people/use-person-mutations";
 import { CourseSelectionAlert } from "../people/alerts/CourseSelectionAlert";
+import { CoursePeopleList } from "./CoursePeopleList";
 
 interface CoursePeopleManagementProps {
   courseId?: string;
@@ -26,7 +26,7 @@ export function CoursePeopleManagement({ courseId }: CoursePeopleManagementProps
 
   return (
     <div className="space-y-6">
-      <PersonList 
+      <CoursePeopleList 
         courseId={courseId}
         onToggleAssignment={handleToggleAssignment}
         onPersonDeleted={handlePersonDeleted}
