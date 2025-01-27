@@ -67,6 +67,30 @@ export function PersonList({
     }
   };
 
+  const handleRemovePerson = async (personId: string) => {
+    if (!courseId || !personId) return;
+
+    try {
+      const { error } = await supabase
+        .from('course_assignments')
+        .delete()
+        .match({ 
+          course_id: courseId,
+          person_id: personId 
+        });
+
+      if (error) throw error;
+      
+      toast.success('Person removed from course successfully');
+      // Invalidate queries to refresh the lists
+      queryClient.invalidateQueries({ queryKey: ['course_assignments', courseId] });
+      queryClient.invalidateQueries({ queryKey: ['people'] });
+    } catch (error: any) {
+      console.error('Remove person error:', error);
+      toast.error('Failed to remove person from course');
+    }
+  };
+
   if (peopleError) {
     return <ErrorState message={peopleError.message} />;
   }
@@ -121,6 +145,7 @@ export function PersonList({
           <PersonTableBody
             people={assignedPeople}
             onPersonDeleted={onPersonDeleted}
+            onRemoveFromCourse={handleRemovePerson}
           />
         </Table>
       </div>
