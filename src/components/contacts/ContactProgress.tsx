@@ -1,4 +1,4 @@
-import { CourseAssignment } from "../types";
+import { CourseAssignment } from "./types";
 import { Button } from "@/components/ui/button";
 import { ListFilter } from "lucide-react";
 import {
@@ -6,8 +6,6 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import { useState } from "react";
-import { ContactDetailsModal } from "./ContactDetailsModal";
 
 interface ContactProgressProps {
   assignments?: CourseAssignment[];
