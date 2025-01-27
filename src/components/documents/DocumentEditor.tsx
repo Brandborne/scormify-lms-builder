@@ -72,7 +72,7 @@ export function DocumentEditor() {
         .insert({
           title: "Untitled Document",
           content: "",
-          category: "general",
+          category: "general", // Using a valid category from our constraint
           status: "draft",
           created_by: user.id
         })
