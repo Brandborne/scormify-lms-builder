@@ -7,12 +7,12 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 
-interface ContactProgressProps {
+interface PersonProgressProps {
   assignments?: CourseAssignment[];
   onOpenDetails: () => void;
 }
 
-export function ContactProgress({ assignments = [], onOpenDetails }: ContactProgressProps) {
+export function PersonProgress({ assignments = [], onOpenDetails }: PersonProgressProps) {
   const totalCourses = assignments.length;
   const completedCourses = assignments.filter(a => a.status === 'completed').length;
   const inProgressCourses = assignments.filter(a => a.status === 'in_progress').length;
