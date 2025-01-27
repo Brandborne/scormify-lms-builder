@@ -3,6 +3,8 @@ import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
 import { Navigate } from "react-router-dom";
 
+const DocumentEditor = lazy(() => import("@/components/documents/DocumentEditor"));
+
 const routes = [
   {
     path: "/index",
@@ -16,7 +18,7 @@ const routes = [
   },
   {
     path: "/documents/:id",
-    element: <lazy(() => import("@/components/documents/DocumentEditor")).default>,
+    element: <DocumentEditor />,
     protected: true,
   },
   {
