@@ -18,6 +18,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <Routes>
+              <Route path="/" element={<Navigate to="/index" replace />} />
               {routes.map((route) => (
                 <Route
                   key={route.path}

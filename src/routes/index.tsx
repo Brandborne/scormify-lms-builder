@@ -1,52 +1,11 @@
-import { Navigate } from "react-router-dom";
-import { CourseViewer } from "@/components/CourseViewer";
-import { LibraryView } from "@/components/LibraryView";
-import { ContactsView } from "@/components/ContactsView";
-import { DocumentsView } from "@/components/DocumentsView";
-import { MyCoursesView } from "@/components/MyCoursesView";
-import { SettingsView } from "@/components/SettingsView";
+import { lazy } from "react";
 import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
 
-export const routes = [
+const routes = [
   {
     path: "/",
     element: <Index />,
-    protected: true,
-  },
-  {
-    path: "/my-courses",
-    element: <MyCoursesView />,
-    protected: true,
-  },
-  {
-    path: "/courses/:courseId",
-    element: <CourseViewer />,
-    protected: true,
-  },
-  {
-    path: "/library",
-    element: <LibraryView />,
-    protected: true,
-  },
-  {
-    path: "/contacts",
-    element: <ContactsView />,
-    protected: true,
-  },
-  {
-    path: "/documents",
-    element: <DocumentsView />,
-    protected: true,
-  },
-  {
-    path: "/documents/:id",
-    element: <DocumentsView />,
-    protected: true,
-  },
-  {
-    path: "/settings",
-    element: <SettingsView />,
     protected: true,
   },
   {
@@ -55,8 +14,30 @@ export const routes = [
     protected: false,
   },
   {
-    path: "*",
-    element: <Navigate to="/" replace />,
-    protected: false,
+    path: "/documents/:id",
+    element: lazy(() => import("@/components/documents/DocumentEditor")),
+    protected: true,
   },
+  {
+    path: "/courses",
+    element: lazy(() => import("@/pages/Courses")),
+    protected: true,
+  },
+  {
+    path: "/courses/:id",
+    element: lazy(() => import("@/pages/CourseDetails")),
+    protected: true,
+  },
+  {
+    path: "/settings",
+    element: lazy(() => import("@/pages/Settings")),
+    protected: true,
+  },
+  {
+    path: "/profile",
+    element: lazy(() => import("@/pages/Profile")),
+    protected: true,
+  }
 ];
+
+export { routes };
