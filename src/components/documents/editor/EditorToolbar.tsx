@@ -6,15 +6,6 @@ import {
   List,
   ListOrdered,
   Quote,
-  Heading1,
-  Heading2,
-  Heading3,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  Type,
-  TextQuote,
-  Minus,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -50,14 +41,13 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         break;
       case 'small':
         editor.chain().focus().setParagraph().run();
-        editor.chain().focus().setMark('textStyle', { class: 'text-sm' }).run();
+        editor.chain().focus().setTextStyle({ class: 'text-sm' }).run();
         break;
     }
   };
 
   const handleLineHeightChange = (value: string) => {
-    const lineHeightClass = `leading-${value}`;
-    editor.chain().focus().setMark('textStyle', { class: lineHeightClass }).run();
+    editor.chain().focus().setTextStyle({ class: `leading-${value}` }).run();
   };
 
   return (

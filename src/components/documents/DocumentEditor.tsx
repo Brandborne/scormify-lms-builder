@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import TextStyle from '@tiptap/extension-text-style';
 import { useParams } from "react-router-dom";
 import { useDocument } from "@/hooks/use-document";
 import { EditorHeader } from "./editor/EditorHeader";
@@ -11,7 +12,10 @@ export function DocumentEditor() {
   const { title, saving, setTitle, loadDocument, debouncedSave } = useDocument(id);
 
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [
+      StarterKit,
+      TextStyle,
+    ],
     content: "",
     editorProps: {
       attributes: {
