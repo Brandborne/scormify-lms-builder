@@ -23,7 +23,7 @@ export function SidebarNavigation() {
           <SidebarMenuButton 
             onClick={() => navigate(item.path)}
             data-active={isActive(item.path)}
-            className="data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
+            className="data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground font-medium transition-colors"
           >
             <item.icon className="h-5 w-5" />
             <span>{item.title}</span>
