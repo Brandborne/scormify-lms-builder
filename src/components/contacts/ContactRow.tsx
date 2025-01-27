@@ -34,6 +34,10 @@ export function ContactRow({
     }
   };
 
+  const handleAssignmentChange = () => {
+    onContactDeleted(); // This will trigger a refetch of the contacts list
+  };
+
   return (
     <TableRow>
       <TableCell>
@@ -71,15 +75,15 @@ export function ContactRow({
           <div className="space-y-6">
             <CourseAssignmentForm
               contactId={contact.id}
-              onAssignmentChange={() => {}}
-              onRefetch={() => {}}
+              onAssignmentChange={handleAssignmentChange}
+              onRefetch={handleAssignmentChange}
               assignments={contact.assignments}
             />
             <CourseAssignmentList
               assignments={contact.assignments || []}
               contactId={contact.id}
-              onAssignmentChange={() => {}}
-              onRefetch={() => {}}
+              onAssignmentChange={handleAssignmentChange}
+              onRefetch={handleAssignmentChange}
             />
           </div>
         </DialogContent>

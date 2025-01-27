@@ -44,7 +44,7 @@ export function ContactList({
   }
 
   return (
-    <div className="rounded-md border">
+    <div className="w-full rounded-md border">
       <Table>
         <ContactTableHeader
           sortField={sortField}
