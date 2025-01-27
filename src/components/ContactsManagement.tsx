@@ -37,7 +37,7 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
   const [isNewContactModalOpen, setIsNewContactModalOpen] = useState(false);
 
   // Fetch all contacts
-  const { data: allContacts } = useQuery({
+  const { data: allContacts, isLoading: isLoadingContacts } = useQuery({
     queryKey: ['contacts'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -45,12 +45,12 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
         .select('*')
         .order('name');
       if (error) throw error;
-      return data;
+      return data || [];
     }
   });
 
   // Fetch assigned contacts with their progress and details
-  const { data: assignedContacts, refetch: refetchAssignments } = useQuery({
+  const { data: assignedContacts, isLoading: isLoadingAssignments } = useQuery({
     queryKey: ['course_assignments', courseId],
     queryFn: async () => {
       if (!courseId) return [];
@@ -71,7 +71,7 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
       if (error) throw error;
       
       // Transform the data to match the expected format
-      return data.map(contact => ({
+      return (data || []).map(contact => ({
         contact_id: contact.id,
         contact_name: contact.name,
         contact_email: contact.email,
@@ -84,11 +84,11 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
   });
 
   // Filter out already assigned contacts
-  const unassignedContacts = allContacts?.filter(
-    contact => !assignedContacts?.some(
+  const unassignedContacts = (allContacts || []).filter(
+    contact => !(assignedContacts || []).some(
       assigned => assigned.contact_id === contact.id
     )
-  ) || [];
+  );
 
   const handleAssignContacts = async (contactId: string) => {
     if (!courseId) {
@@ -148,6 +148,10 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
         return 'bg-gray-500';
     }
   };
+
+  if (isLoadingContacts || isLoadingAssignments) {
+    return <div className="p-4 text-center text-muted-foreground">Loading contacts...</div>;
+  }
 
   return (
     <div className="space-y-4">
@@ -221,7 +225,7 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
       </div>
 
       <div className="space-y-2">
-        {assignedContacts?.map((assignment) => (
+        {(assignedContacts || []).map((assignment) => (
           <div
             key={assignment.contact_id}
             className="flex items-center justify-between p-3 border rounded-lg"
