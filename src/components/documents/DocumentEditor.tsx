@@ -7,7 +7,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useDebounce } from "@/hooks/use-debounce";
 import { EditorHeader } from "./editor/EditorHeader";
 import { EditorToolbar } from "./editor/EditorToolbar";
-import { LMSSidebar } from "../LMSSidebar";
 
 export function DocumentEditor() {
   const { id } = useParams();
@@ -121,25 +120,20 @@ export function DocumentEditor() {
   };
 
   return (
-    <>
-      <LMSSidebar />
-      <main className="flex-1">
-        <div className="container mx-auto p-8">
-          <EditorHeader
-            title={title}
-            saving={saving}
-            onTitleChange={handleTitleChange}
-          />
-          <div className="bg-card border rounded-lg">
-            <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-              <EditorToolbar editor={editor} />
-            </div>
-            <div className="min-h-screen bg-white dark:bg-zinc-900">
-              <EditorContent editor={editor} />
-            </div>
-          </div>
+    <div className="container mx-auto p-8">
+      <EditorHeader
+        title={title}
+        saving={saving}
+        onTitleChange={handleTitleChange}
+      />
+      <div className="bg-card border rounded-lg">
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+          <EditorToolbar editor={editor} />
         </div>
-      </main>
-    </>
+        <div className="min-h-screen bg-white dark:bg-zinc-900">
+          <EditorContent editor={editor} />
+        </div>
+      </div>
+    </div>
   );
 }
