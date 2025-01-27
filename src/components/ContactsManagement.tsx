@@ -12,7 +12,12 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
 
   const handleToggleAssignment = async (contactId: string) => {
     if (!courseId) {
-      toast.error('No course selected');
+      toast.error('Please select a course first');
+      return;
+    }
+
+    if (!contactId) {
+      toast.error('Invalid contact selected');
       return;
     }
 
