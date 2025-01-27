@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SidebarProvider } from "./components/ui/sidebar";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { routes } from "./routes";
+import { Suspense } from "react";
 
 const queryClient = new QueryClient();
 
@@ -24,11 +25,13 @@ const App = () => (
                   key={route.path}
                   path={route.path}
                   element={
-                    route.protected ? (
-                      <ProtectedRoute>{route.element}</ProtectedRoute>
-                    ) : (
-                      route.element
-                    )
+                    <Suspense fallback={<div>Loading...</div>}>
+                      {route.protected ? (
+                        <ProtectedRoute>{route.element}</ProtectedRoute>
+                      ) : (
+                        route.element
+                      )}
+                    </Suspense>
                   }
                 />
               ))}

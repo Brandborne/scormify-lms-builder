@@ -1,10 +1,11 @@
 import { lazy } from "react";
 import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
+import { Navigate } from "react-router-dom";
 
 const routes = [
   {
-    path: "/",
+    path: "/index",
     element: <Index />,
     protected: true,
   },
@@ -15,28 +16,13 @@ const routes = [
   },
   {
     path: "/documents/:id",
-    element: lazy(() => import("@/components/documents/DocumentEditor")),
+    element: <lazy(() => import("@/components/documents/DocumentEditor")).default>,
     protected: true,
   },
   {
-    path: "/courses",
-    element: lazy(() => import("@/pages/Courses")),
-    protected: true,
-  },
-  {
-    path: "/courses/:id",
-    element: lazy(() => import("@/pages/CourseDetails")),
-    protected: true,
-  },
-  {
-    path: "/settings",
-    element: lazy(() => import("@/pages/Settings")),
-    protected: true,
-  },
-  {
-    path: "/profile",
-    element: lazy(() => import("@/pages/Profile")),
-    protected: true,
+    path: "*",
+    element: <Navigate to="/index" replace />,
+    protected: false,
   }
 ];
 
