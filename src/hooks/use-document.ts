@@ -27,9 +27,12 @@ export function useDocument(id: string | undefined) {
         variant: "destructive",
       });
     } finally {
-      setSaving(false);
+      // Add a small delay before removing the saving indicator
+      setTimeout(() => {
+        setSaving(false);
+      }, 500);
     }
-  }, 1000);
+  }, 2000); // Increased debounce time to 2 seconds for smoother saving
 
   const createNewDocument = async () => {
     const { data: { user } } = await supabase.auth.getUser();

@@ -15,7 +15,7 @@ export function DocumentEditor() {
     content: "",
     editorProps: {
       attributes: {
-        class: "prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none min-h-[500px] px-8 py-4",
+        class: "prose dark:prose-invert prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none min-h-[500px] px-8 py-4 max-w-none",
       },
     },
     onUpdate: ({ editor }) => {
