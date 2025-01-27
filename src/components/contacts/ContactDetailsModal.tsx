@@ -1,18 +1,10 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Contact } from "./types";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CourseAssignmentForm } from "./course-assignments/CourseAssignmentForm";
 import { CourseAssignmentList } from "./course-assignments/CourseAssignmentList";
+import { ContactWithAssignments } from "./types";
 
 interface ContactDetailsModalProps {
-  contact: Contact;
+  contact: ContactWithAssignments;
   isOpen: boolean;
   onClose: () => void;
   onAssignmentChange: () => void;
@@ -24,44 +16,26 @@ export function ContactDetailsModal({
   onClose,
   onAssignmentChange,
 }: ContactDetailsModalProps) {
-  const { data: assignments, refetch: refetchAssignments } = useQuery({
-    queryKey: ["contact_assignments", contact.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("contact_course_progress")
-        .select("*")
-        .eq("contact_id", contact.id);
-      if (error) throw error;
-      return data;
-    },
-  });
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{contact.name}'s Course Assignments</DialogTitle>
+          <DialogTitle>Course Assignments - {contact.name}</DialogTitle>
           <DialogDescription>
             Manage course assignments for this contact
           </DialogDescription>
         </DialogHeader>
-
         <div className="space-y-6">
           <CourseAssignmentForm
             contactId={contact.id}
             onAssignmentChange={onAssignmentChange}
-            onRefetch={refetchAssignments}
+            onRefetch={onAssignmentChange}
+            assignments={contact.assignments}
           />
-
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium">Current Assignments</h4>
-            <CourseAssignmentList
-              assignments={assignments || []}
-              contactId={contact.id}
-              onAssignmentChange={onAssignmentChange}
-              onRefetch={refetchAssignments}
-            />
-          </div>
+          <CourseAssignmentList
+            assignments={contact.assignments || []}
+            onAssignmentChange={onAssignmentChange}
+          />
         </div>
       </DialogContent>
     </Dialog>

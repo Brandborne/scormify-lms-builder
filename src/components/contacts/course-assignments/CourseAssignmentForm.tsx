@@ -40,7 +40,7 @@ export function CourseAssignmentForm({
 
   // Filter out already assigned courses
   const availableCourses = courses?.filter(course => 
-    !assignments.some(assignment => assignment.course_id === course.id)
+    !assignments?.some(assignment => assignment.course_id === course.id)
   );
 
   const handleAssignCourse = async () => {
