@@ -22,6 +22,24 @@ export default {
 				DEFAULT: {
 					css: {
 						maxWidth: '100%',
+						h1: {
+							fontSize: '2.5rem',
+							fontWeight: '700',
+							marginBottom: '1rem',
+						},
+						h2: {
+							fontSize: '2rem',
+							fontWeight: '600',
+							marginBottom: '0.75rem',
+						},
+						h3: {
+							fontSize: '1.5rem',
+							fontWeight: '600',
+							marginBottom: '0.5rem',
+						},
+						p: {
+							marginBottom: '1rem',
+						},
 					},
 				},
 			},

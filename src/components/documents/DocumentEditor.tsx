@@ -15,7 +15,7 @@ export function DocumentEditor() {
     content: "",
     editorProps: {
       attributes: {
-        class: "prose dark:prose-invert prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none min-h-[500px] px-8 py-4 max-w-none",
+        class: "prose dark:prose-invert prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none min-h-[500px] px-8 py-4 max-w-none leading-relaxed",
       },
     },
     onUpdate: ({ editor }) => {
@@ -49,7 +49,9 @@ export function DocumentEditor() {
           <EditorToolbar editor={editor} />
         </div>
         <div className="min-h-screen bg-white dark:bg-zinc-900">
-          <EditorContent editor={editor} />
+          <div className="max-w-[800px] mx-auto">
+            <EditorContent editor={editor} />
+          </div>
         </div>
       </div>
     </div>
