@@ -1,11 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Edit2 } from "lucide-react";
-import { ContactActionsProps } from "./types";
+import { PersonActionsProps } from "./types";
 
-export function ContactActions({ 
-  contactId,
+export function PersonActions({ 
+  personId,
   onEdit
-}: ContactActionsProps) {
+}: PersonActionsProps) {
   return (
     <div className="flex justify-end items-center gap-2">
       <Button

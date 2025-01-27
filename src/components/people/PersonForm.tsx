@@ -7,62 +7,62 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
-interface ContactFormProps {
+interface PersonFormProps {
   onSuccess: () => void;
 }
 
-export function ContactForm({ onSuccess }: ContactFormProps) {
+export function PersonForm({ onSuccess }: PersonFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [newContact, setNewContact] = useState({ name: "", email: "" });
+  const [newPerson, setNewPerson] = useState({ name: "", email: "" });
   const queryClient = useQueryClient();
 
-  const handleAddContact = async (e: React.FormEvent) => {
+  const handleAddPerson = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setIsLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No user found");
 
-      // Check if contact already exists
-      const { data: existingContacts } = await supabase
-        .from('contacts')
+      // Check if person already exists
+      const { data: existingPeople } = await supabase
+        .from('people')
         .select('email')
-        .eq('email', newContact.email);
+        .eq('email', newPerson.email);
 
-      if (existingContacts && existingContacts.length > 0) {
-        toast.error('Contact with this email already exists');
+      if (existingPeople && existingPeople.length > 0) {
+        toast.error('Person with this email already exists');
         return;
       }
 
       const { error } = await supabase
-        .from('contacts')
+        .from('people')
         .insert([{
-          ...newContact,
+          ...newPerson,
           created_by: user.id
         }]);
 
       if (error) throw error;
       
-      toast.success('Contact added successfully');
-      setNewContact({ name: "", email: "" });
-      // Invalidate contacts query to refresh the list
-      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      toast.success('Person added successfully');
+      setNewPerson({ name: "", email: "" });
+      // Invalidate people query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['people'] });
       onSuccess();
     } catch (error: any) {
-      toast.error('Failed to add contact: ' + error.message);
+      toast.error('Failed to add person: ' + error.message);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleAddContact} className="space-y-4">
+    <form onSubmit={handleAddPerson} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="name">Name</Label>
         <Input
           id="name"
-          value={newContact.name}
-          onChange={(e) => setNewContact(prev => ({ ...prev, name: e.target.value }))}
+          value={newPerson.name}
+          onChange={(e) => setNewPerson(prev => ({ ...prev, name: e.target.value }))}
           placeholder="John Doe"
           required
         />
@@ -72,15 +72,15 @@ export function ContactForm({ onSuccess }: ContactFormProps) {
         <Input
           id="email"
           type="email"
-          value={newContact.email}
-          onChange={(e) => setNewContact(prev => ({ ...prev, email: e.target.value }))}
+          value={newPerson.email}
+          onChange={(e) => setNewPerson(prev => ({ ...prev, email: e.target.value }))}
           placeholder="john@example.com"
           required
         />
       </div>
       <Button type="submit" disabled={isLoading} className="w-full">
         <Plus className="h-4 w-4 mr-2" />
-        Add Contact
+        Add Person
       </Button>
     </form>
   );

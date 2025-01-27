@@ -2,87 +2,87 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ContactRowProps } from "./types";
-import { ContactActions } from "./ContactActions";
-import { ContactDetailsModal } from "./contact-details/ContactDetailsModal";
-import { ContactProgress } from "./contact-details/ContactProgress";
+import { PersonActions } from "./PersonActions";
+import { PersonDetailsModal } from "./person-details/PersonDetailsModal";
+import { PersonProgress } from "./person-details/PersonProgress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CourseAssignmentForm } from "./course-assignments/CourseAssignmentForm";
 import { CourseAssignmentList } from "./course-assignments/CourseAssignmentList";
+import { PersonRowProps } from "./types";
 
-export function ContactRow({
-  contact,
-  onContactDeleted
-}: ContactRowProps) {
+export function PersonRow({
+  person,
+  onPersonDeleted
+}: PersonRowProps) {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
   const handleDelete = async () => {
     try {
       const { error } = await supabase
-        .from('contacts')
+        .from('people')
         .delete()
-        .eq('id', contact.id);
+        .eq('id', person.id);
 
       if (error) throw error;
-      toast.success('Contact deleted successfully');
-      onContactDeleted();
+      toast.success('Person deleted successfully');
+      onPersonDeleted();
       setIsDetailsModalOpen(false);
     } catch (error: any) {
-      console.error('Delete contact error:', error);
-      toast.error('Failed to delete contact: ' + error.message);
+      console.error('Delete person error:', error);
+      toast.error('Failed to delete person: ' + error.message);
     }
   };
 
   const handleAssignmentChange = () => {
-    onContactDeleted(); // This will trigger a refetch of the contacts list
+    onPersonDeleted(); // This will trigger a refetch of the people list
   };
 
   return (
     <TableRow>
       <TableCell>
         <div>
-          <p className="font-medium">{contact.name}</p>
-          <p className="text-sm text-muted-foreground">{contact.email}</p>
+          <p className="font-medium">{person.name}</p>
+          <p className="text-sm text-muted-foreground">{person.email}</p>
         </div>
       </TableCell>
       <TableCell>
-        <ContactProgress
-          assignments={contact.assignments}
+        <PersonProgress
+          assignments={person.assignments}
           onOpenDetails={() => setIsAssignModalOpen(true)}
         />
       </TableCell>
       <TableCell className="text-right">
-        <ContactActions
-          contactId={contact.id}
+        <PersonActions
+          personId={person.id}
           onEdit={() => setIsDetailsModalOpen(true)}
         />
       </TableCell>
-      <ContactDetailsModal
-        contact={contact}
+      <PersonDetailsModal
+        person={person}
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
         onDelete={handleDelete}
-        onUpdate={onContactDeleted}
+        onUpdate={onPersonDeleted}
       />
       <Dialog open={isAssignModalOpen} onOpenChange={setIsAssignModalOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Course Assignments - {contact.name}</DialogTitle>
+            <DialogTitle>Course Assignments - {person.name}</DialogTitle>
             <DialogDescription>
-              Manage course assignments for this contact
+              Manage course assignments for this person
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6">
             <CourseAssignmentForm
-              contactId={contact.id}
+              personId={person.id}
               onAssignmentChange={handleAssignmentChange}
               onRefetch={handleAssignmentChange}
-              assignments={contact.assignments}
+              assignments={person.assignments}
             />
             <CourseAssignmentList
-              assignments={contact.assignments || []}
-              contactId={contact.id}
+              assignments={person.assignments || []}
+              personId={person.id}
               onAssignmentChange={handleAssignmentChange}
               onRefetch={handleAssignmentChange}
             />
