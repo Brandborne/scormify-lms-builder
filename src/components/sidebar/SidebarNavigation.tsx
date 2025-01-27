@@ -23,7 +23,7 @@ export function SidebarNavigation() {
           <SidebarMenuButton 
             onClick={() => navigate(item.path)}
             data-active={isActive(item.path)}
-            className="data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground font-medium transition-colors"
+            className="relative data-[active=true]:bg-sidebar-primary/10 data-[active=true]:text-sidebar-primary font-medium transition-colors before:absolute before:left-0 before:top-0 before:h-full before:w-1 before:bg-sidebar-primary before:opacity-0 data-[active=true]:before:opacity-100 before:transition-opacity"
           >
             <item.icon className="h-5 w-5" />
             <span>{item.title}</span>
