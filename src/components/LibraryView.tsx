@@ -4,7 +4,7 @@ import { LMSSidebar } from "./LMSSidebar";
 
 export function LibraryView() {
   return (
-    <div className="flex h-screen">
+    <>
       <LMSSidebar />
       <main className="flex-1 p-8">
         <DashboardHeader title="Library">
@@ -19,6 +19,6 @@ export function LibraryView() {
           <p className="text-muted-foreground">Library features are coming soon.</p>
         </div>
       </main>
-    </div>
+    </>
   );
 }
