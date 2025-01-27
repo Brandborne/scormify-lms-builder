@@ -14,7 +14,9 @@ export function DocumentEditor() {
   const editor = useEditor({
     extensions: [
       StarterKit,
-      TextStyle,
+      TextStyle.configure({
+        types: ['textStyle'],
+      }),
     ],
     content: "",
     editorProps: {
