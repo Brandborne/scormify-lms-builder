@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { ContactsManagement } from "../ContactsManagement";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface CourseActionsModalProps {
   id: string;
@@ -31,6 +32,7 @@ export function CourseActionsModal({
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
+  const queryClient = useQueryClient();
 
   const handleUpdateCourse = async () => {
     try {
@@ -45,6 +47,7 @@ export function CourseActionsModal({
       if (error) throw error;
       
       toast.success('Course updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
       setIsOpen(false);
     } catch (error: any) {
       toast.error('Failed to update course: ' + error.message);
