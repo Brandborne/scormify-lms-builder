@@ -39,21 +39,30 @@ export type Database = {
           created_by: string
           email: string
           id: string
+          is_archived: boolean | null
           name: string
+          notes: string | null
+          phone: string | null
         }
         Insert: {
           created_at?: string
           created_by: string
           email: string
           id?: string
+          is_archived?: boolean | null
           name: string
+          notes?: string | null
+          phone?: string | null
         }
         Update: {
           created_at?: string
           created_by?: string
           email?: string
           id?: string
+          is_archived?: boolean | null
           name?: string
+          notes?: string | null
+          phone?: string | null
         }
         Relationships: []
       }
@@ -95,6 +104,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "contacts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_assignments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "contact_course_progress"
+            referencedColumns: ["course_id"]
           },
           {
             foreignKeyName: "course_assignments_course_id_fkey"
@@ -306,6 +322,13 @@ export type Database = {
             foreignKeyName: "scorm_runtime_data_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
+            referencedRelation: "contact_course_progress"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "scorm_runtime_data_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
           },
@@ -313,7 +336,26 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      contact_course_progress: {
+        Row: {
+          assigned_at: string | null
+          completed_at: string | null
+          contact_id: string | null
+          course_id: string | null
+          course_title: string | null
+          progress_status: string | null
+          status: Database["public"]["Enums"]["assignment_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_assignments_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       [_ in never]: never
