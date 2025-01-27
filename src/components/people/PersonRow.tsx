@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { PersonRowProps } from "./types";
+import { PersonProgress } from "./person-details/PersonProgress";
+import { PersonDetailsModal } from "./person-details/PersonDetailsModal";
 import { Button } from "@/components/ui/button";
-import { Trash2, UserMinus } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,41 +15,47 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { PersonProgress } from "./person-details/PersonProgress";
+import { Trash2 } from "lucide-react";
+import { usePersonMutations } from "@/hooks/people/use-person-mutations";
 
 export function PersonRow({
   person,
   onPersonDeleted,
-  onRemoveFromCourse
 }: PersonRowProps) {
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const { deletePerson } = usePersonMutations();
+
+  const handleDelete = async () => {
+    await deletePerson.mutateAsync(person.id);
+    onPersonDeleted();
+  };
+
   return (
     <TableRow>
-      <TableCell>{person.name}</TableCell>
-      <TableCell>{person.email}</TableCell>
       <TableCell>
-        <PersonProgress
+        <div className="flex items-center gap-4">
+          <div>
+            <div className="font-medium">{person.name}</div>
+            <div className="text-sm text-muted-foreground">
+              {person.email}
+            </div>
+          </div>
+        </div>
+      </TableCell>
+      <TableCell>
+        <PersonProgress 
           assignments={person.assignments}
-          onOpenDetails={() => {}}
+          onOpenDetails={() => setIsDetailsOpen(true)}
         />
       </TableCell>
-      <TableCell className="text-right">
-        <div className="flex justify-end gap-2">
-          {onRemoveFromCourse && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onRemoveFromCourse(person.id)}
-              className="text-destructive hover:text-destructive"
-            >
-              <UserMinus className="h-4 w-4" />
-            </Button>
-          )}
+      <TableCell className="w-[100px]">
+        <div className="flex justify-end">
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-destructive hover:text-destructive"
+                className="h-8 w-8 text-muted-foreground hover:text-destructive"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -56,22 +64,22 @@ export function PersonRow({
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Person</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to delete this person? This action cannot be undone.
+                  Are you sure you want to delete {person.name}? This action cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => onPersonDeleted()}
-                  className="bg-destructive hover:bg-destructive/90"
-                >
-                  Delete
-                </AlertDialogAction>
+                <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
         </div>
       </TableCell>
+      <PersonDetailsModal
+        person={person}
+        open={isDetailsOpen}
+        onOpenChange={setIsDetailsOpen}
+      />
     </TableRow>
   );
 }
