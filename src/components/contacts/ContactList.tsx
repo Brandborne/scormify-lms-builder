@@ -9,10 +9,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Trash } from "lucide-react";
+import { Trash, Edit2, Check, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
 
 interface Contact {
   id: string;
@@ -32,6 +33,8 @@ interface ContactListProps {
 export function ContactList({ courseId, onToggleAssignment, onContactDeleted }: ContactListProps) {
   const [sortField, setSortField] = useState<'name' | 'email' | 'created_at'>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [editingContact, setEditingContact] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<Partial<Contact>>({});
 
   const { data: contacts, isLoading } = useQuery({
     queryKey: ['contacts', sortField, sortDirection],
@@ -86,6 +89,45 @@ export function ContactList({ courseId, onToggleAssignment, onContactDeleted }: 
     }
   };
 
+  const startEditing = (contact: Contact) => {
+    setEditingContact(contact.id);
+    setEditValues({
+      name: contact.name,
+      email: contact.email,
+      phone: contact.phone,
+      notes: contact.notes,
+    });
+  };
+
+  const cancelEditing = () => {
+    setEditingContact(null);
+    setEditValues({});
+  };
+
+  const saveEditing = async () => {
+    if (!editingContact || !editValues.name || !editValues.email) return;
+
+    try {
+      const { error } = await supabase
+        .from('contacts')
+        .update({
+          name: editValues.name,
+          email: editValues.email,
+          phone: editValues.phone,
+          notes: editValues.notes,
+        })
+        .eq('id', editingContact);
+
+      if (error) throw error;
+      toast.success('Contact updated successfully');
+      setEditingContact(null);
+      setEditValues({});
+    } catch (error: any) {
+      console.error('Update contact error:', error);
+      toast.error('Failed to update contact: ' + error.message);
+    }
+  };
+
   if (isLoading) {
     return <div>Loading contacts...</div>;
   }
@@ -123,12 +165,54 @@ export function ContactList({ courseId, onToggleAssignment, onContactDeleted }: 
           <TableBody>
             {contacts?.map((contact) => {
               const isAssigned = assignments?.includes(contact.id);
+              const isEditing = editingContact === contact.id;
+
               return (
                 <TableRow key={contact.id}>
-                  <TableCell>{contact.name}</TableCell>
-                  <TableCell>{contact.email}</TableCell>
-                  <TableCell>{contact.phone || '-'}</TableCell>
-                  <TableCell>{contact.notes || '-'}</TableCell>
+                  <TableCell>
+                    {isEditing ? (
+                      <Input
+                        value={editValues.name || ''}
+                        onChange={(e) => setEditValues(prev => ({ ...prev, name: e.target.value }))}
+                        className="max-w-[200px]"
+                      />
+                    ) : (
+                      contact.name
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {isEditing ? (
+                      <Input
+                        value={editValues.email || ''}
+                        onChange={(e) => setEditValues(prev => ({ ...prev, email: e.target.value }))}
+                        className="max-w-[200px]"
+                      />
+                    ) : (
+                      contact.email
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {isEditing ? (
+                      <Input
+                        value={editValues.phone || ''}
+                        onChange={(e) => setEditValues(prev => ({ ...prev, phone: e.target.value }))}
+                        className="max-w-[150px]"
+                      />
+                    ) : (
+                      contact.phone || '-'
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {isEditing ? (
+                      <Input
+                        value={editValues.notes || ''}
+                        onChange={(e) => setEditValues(prev => ({ ...prev, notes: e.target.value }))}
+                        className="max-w-[200px]"
+                      />
+                    ) : (
+                      contact.notes || '-'
+                    )}
+                  </TableCell>
                   <TableCell>
                     {new Date(contact.created_at).toLocaleDateString()}
                   </TableCell>
@@ -140,6 +224,34 @@ export function ContactList({ courseId, onToggleAssignment, onContactDeleted }: 
                           onCheckedChange={() => onToggleAssignment(contact.id)}
                           aria-label={`Toggle assignment for ${contact.name}`}
                         />
+                      )}
+                      {isEditing ? (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={saveEditing}
+                            className="text-green-600 hover:text-green-700"
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={cancelEditing}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEditing(contact)}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
                       )}
                       <Button
                         size="sm"
