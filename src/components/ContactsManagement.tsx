@@ -37,7 +37,7 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
   const [isNewContactModalOpen, setIsNewContactModalOpen] = useState(false);
 
   // Fetch all contacts
-  const { data: allContacts, isLoading: isLoadingContacts } = useQuery({
+  const { data: allContacts = [], isLoading: isLoadingContacts } = useQuery({
     queryKey: ['contacts'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -51,7 +51,7 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
 
   // Fetch assigned contacts with their progress and details
   const { 
-    data: assignedContacts, 
+    data: assignedContacts = [], 
     isLoading: isLoadingAssignments,
     refetch: refetchAssignments 
   } = useQuery({
@@ -88,8 +88,8 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
   });
 
   // Filter out already assigned contacts
-  const unassignedContacts = (allContacts || []).filter(
-    contact => !(assignedContacts || []).some(
+  const unassignedContacts = allContacts.filter(
+    contact => !assignedContacts.some(
       assigned => assigned.contact_id === contact.id
     )
   );
@@ -229,7 +229,7 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
       </div>
 
       <div className="space-y-2">
-        {(assignedContacts || []).map((assignment) => (
+        {assignedContacts.map((assignment) => (
           <div
             key={assignment.contact_id}
             className="flex items-center justify-between p-3 border rounded-lg"
@@ -262,7 +262,7 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
             </Button>
           </div>
         ))}
-        {(!assignedContacts || assignedContacts.length === 0) && (
+        {assignedContacts.length === 0 && (
           <div className="text-center text-muted-foreground py-4">
             No contacts assigned to this course
           </div>
