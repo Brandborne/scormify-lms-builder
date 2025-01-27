@@ -11,7 +11,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CourseEditForm } from "./CourseEditForm";
 import { CourseDangerZone } from "./CourseDangerZone";
-import { CourseContactsManagement } from "./CourseContactsManagement";
+import { CoursePeopleManagement } from "./CoursePeopleManagement";
 
 interface CourseActionsModalProps {
   id: string;
@@ -42,7 +42,7 @@ export function CourseActionsModal({
         <Tabs defaultValue="edit" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="edit">Edit</TabsTrigger>
-            <TabsTrigger value="contacts">Contacts</TabsTrigger>
+            <TabsTrigger value="people">People</TabsTrigger>
             <TabsTrigger value="danger">Danger</TabsTrigger>
           </TabsList>
           <TabsContent value="edit">
@@ -53,9 +53,9 @@ export function CourseActionsModal({
               onSuccess={() => setIsOpen(false)}
             />
           </TabsContent>
-          <TabsContent value="contacts">
+          <TabsContent value="people">
             <div className="pt-2">
-              <CourseContactsManagement courseId={id} />
+              <CoursePeopleManagement courseId={id} />
             </div>
           </TabsContent>
           <TabsContent value="danger" className="space-y-4">
