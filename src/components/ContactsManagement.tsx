@@ -1,8 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Alert, AlertDescription } from "./ui/alert";
-import { AlertCircle } from "lucide-react";
 import { ContactList } from "./contacts/ContactList";
 import { useContactMutations } from "@/hooks/contacts/use-contact-mutations";
+import { CourseSelectionAlert } from "./contacts/alerts/CourseSelectionAlert";
 
 interface ContactsManagementProps {
   courseId?: string;
@@ -13,10 +12,7 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
   const { toggleAssignment } = useContactMutations();
 
   const handleToggleAssignment = async (contactId: string) => {
-    if (!courseId || !contactId) {
-      return;
-    }
-
+    if (!courseId || !contactId) return;
     await toggleAssignment.mutateAsync({ contactId, courseId });
   };
 
@@ -25,14 +21,7 @@ export function ContactsManagement({ courseId }: ContactsManagementProps) {
   };
 
   if (!courseId) {
-    return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          Please select a course to manage contacts
-        </AlertDescription>
-      </Alert>
-    );
+    return <CourseSelectionAlert />;
   }
 
   return (
