@@ -1,11 +1,12 @@
-import { getNodeText, getNodeAttribute, getAllNodes } from './xmlParser.ts';
-import type { OrganizationItem } from '../../types/parser.ts';
+import { getNodeText, getNodeAttribute, getAllNodes } from '../xml/xmlParser.ts';
+import type { OrganizationItem, OrganizationsResult } from '../../types/manifest.ts';
+import { logDebug } from '../../utils/logger.ts';
 
-export function parseOrganizations(organizationsNode: Element | null): { default: string; items: OrganizationItem[] } {
-  console.log('Parsing organizations from node:', organizationsNode?.outerHTML);
+export function parseOrganizations(organizationsNode: any): OrganizationsResult {
+  logDebug('Parsing organizations from node:', organizationsNode);
   
   if (!organizationsNode) {
-    console.log('No organizations node found');
+    logDebug('No organizations node found');
     return { default: '', items: [] };
   }
 
@@ -19,12 +20,12 @@ export function parseOrganizations(organizationsNode: Element | null): { default
     items
   };
 
-  console.log('Parsed organizations:', result);
+  logDebug('Parsed organizations:', result);
   return result;
 }
 
-function parseOrganizationItem(item: Element): OrganizationItem | null {
-  console.log('Parsing organization item:', item.outerHTML);
+function parseOrganizationItem(item: any): OrganizationItem | null {
+  logDebug('Parsing organization item:', item);
   
   if (!item) return null;
 
@@ -38,6 +39,6 @@ function parseOrganizationItem(item: Element): OrganizationItem | null {
     resourceId
   };
 
-  console.log('Parsed organization item:', result);
+  logDebug('Parsed organization item:', result);
   return result;
 }

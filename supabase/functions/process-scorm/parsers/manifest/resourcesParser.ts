@@ -1,22 +1,23 @@
-import { getNodeAttribute, getAllNodes } from './xmlParser.ts';
-import type { ResourceData } from '../../types/parser.ts';
+import { getNodeAttribute, getAllNodes } from '../xml/xmlParser.ts';
+import type { Resource } from '../../types/manifest.ts';
+import { logDebug } from '../../utils/logger.ts';
 
-export function parseResources(resourcesNode: Element | null): ResourceData[] {
-  console.log('Parsing resources from node:', resourcesNode?.outerHTML);
+export function parseResources(resourcesNode: any): Resource[] {
+  logDebug('Parsing resources from node:', resourcesNode);
   
   if (!resourcesNode) {
-    console.log('No resources node found');
+    logDebug('No resources node found');
     return [];
   }
 
   try {
     const resourceNodes = getAllNodes(resourcesNode, 'resource');
-    console.log(`Found ${resourceNodes.length} resource nodes`);
+    logDebug(`Found ${resourceNodes.length} resource nodes`);
 
     const resources = resourceNodes.map(resource => {
-      console.log('Parsing resource:', resource.outerHTML);
+      logDebug('Parsing resource:', resource);
       
-      const parsed: ResourceData = {
+      const parsed: Resource = {
         identifier: getNodeAttribute(resource, 'identifier') || '',
         type: getNodeAttribute(resource, 'type') || '',
         href: getNodeAttribute(resource, 'href'),
@@ -25,24 +26,25 @@ export function parseResources(resourcesNode: Element | null): ResourceData[] {
         files: parseFiles(resource)
       };
 
-      console.log('Parsed resource:', parsed);
+      logDebug('Parsed resource:', parsed);
       return parsed;
     });
 
-    console.log(`Successfully parsed ${resources.length} resources`);
+    logDebug(`Successfully parsed ${resources.length} resources`);
     return resources;
   } catch (error) {
-    console.error('Error parsing resources:', error);
+    logDebug('Error parsing resources:', error);
     return [];
   }
 }
 
-function parseFiles(resource: Element): string[] {
+function parseFiles(resource: any): { href: string; type?: string }[] {
   const fileNodes = getAllNodes(resource, 'file');
-  const files = fileNodes
-    .map(file => getNodeAttribute(file, 'href'))
-    .filter(Boolean) as string[];
+  const files = fileNodes.map(file => ({
+    href: getNodeAttribute(file, 'href') || '',
+    type: getNodeAttribute(file, 'type')
+  })).filter(file => file.href);
   
-  console.log(`Parsed ${files.length} files for resource`);
+  logDebug(`Parsed ${files.length} files for resource`);
   return files;
 }

@@ -1,11 +1,12 @@
-import { getNodeText } from './xmlParser.ts';
-import type { ScormManifest } from '../../types/parser.ts';
+import { getNodeText } from '../xml/xmlParser.ts';
+import type { MetadataResult } from '../../types/manifest.ts';
+import { logDebug } from '../../utils/logger.ts';
 
-export function parseMetadata(metadataNode: Element | null): Partial<ScormManifest['metadata']> {
-  console.log('Parsing metadata from node:', metadataNode?.outerHTML);
+export function parseMetadata(metadataNode: any): MetadataResult {
+  logDebug('Parsing metadata from node:', metadataNode);
   
   if (!metadataNode) {
-    console.log('No metadata node found');
+    logDebug('No metadata node found');
     return {};
   }
 
@@ -35,6 +36,6 @@ export function parseMetadata(metadataNode: Element | null): Partial<ScormManife
     result[key] === undefined && delete result[key]
   );
 
-  console.log('Parsed metadata:', result);
+  logDebug('Parsed metadata:', result);
   return result;
 }
