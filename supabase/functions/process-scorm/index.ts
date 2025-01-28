@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { corsHeaders } from '../_shared/cors.ts'
-import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
+import { parse } from "https://deno.land/x/xml_parser/mod.ts";
 
 console.log('Process SCORM function started');
 
@@ -33,86 +33,79 @@ async function parseManifest(xmlString: string): Promise<ManifestData> {
   console.log('First 500 chars:', xmlString.substring(0, 500));
 
   try {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlString, "application/xml");
+    const parsedXml = parse(xmlString);
+    console.log('Parsed XML structure:', JSON.stringify(parsedXml, null, 2));
 
-    if (!xmlDoc) {
+    if (!parsedXml) {
       console.error('Failed to parse XML document');
       throw new Error('Failed to parse XML document');
     }
 
-    // Check for XML parsing errors
-    const parseError = xmlDoc.querySelector('parsererror');
-    if (parseError) {
-      console.error('XML Parse Error:', parseError.textContent);
-      throw new Error(`Invalid XML format in manifest: ${parseError.textContent}`);
+    // Get the manifest element (root)
+    const manifestElement = parsedXml.root;
+    if (!manifestElement || manifestElement.name !== 'manifest') {
+      throw new Error('Invalid manifest: No manifest element found');
     }
 
-    const manifestElement = xmlDoc.documentElement;
-    console.log('Manifest element tag name:', manifestElement.tagName);
+    console.log('Manifest element:', manifestElement);
 
-    // Detect SCORM version
-    const metadata = manifestElement.querySelector('metadata');
-    const schema = metadata?.querySelector('schema')?.textContent;
-    console.log('Schema found:', schema);
-
-    let scormVersion = 'SCORM 1.2'; // Default
-    if (schema?.includes('2004')) {
-      scormVersion = 'SCORM 2004';
+    // Detect SCORM version from metadata or namespace
+    let scormVersion = 'SCORM 1.2'; // Default version
+    const metadata = manifestElement.children?.find((child: any) => child.name === 'metadata');
+    
+    if (metadata) {
+      const schema = metadata.children?.find((child: any) => 
+        child.name === 'schema' || child.name === 'lom:schema'
+      )?.content;
+      
+      console.log('Schema found in metadata:', schema);
+      if (schema?.includes('2004')) {
+        scormVersion = 'SCORM 2004';
+      }
     }
-    console.log('Detected SCORM version:', scormVersion);
 
-    // Get title (try multiple possible locations)
-    const title = manifestElement.querySelector('organization > title')?.textContent ||
-                 manifestElement.querySelector('organizations > organization > title')?.textContent ||
-                 manifestElement.querySelector('metadata > title')?.textContent ||
-                 'Untitled Course';
-    console.log('Title found:', title);
+    // Parse title with multiple fallbacks
+    const title = findFirstContent(manifestElement, [
+      'organizations.organization.title',
+      'metadata.title',
+      'title'
+    ]) || 'Untitled Course';
+    console.log('Parsed title:', title);
 
     // Parse organizations
-    const organizationsElement = manifestElement.querySelector('organizations');
+    const organizationsElement = findFirstChild(manifestElement, 'organizations');
     const organizations = {
-      default: organizationsElement?.getAttribute('default') || '',
-      items: [] as Array<{ identifier: string; title: string; resourceId?: string; }>
+      default: organizationsElement?.attributes?.default || '',
+      items: []
     };
 
-    const orgElements = organizationsElement?.querySelectorAll('organization');
-    if (orgElements) {
-      console.log('Found organizations:', orgElements.length);
-      orgElements.forEach(org => {
-        const orgItem = {
-          identifier: org.getAttribute('identifier') || '',
-          title: org.querySelector('title')?.textContent || '',
-          resourceId: org.getAttribute('identifierref')
-        };
-        organizations.items.push(orgItem);
-        console.log('Parsed organization:', orgItem);
-      });
+    if (organizationsElement?.children) {
+      const orgElements = organizationsElement.children.filter((child: any) => 
+        child.name === 'organization'
+      );
+
+      organizations.items = orgElements.map((org: any) => ({
+        identifier: org.attributes?.identifier || '',
+        title: findFirstContent(org, ['title']) || '',
+        resourceId: org.attributes?.identifierref
+      }));
     }
+
+    console.log('Parsed organizations:', organizations);
 
     // Parse resources
-    const resources: Array<{
-      identifier: string;
-      type: string;
-      href?: string;
-      scormType?: string;
-    }> = [];
+    const resourcesElement = findFirstChild(manifestElement, 'resources');
+    const resources = resourcesElement?.children
+      ?.filter((child: any) => child.name === 'resource')
+      .map((resource: any) => ({
+        identifier: resource.attributes?.identifier || '',
+        type: resource.attributes?.type || '',
+        href: resource.attributes?.href,
+        scormType: resource.attributes?.['adlcp:scormtype'] || 
+                  resource.attributes?.scormType
+      })) || [];
 
-    const resourceElements = manifestElement.querySelectorAll('resource');
-    if (resourceElements) {
-      console.log('Found resources:', resourceElements.length);
-      resourceElements.forEach(resource => {
-        const resourceItem = {
-          identifier: resource.getAttribute('identifier') || '',
-          type: resource.getAttribute('type') || '',
-          href: resource.getAttribute('href'),
-          scormType: resource.getAttribute('adlcp:scormtype') || 
-                    resource.getAttribute('scormType')
-        };
-        resources.push(resourceItem);
-        console.log('Parsed resource:', resourceItem);
-      });
-    }
+    console.log('Parsed resources:', resources);
 
     // Find starting page
     let startingPage: string | undefined;
@@ -144,7 +137,9 @@ async function parseManifest(xmlString: string): Promise<ManifestData> {
       status: 'processed',
       startingPage,
       metadata: {
-        schema,
+        schema: metadata?.children?.find((child: any) => 
+          child.name === 'schema'
+        )?.content
       },
       organizations,
       resources
@@ -157,6 +152,29 @@ async function parseManifest(xmlString: string): Promise<ManifestData> {
     console.error('Error parsing manifest:', error);
     throw new Error(`Failed to parse SCORM manifest: ${error.message}`);
   }
+}
+
+// Helper function to find first matching content in nested structure
+function findFirstContent(element: any, paths: string[]): string | undefined {
+  for (const path of paths) {
+    const parts = path.split('.');
+    let current = element;
+    
+    for (const part of parts) {
+      current = current?.children?.find((child: any) => child.name === part);
+      if (!current) break;
+    }
+    
+    if (current?.content) {
+      return current.content;
+    }
+  }
+  return undefined;
+}
+
+// Helper function to find first child by name
+function findFirstChild(element: any, name: string): any {
+  return element?.children?.find((child: any) => child.name === name);
 }
 
 serve(async (req) => {
