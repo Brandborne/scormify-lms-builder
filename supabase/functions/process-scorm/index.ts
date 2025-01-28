@@ -30,11 +30,11 @@ interface ManifestData {
 
 async function parseManifest(xmlString: string): Promise<ManifestData> {
   console.log('Parsing manifest XML, length:', xmlString.length);
-  console.log('First 500 chars of manifest:', xmlString.substring(0, 500));
+  console.log('First 500 chars:', xmlString.substring(0, 500));
 
   try {
     const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+    const xmlDoc = parser.parseFromString(xmlString, "application/xml");
 
     if (!xmlDoc) {
       console.error('Failed to parse XML document');
