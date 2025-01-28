@@ -86,11 +86,20 @@ serve(async (req) => {
       title: findValue(xmlDoc, 'organization > title') || course.title,
       description: findValue(xmlDoc, 'description'),
       version: findValue(xmlDoc, 'schemaversion'),
-      scormVersion: 
-        findValue(xmlDoc, 'metadata > schema')?.includes('2004') 
-          ? 'SCORM 2004' 
-          : 'SCORM 1.2',
-      startingPage: findStartingPage(xmlDoc)
+      scormVersion: findValue(xmlDoc, 'metadata > schema')?.includes('2004') 
+        ? 'SCORM 2004' 
+        : 'SCORM 1.2',
+      startingPage: findStartingPage(xmlDoc),
+      organizations: extractOrganizations(xmlDoc),
+      resources: extractResources(xmlDoc),
+      prerequisites: extractPrerequisites(xmlDoc),
+      metadata: {
+        schema: findValue(xmlDoc, 'metadata > schema'),
+        schemaVersion: findValue(xmlDoc, 'metadata > schemaversion'),
+        location: findValue(xmlDoc, 'metadata > location'),
+        rights: findValue(xmlDoc, 'metadata > rights'),
+        minimumSCORMVersion: findValue(xmlDoc, 'metadata > minimumSCORMVersion')
+      }
     }
 
     console.log('Parsed manifest info:', manifestInfo)
@@ -145,6 +154,81 @@ function findValue(xmlDoc: any, path: string): string | undefined {
   }
   
   return current?.['$text'] || undefined
+}
+
+// Helper function to extract organizations structure
+function extractOrganizations(xmlDoc: any): any {
+  const organizations = xmlDoc.organizations
+  if (!organizations) return undefined
+
+  const result = {
+    default: organizations['$default'] || '',
+    items: []
+  }
+
+  const orgs = organizations.organization
+  if (Array.isArray(orgs)) {
+    result.items = orgs.map(org => ({
+      identifier: org['$identifier'] || '',
+      title: org.title?.['$text'] || '',
+      items: extractItems(org.item)
+    }))
+  } else if (orgs) {
+    result.items = [{
+      identifier: orgs['$identifier'] || '',
+      title: orgs.title?.['$text'] || '',
+      items: extractItems(orgs.item)
+    }]
+  }
+
+  return result
+}
+
+// Helper function to extract items recursively
+function extractItems(items: any): any[] {
+  if (!items) return []
+  
+  const itemArray = Array.isArray(items) ? items : [items]
+  return itemArray.map(item => ({
+    identifier: item['$identifier'] || '',
+    title: item.title?.['$text'] || '',
+    launch: item['$identifierref'],
+    items: extractItems(item.item)
+  }))
+}
+
+// Helper function to extract resources
+function extractResources(xmlDoc: any): any[] {
+  const resources = xmlDoc.resources?.resource
+  if (!resources) return []
+
+  const resourceArray = Array.isArray(resources) ? resources : [resources]
+  return resourceArray.map(resource => ({
+    identifier: resource['$identifier'] || '',
+    type: resource['$type'] || '',
+    href: resource['$href'],
+    dependencies: extractDependencies(resource.dependency)
+  }))
+}
+
+// Helper function to extract dependencies
+function extractDependencies(dependencies: any): string[] {
+  if (!dependencies) return []
+  
+  const depArray = Array.isArray(dependencies) ? dependencies : [dependencies]
+  return depArray.map(dep => dep['$identifierref']).filter(Boolean)
+}
+
+// Helper function to extract prerequisites
+function extractPrerequisites(xmlDoc: any): string[] {
+  const prerequisites = xmlDoc.prerequisites
+  if (!prerequisites) return []
+  
+  if (Array.isArray(prerequisites)) {
+    return prerequisites.map(p => p['$text']).filter(Boolean)
+  }
+  
+  return prerequisites['$text'] ? [prerequisites['$text']] : []
 }
 
 // Helper function to find the starting page
