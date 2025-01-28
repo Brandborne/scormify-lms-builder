@@ -37,6 +37,11 @@ serve(async (req) => {
     const zipContent = await JSZip.loadAsync(fileData, { base64: true })
     console.log('Loaded zip content')
 
+    // Find the root folder name (if any)
+    const paths = Object.keys(zipContent.files)
+    const rootFolder = paths.length > 0 ? paths[0].split('/')[0] : ''
+    console.log('Root folder detected:', rootFolder)
+
     // Process each file in the zip
     for (const [relativePath, file] of Object.entries(zipContent.files)) {
       // Skip directories and macOS system files
@@ -46,8 +51,13 @@ serve(async (req) => {
 
       try {
         const content = await file.async('arraybuffer')
-        const filePath = `${course.course_files_path}/${relativePath}`
         
+        // Remove the root folder from the path if it exists
+        const finalPath = rootFolder 
+          ? relativePath.replace(`${rootFolder}/`, '')
+          : relativePath
+        
+        const filePath = `${course.course_files_path}/${finalPath}`
         console.log('Uploading file:', filePath)
 
         const { error: uploadError } = await supabaseClient
