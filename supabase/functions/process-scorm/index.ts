@@ -13,59 +13,63 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  console.log('Received request:', req.method)
+  console.log('Received request:', req.method);
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('Handling OPTIONS request')
+    console.log('Handling OPTIONS request');
     return new Response(null, { 
       headers: corsHeaders,
       status: 204
-    })
+    });
   }
 
   try {
-    const body = await req.json().catch(() => null)
-    if (!body || !body.courseId) {
-      console.error('Invalid request: Missing courseId')
-      throw new Error('Invalid request: courseId is required')
+    const body = await req.json().catch(() => null);
+    if (!body?.courseId) {
+      console.error('Invalid request: Missing courseId');
+      throw new Error('Invalid request: courseId is required');
     }
 
-    const courseId = body.courseId
-    console.log('Processing course:', courseId)
+    const courseId = body.courseId;
+    console.log('Processing course:', courseId);
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!supabaseUrl || !supabaseKey) {
-      console.error('Missing required environment variables')
-      throw new Error('Missing required environment variables')
+      console.error('Missing required environment variables');
+      throw new Error('Missing required environment variables');
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get course details
     const { data: course, error: courseError } = await supabase
       .from('courses')
       .select('*')
       .eq('id', courseId)
-      .single()
+      .single();
 
     if (courseError || !course) {
-      console.error('Error fetching course:', courseError)
-      throw new Error('Course not found')
+      console.error('Error fetching course:', courseError);
+      throw new Error('Course not found');
     }
 
-    console.log('Downloading zip file:', course.original_zip_path)
-    const zipBuffer = await downloadZipFile(supabase, course.original_zip_path)
+    console.log('Downloading zip file:', course.original_zip_path);
+    const zipBuffer = await downloadZipFile(supabase, course.original_zip_path);
     
-    console.log('Loading zip content')
-    const zip = await JSZip.loadAsync(zipBuffer)
+    console.log('Loading zip content');
+    const zip = await JSZip.loadAsync(zipBuffer);
     
-    console.log('Processing zip content')
-    const { indexHtmlPath, originalIndexPath, manifestData } = await processZipContent(zip, supabase, courseId)
+    console.log('Processing zip content');
+    const { indexHtmlPath, originalIndexPath, manifestData } = await processZipContent(
+      zip, 
+      supabase, 
+      courseId
+    );
 
-    // Update course with manifest data
+    // Update course with manifest data and processing status
     const { error: updateError } = await supabase
       .from('courses')
       .update({
@@ -76,23 +80,24 @@ serve(async (req) => {
           original_index_path: originalIndexPath
         }
       })
-      .eq('id', courseId)
+      .eq('id', courseId);
 
     if (updateError) {
-      console.error('Error updating course:', updateError)
-      throw new Error('Failed to update course manifest data')
+      console.error('Error updating course:', updateError);
+      throw new Error('Failed to update course manifest data');
     }
 
+    console.log('Successfully processed SCORM package');
     return new Response(
       JSON.stringify({ 
         message: 'SCORM package processed successfully',
         manifestData
       }),
       { headers: corsHeaders }
-    )
+    );
 
   } catch (error) {
-    console.error('Error processing SCORM package:', error)
+    console.error('Error processing SCORM package:', error);
     
     return new Response(
       JSON.stringify({
@@ -102,6 +107,6 @@ serve(async (req) => {
         headers: corsHeaders,
         status: 500
       }
-    )
+    );
   }
-})
+});

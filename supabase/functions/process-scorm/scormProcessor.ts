@@ -12,10 +12,8 @@ export async function processZipContent(
   originalIndexPath: string | null;
   manifestData: any;
 }> {
-  let indexHtmlPath = null;
-  let originalIndexPath = null;
-  let manifestData = null;
-
+  console.log('Starting SCORM package processing...');
+  
   const courseFilesPath = `Courses/${courseId}/course_files`;
   console.log('Base course files directory path:', courseFilesPath);
 
@@ -32,39 +30,33 @@ export async function processZipContent(
 
   console.log('Found manifest at:', manifestFile);
   const manifestContent = await zip.files[manifestFile].async('text');
-  manifestData = await parseManifest(manifestContent);
+  const manifestData = await parseManifest(manifestContent);
   console.log('Parsed manifest data:', manifestData);
 
-  // Get all files from the zip
-  const files = Object.keys(zip.files);
-  console.log('Total files in zip:', files.length);
+  let indexHtmlPath = null;
+  let originalIndexPath = null;
 
   // Process each file in the zip, maintaining folder structure
-  for (const relativePath of files) {
+  for (const relativePath of Object.keys(zip.files)) {
     const file = zip.files[relativePath];
     
-    // Skip directories and macOS metadata files
+    // Skip directories and macOS metadata
     if (file.dir || relativePath.startsWith('__MACOSX/') || relativePath.includes('/._')) {
       console.log('Skipping directory or metadata file:', relativePath);
       continue;
     }
 
-    console.log('Processing file:', relativePath);
-
     try {
       // Remove any potential parent folder from the zip structure
       const pathParts = relativePath.split('/');
-      // Skip the first folder level if it exists
       const cleanPath = pathParts.length > 1 ? pathParts.slice(1).join('/') : relativePath;
-      
-      // Construct the final path without the zip name folder
       const originalPath = `${courseFilesPath}/${cleanPath}`;
+
+      console.log('Processing file:', cleanPath);
       console.log('Target storage path:', originalPath);
 
-      // Get file content as ArrayBuffer
+      // Get file content and upload
       const content = await file.async('arraybuffer');
-
-      // Upload the file with its exact path structure
       await uploadFile(supabase, originalPath, content);
       console.log('Successfully uploaded file to:', originalPath);
 
@@ -72,7 +64,7 @@ export async function processZipContent(
       if (manifestData.startingPage && cleanPath.endsWith(manifestData.startingPage)) {
         originalIndexPath = originalPath;
         indexHtmlPath = originalPath;
-        console.log('Found starting page at:', originalPath);
+        console.log('Found manifest-specified starting page at:', originalPath);
       }
       // Fallback to index.html if no starting page specified
       else if (!indexHtmlPath && cleanPath.toLowerCase().endsWith('index.html')) {
@@ -86,10 +78,8 @@ export async function processZipContent(
     }
   }
 
-  if (!originalIndexPath) {
-    console.warn('No index.html found in the SCORM package');
-  } else {
-    console.log('Final index.html path:', originalIndexPath);
+  if (!indexHtmlPath) {
+    console.warn('No index.html or starting page found in the SCORM package');
   }
 
   return { indexHtmlPath, originalIndexPath, manifestData };
