@@ -4,7 +4,6 @@ import { corsHeaders } from '../_shared/cors.ts'
 import { parse as parseXML } from 'https://deno.land/x/xml@2.1.1/mod.ts'
 
 serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -17,13 +16,11 @@ serve(async (req) => {
       throw new Error('Course ID is required')
     }
 
-    // Initialize Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Get course data
     const { data: course, error: courseError } = await supabaseClient
       .from('courses')
       .select('*')
@@ -37,7 +34,6 @@ serve(async (req) => {
 
     console.log('Found course:', course.title)
 
-    // List files in the course directory
     const { data: files, error: listError } = await supabaseClient
       .storage
       .from('scorm_packages')
@@ -50,7 +46,6 @@ serve(async (req) => {
 
     console.log('Files in course directory:', files.map(f => f.name))
 
-    // Find manifest file (case-insensitive)
     const manifestFile = files.find(file => 
       file.name.toLowerCase() === 'imsmanifest.xml'
     )
@@ -62,7 +57,6 @@ serve(async (req) => {
 
     console.log('Found manifest file:', manifestFile.name)
 
-    // Download manifest file
     const { data: manifestData, error: downloadError } = await supabaseClient
       .storage
       .from('scorm_packages')
@@ -73,19 +67,18 @@ serve(async (req) => {
       throw downloadError
     }
 
-    // Parse manifest content
     const manifestContent = await manifestData.text()
     console.log('Manifest content length:', manifestContent.length)
 
-    // Parse XML using Deno's XML parser
     const xmlDoc = parseXML(manifestContent)
     console.log('Successfully parsed XML')
 
-    // Extract manifest data
+    // Extract manifest data with enhanced information
     const manifestInfo = {
       title: findValue(xmlDoc, 'organization > title') || course.title,
       description: findValue(xmlDoc, 'description'),
       version: findValue(xmlDoc, 'schemaversion'),
+      status: 'processed',
       scormVersion: findValue(xmlDoc, 'metadata > schema')?.includes('2004') 
         ? 'SCORM 2004' 
         : 'SCORM 1.2',
@@ -98,22 +91,25 @@ serve(async (req) => {
         schemaVersion: findValue(xmlDoc, 'metadata > schemaversion'),
         location: findValue(xmlDoc, 'metadata > location'),
         rights: findValue(xmlDoc, 'metadata > rights'),
-        minimumSCORMVersion: findValue(xmlDoc, 'metadata > minimumSCORMVersion')
+        minimumSCORMVersion: findValue(xmlDoc, 'metadata > minimumSCORMVersion'),
+        masteryCriteria: findValue(xmlDoc, 'adlcp:masteryscore'),
+        maxTimeAllowed: findValue(xmlDoc, 'adlcp:maxtimeallowed'),
+        timeLimitAction: findValue(xmlDoc, 'adlcp:timelimitaction'),
+        dataFromLMS: findValue(xmlDoc, 'adlcp:datafromlms'),
+        completionThreshold: findValue(xmlDoc, 'adlcp:completionthreshold'),
+        objectives: extractObjectives(xmlDoc),
+        sequencing: extractSequencing(xmlDoc)
       }
     }
 
     console.log('Parsed manifest info:', manifestInfo)
 
-    // Update course with manifest data
     const { error: updateError } = await supabaseClient
       .from('courses')
       .update({
         title: manifestInfo.title,
         description: manifestInfo.description,
-        manifest_data: {
-          ...manifestInfo,
-          status: 'processed'
-        },
+        manifest_data: manifestInfo,
         processing_stage: 'processed'
       })
       .eq('id', courseId)
@@ -193,6 +189,12 @@ function extractItems(items: any): any[] {
     identifier: item['$identifier'] || '',
     title: item.title?.['$text'] || '',
     launch: item['$identifierref'],
+    prerequisites: item['$prerequisites'],
+    masteryScore: item['$masteryscore'],
+    maxTimeAllowed: item['$maxtimeallowed'],
+    timeLimitAction: item['$timelimitaction'],
+    dataFromLMS: item['$datafromlms'],
+    completionThreshold: item['$completionthreshold'],
     items: extractItems(item.item)
   }))
 }
@@ -207,8 +209,18 @@ function extractResources(xmlDoc: any): any[] {
     identifier: resource['$identifier'] || '',
     type: resource['$type'] || '',
     href: resource['$href'],
-    dependencies: extractDependencies(resource.dependency)
+    scormType: resource['$scormtype'],
+    dependencies: extractDependencies(resource.dependency),
+    files: extractFiles(resource.file)
   }))
+}
+
+// Helper function to extract files
+function extractFiles(files: any): string[] {
+  if (!files) return []
+  
+  const fileArray = Array.isArray(files) ? files : [files]
+  return fileArray.map(file => file['$href']).filter(Boolean)
 }
 
 // Helper function to extract dependencies
@@ -231,14 +243,62 @@ function extractPrerequisites(xmlDoc: any): string[] {
   return prerequisites['$text'] ? [prerequisites['$text']] : []
 }
 
+// Helper function to extract objectives
+function extractObjectives(xmlDoc: any): any[] {
+  const objectives = xmlDoc.objectives?.objective
+  if (!objectives) return []
+
+  const objArray = Array.isArray(objectives) ? objectives : [objectives]
+  return objArray.map(obj => ({
+    id: obj['$identifier'],
+    primaryObjective: obj['$primaryobjective'] === 'true',
+    satisfiedByMeasure: obj['$satisfiedbymeasure'] === 'true',
+    minNormalizedMeasure: obj.minnormalizedmeasure?.['$text'],
+    description: obj.description?.['$text']
+  }))
+}
+
+// Helper function to extract sequencing information
+function extractSequencing(xmlDoc: any): any {
+  const sequencing = xmlDoc.sequencing
+  if (!sequencing) return undefined
+
+  return {
+    controlMode: {
+      choice: sequencing.controlmode?.['$choice'] === 'true',
+      choiceExit: sequencing.controlmode?.['$choiceexit'] === 'true',
+      flow: sequencing.controlmode?.['$flow'] === 'true',
+      forwardOnly: sequencing.controlmode?.['$forwardonly'] === 'true'
+    },
+    limitConditions: {
+      attemptLimit: sequencing.limitconditions?.['$attemptlimit'],
+      attemptAbsoluteDurationLimit: sequencing.limitconditions?.['$attemptabsolutedurationlimit']
+    },
+    rollupRules: extractRollupRules(sequencing.rollupRules)
+  }
+}
+
+// Helper function to extract rollup rules
+function extractRollupRules(rules: any): any[] {
+  if (!rules) return []
+
+  const ruleArray = Array.isArray(rules.rollupRule) ? rules.rollupRule : [rules.rollupRule]
+  return ruleArray.map(rule => ({
+    childActivitySet: rule['$childactivityset'],
+    minimumCount: rule['$minimumcount'],
+    minimumPercent: rule['$minimumpercent'],
+    action: rule.rollupaction?.['$action']
+  }))
+}
+
 // Helper function to find the starting page
 function findStartingPage(xmlDoc: any): string | undefined {
   // Try to find it in resources
   const resources = xmlDoc.resources?.resource
   if (Array.isArray(resources)) {
-    const resource = resources.find((r: any) => r['$href'])
+    const resource = resources.find((r: any) => r['$href'] && r['$scormtype'] === 'sco')
     if (resource) return resource['$href']
-  } else if (resources?.['$href']) {
+  } else if (resources?.['$href'] && resources?.['$scormtype'] === 'sco') {
     return resources['$href']
   }
 
