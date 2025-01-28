@@ -1,3 +1,29 @@
+export interface ControlMode {
+  choice: boolean;
+  flow: boolean;
+  forwardOnly?: boolean;
+}
+
+export interface DeliveryControls {
+  completionSetByContent: boolean;
+  objectiveSetByContent: boolean;
+}
+
+export interface SequencingRule {
+  conditions: Array<{
+    type: string;
+    operator: string;
+    value: string;
+  }>;
+  action: string;
+}
+
+export interface SequencingData {
+  controlMode?: ControlMode;
+  deliveryControls?: DeliveryControls;
+  rules?: SequencingRule[];
+}
+
 export interface MetadataResult {
   schema?: string;
   schemaVersion?: string;
@@ -50,27 +76,7 @@ export interface ObjectiveData {
   }>;
 }
 
-export interface SequencingData {
-  controlMode?: {
-    choice: boolean;
-    flow: boolean;
-    forwardOnly?: boolean;
-  };
-  deliveryControls?: {
-    completionSetByContent: boolean;
-    objectiveSetByContent: boolean;
-  };
-  rules?: Array<{
-    conditions: Array<{
-      type: string;
-      operator: string;
-      value: string;
-    }>;
-    action: string;
-  }>;
-}
-
-export interface ManifestResult {
+export interface ManifestData {
   title?: string;
   version?: string;
   scormVersion: string;

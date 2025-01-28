@@ -1,7 +1,13 @@
-import { SequencingData, ControlMode, DeliveryControls, SequencingRules } from './types';
+import { ControlMode, DeliveryControls, SequencingData } from './types';
+import { logDebug } from '../../../utils/logger';
 
 export function parseSequencing(sequencingNode: any): SequencingData {
-  if (!sequencingNode) return {};
+  logDebug('Parsing sequencing from node:', sequencingNode);
+  
+  if (!sequencingNode) {
+    logDebug('No sequencing node found');
+    return {};
+  }
 
   const controlMode = sequencingNode['imsss:controlMode']?.[0];
   const deliveryControls = sequencingNode['imsss:deliveryControls']?.[0];
@@ -17,7 +23,7 @@ export function parseSequencing(sequencingNode: any): SequencingData {
     objectiveSetByContent: deliveryControls['$objectiveSetByContent'] === 'true'
   } : undefined;
 
-  const rules: SequencingRules[] = sequencingNode['imsss:sequencingRules']?.map((rule: any) => ({
+  const rules = sequencingNode['imsss:sequencingRules']?.map((rule: any) => ({
     conditions: rule.conditions?.map((condition: any) => ({
       type: condition['$type'] || '',
       operator: condition['$operator'] || '',
