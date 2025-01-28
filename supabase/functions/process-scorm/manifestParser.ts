@@ -1,16 +1,14 @@
 import { parse as parseXML } from 'https://deno.land/x/xml@2.1.1/mod.ts'
 
 export interface ScormManifest {
-  identifier?: string;
-  version?: string;
   title?: string;
-  description?: string;
-  startingPage?: string;
+  version?: string;
   scormVersion?: string;
+  status?: string;
   metadata: {
     schema?: string;
     schemaVersion?: string;
-    objectives: {
+    objectives?: {
       primary?: {
         id: string;
         satisfiedByMeasure: boolean;
@@ -38,6 +36,22 @@ export interface ScormManifest {
       identifier: string;
       title: string;
       resourceId?: string;
+      objectives?: {
+        primary?: {
+          id: string;
+          satisfiedByMeasure: boolean;
+          minNormalizedMeasure: number;
+        };
+        secondary: Array<{
+          id: string;
+        }>;
+      };
+      sequencing?: {
+        deliveryControls?: {
+          completionSetByContent: boolean;
+          objectiveSetByContent: boolean;
+        };
+      };
     }>;
   };
   resources: Array<{
@@ -65,160 +79,96 @@ export async function parseManifest(xmlString: string): Promise<ScormManifest> {
     const defaultOrg = organizations?.['@default'];
     const organization = findNode(organizations, 'organization');
 
-    // Extract title
+    // Extract title and items from organization
     const title = findValue(organization, 'title');
+    const items = organization?.item ? (Array.isArray(organization.item) ? organization.item : [organization.item]) : [];
 
-    // Extract objectives
-    const sequencingNode = findNode(organization, 'sequencing') || findNode(findNode(organization, 'item'), 'sequencing');
-    const objectivesNode = sequencingNode ? findNode(sequencingNode, 'objectives') : null;
-    
-    const objectives = {
-      primary: extractPrimaryObjective(objectivesNode),
-      secondary: extractSecondaryObjectives(objectivesNode)
-    };
+    // Process items to extract objectives and sequencing
+    const processedItems = items.map(item => {
+      const itemSequencing = findNode(item, 'sequencing');
+      const objectives = findNode(itemSequencing, 'objectives');
+      
+      const primaryObjective = objectives?.primaryObjective ? {
+        id: objectives.primaryObjective['@objectiveID'],
+        satisfiedByMeasure: objectives.primaryObjective['@satisfiedByMeasure'] === 'true',
+        minNormalizedMeasure: parseFloat(findValue(objectives.primaryObjective, 'minNormalizedMeasure') || '0')
+      } : undefined;
 
-    // Extract sequencing information
-    const sequencing = {
-      controlMode: extractControlMode(sequencingNode),
-      deliveryControls: extractDeliveryControls(sequencingNode)
-    };
+      const secondaryObjectives = objectives?.objective ? 
+        (Array.isArray(objectives.objective) ? objectives.objective : [objectives.objective])
+          .map(obj => ({
+            id: obj['@objectiveID']
+          })) : [];
+
+      const deliveryControls = itemSequencing?.deliveryControls ? {
+        completionSetByContent: itemSequencing.deliveryControls['@completionSetByContent'] === 'true',
+        objectiveSetByContent: itemSequencing.deliveryControls['@objectiveSetByContent'] === 'true'
+      } : undefined;
+
+      return {
+        identifier: item['@identifier'],
+        title: findValue(item, 'title'),
+        resourceId: item['@identifierref'],
+        objectives: {
+          primary: primaryObjective,
+          secondary: secondaryObjectives
+        },
+        sequencing: {
+          deliveryControls
+        }
+      };
+    });
 
     // Extract resources
-    const resources = extractResources(manifest.resources);
+    const resources = manifest.resources?.resource ? 
+      (Array.isArray(manifest.resources.resource) ? manifest.resources.resource : [manifest.resources.resource])
+        .map(resource => ({
+          identifier: resource['@identifier'],
+          type: resource['@type'],
+          href: resource['@href'],
+          scormType: resource['@scormType'],
+          files: resource.file ? 
+            (Array.isArray(resource.file) ? resource.file : [resource.file])
+              .map(file => file['@href'])
+            : []
+        })) : [];
 
-    // Find starting page
-    const startingPage = findStartingPage(resources);
+    // Extract sequencing from organization
+    const orgSequencing = findNode(organization, 'sequencing');
+    const controlMode = orgSequencing?.controlMode ? {
+      choice: orgSequencing.controlMode['@choice'] === 'true',
+      flow: orgSequencing.controlMode['@flow'] === 'true'
+    } : undefined;
 
     console.log('Successfully parsed manifest:', {
       title,
-      metadata: { schema, schemaVersion, objectives, sequencing },
-      organizations: { default: defaultOrg, items: extractOrganizationItems(organization) },
+      metadata: { schema, schemaVersion },
+      organizations: { default: defaultOrg, items: processedItems },
       resources,
-      startingPage
+      sequencing: { controlMode }
     });
 
     return {
       title,
       scormVersion: determineScormVersion(schema, schemaVersion),
+      status: 'processed',
       metadata: {
         schema,
         schemaVersion,
-        objectives,
-        sequencing
+        sequencing: {
+          controlMode
+        }
       },
       organizations: {
         default: defaultOrg || '',
-        items: extractOrganizationItems(organization)
+        items: processedItems
       },
-      resources,
-      startingPage
+      resources
     };
   } catch (error) {
     console.error('Error parsing manifest:', error);
     throw new Error('Failed to parse SCORM manifest: ' + error.message);
   }
-}
-
-function extractPrimaryObjective(objectivesNode: any) {
-  if (!objectivesNode) return undefined;
-
-  const primaryObj = findNode(objectivesNode, 'primaryObjective');
-  if (!primaryObj) return undefined;
-
-  return {
-    id: primaryObj['@objectiveID'] || '',
-    satisfiedByMeasure: primaryObj['@satisfiedByMeasure'] === 'true',
-    minNormalizedMeasure: parseFloat(findValue(primaryObj, 'minNormalizedMeasure') || '0')
-  };
-}
-
-function extractSecondaryObjectives(objectivesNode: any): Array<{ id: string; description?: string }> {
-  if (!objectivesNode) return [];
-
-  const objectives = findNodes(objectivesNode, 'objective');
-  return objectives
-    .filter(obj => !obj['@primary'])
-    .map(obj => ({
-      id: obj['@objectiveID'] || '',
-      description: obj['description']?.['#text']
-    }));
-}
-
-function extractControlMode(sequencingNode: any) {
-  if (!sequencingNode) return undefined;
-
-  const controlMode = findNode(sequencingNode, 'controlMode');
-  if (!controlMode) return undefined;
-
-  return {
-    choice: controlMode['@choice'] === 'true',
-    flow: controlMode['@flow'] === 'true'
-  };
-}
-
-function extractDeliveryControls(sequencingNode: any) {
-  if (!sequencingNode) return undefined;
-
-  const deliveryControls = findNode(sequencingNode, 'deliveryControls');
-  if (!deliveryControls) return undefined;
-
-  return {
-    completionSetByContent: deliveryControls['@completionSetByContent'] === 'true',
-    objectiveSetByContent: deliveryControls['@objectiveSetByContent'] === 'true'
-  };
-}
-
-function extractResources(resourcesNode: any): Array<{
-  identifier: string;
-  type: string;
-  href?: string;
-  scormType?: string;
-  files: string[];
-}> {
-  if (!resourcesNode) return [];
-
-  const resources = findNodes(resourcesNode, 'resource');
-  return resources.map(resource => ({
-    identifier: resource['@identifier'] || '',
-    type: resource['@type'] || '',
-    href: resource['@href'],
-    scormType: resource['@scormType'],
-    files: extractFiles(resource)
-  }));
-}
-
-function extractFiles(resourceNode: any): string[] {
-  if (!resourceNode) return [];
-
-  const files = findNodes(resourceNode, 'file');
-  return files.map(file => file['@href']).filter(Boolean);
-}
-
-function extractOrganizationItems(organizationNode: any): Array<{
-  identifier: string;
-  title: string;
-  resourceId?: string;
-}> {
-  if (!organizationNode) return [];
-
-  const items = findNodes(organizationNode, 'item');
-  return items.map(item => ({
-    identifier: item['@identifier'] || '',
-    title: findValue(item, 'title') || '',
-    resourceId: item['@identifierref']
-  }));
-}
-
-function findStartingPage(resources: any[]): string | undefined {
-  const mainResource = resources.find(r => r.scormType?.toLowerCase() === 'sco');
-  return mainResource?.href;
-}
-
-function determineScormVersion(schema?: string, schemaVersion?: string): string {
-  if (schema?.includes('2004') || schemaVersion?.includes('2004')) {
-    return 'SCORM 2004';
-  }
-  return 'SCORM 1.2';
 }
 
 // Helper functions
@@ -240,30 +190,6 @@ function findNode(node: any, name: string): any {
   return null;
 }
 
-function findNodes(node: any, name: string): any[] {
-  const results: any[] = [];
-  if (!node) return results;
-  
-  // Check direct properties
-  if (node[name]) {
-    if (Array.isArray(node[name])) {
-      results.push(...node[name]);
-    } else {
-      results.push(node[name]);
-    }
-  }
-  
-  // Check children array
-  if (Array.isArray(node.children)) {
-    for (const child of node.children) {
-      if (child.name === name) results.push(child);
-      results.push(...findNodes(child, name));
-    }
-  }
-  
-  return results;
-}
-
 function findValue(node: any, path: string): string | undefined {
   if (!node) return undefined;
   
@@ -276,4 +202,11 @@ function findValue(node: any, path: string): string | undefined {
   }
   
   return current['#text'] || current;
+}
+
+function determineScormVersion(schema?: string, schemaVersion?: string): string {
+  if (schema?.includes('2004') || schemaVersion?.includes('2004')) {
+    return 'SCORM 2004';
+  }
+  return 'SCORM 1.2';
 }
