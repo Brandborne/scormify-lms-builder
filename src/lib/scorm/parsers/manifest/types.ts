@@ -50,24 +50,40 @@ export interface ObjectiveData {
   }>;
 }
 
-export interface SequencingData {
-  controlMode?: {
-    choice: boolean;
-    flow: boolean;
-    forwardOnly?: boolean;
-  };
-  deliveryControls?: {
-    completionSetByContent: boolean;
-    objectiveSetByContent: boolean;
-  };
-  rules?: Array<{
-    conditions: Array<{
-      type: string;
-      operator: string;
-      value: string;
-    }>;
-    action: string;
+export interface ControlMode {
+  choice: boolean;
+  flow: boolean;
+  forwardOnly?: boolean;
+}
+
+export interface DeliveryControls {
+  completionSetByContent: boolean;
+  objectiveSetByContent: boolean;
+}
+
+export interface SequencingRules {
+  conditions: Array<{
+    type: string;
+    operator: string;
+    value: string;
   }>;
+  action: string;
+}
+
+export interface SequencingData {
+  controlMode?: ControlMode;
+  deliveryControls?: DeliveryControls;
+  rules?: SequencingRules[];
+}
+
+export interface ManifestData {
+  scormVersion: string;
+  status: string;
+  metadata: MetadataResult;
+  organizations: OrganizationsResult;
+  resources: Resource[];
+  sequencing?: SequencingData;
+  objectives?: ObjectiveData;
 }
 
 export interface ManifestResult {
