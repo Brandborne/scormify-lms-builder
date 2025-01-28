@@ -105,12 +105,6 @@ export async function parseManifest(xmlString: string): Promise<ScormManifest> {
       startingPage = firstResource?.attributes?.href;
     }
 
-    // Parse prerequisites
-    const prerequisiteNodes = findNodes(xmlDoc, 'prerequisites');
-    const prerequisites = prerequisiteNodes
-      .map(node => node.value)
-      .filter(Boolean);
-
     // Parse resources
     const resources = findNodes(xmlDoc, 'resource').map(resource => ({
       identifier: resource.attributes?.identifier || '',
@@ -125,7 +119,8 @@ export async function parseManifest(xmlString: string): Promise<ScormManifest> {
       scormVersion,
       title,
       startingPage,
-      organizations
+      organizations,
+      resources
     });
 
     return {
@@ -134,7 +129,6 @@ export async function parseManifest(xmlString: string): Promise<ScormManifest> {
       title,
       description,
       startingPage,
-      prerequisites: prerequisites.length > 0 ? prerequisites : undefined,
       organizations,
       resources
     };

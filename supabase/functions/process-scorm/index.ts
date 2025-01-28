@@ -1,9 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-import { parse as parseXML } from 'https://deno.land/x/xml@2.1.1/mod.ts'
-import { corsHeaders } from '../_shared/cors.ts'
-import { processZipContent } from './scormProcessor.ts'
 import JSZip from 'https://esm.sh/jszip@3.10.1'
+import { corsHeaders } from '../_shared/cors.ts'
+import { parseManifest } from './manifestParser.ts'
 
 serve(async (req) => {
   // Handle CORS
@@ -58,13 +57,27 @@ serve(async (req) => {
     const zip = new JSZip()
     const zipContent = await zip.loadAsync(await fileData.arrayBuffer())
     
-    const { indexHtmlPath, originalIndexPath, manifestData } = await processZipContent(
-      zip,
-      supabaseClient,
-      courseId
+    // Find manifest file
+    const manifestFile = Object.keys(zipContent.files).find(path => 
+      path.toLowerCase().endsWith('imsmanifest.xml')
     )
 
-    console.log('Processed zip content:', { indexHtmlPath, originalIndexPath })
+    if (!manifestFile) {
+      throw new Error('No manifest file found in package')
+    }
+
+    console.log('Found manifest at:', manifestFile)
+    
+    // Extract and parse manifest
+    const manifestContent = await zipContent.files[manifestFile].async('text')
+    const manifestData = await parseManifest(manifestContent)
+    
+    console.log('Parsed manifest data:', manifestData)
+
+    // Determine index path
+    const indexPath = manifestData.startingPage 
+      ? `${course.course_files_path}/${manifestData.startingPage}`
+      : `${course.course_files_path}/index.html`
 
     // Update course with processing results
     const { error: updateError } = await supabaseClient
@@ -73,8 +86,8 @@ serve(async (req) => {
         manifest_data: {
           ...manifestData,
           status: 'processed',
-          index_path: indexHtmlPath,
-          original_index_path: originalIndexPath
+          index_path: indexPath,
+          original_index_path: indexPath
         }
       })
       .eq('id', courseId)
@@ -82,6 +95,8 @@ serve(async (req) => {
     if (updateError) {
       throw updateError
     }
+
+    console.log('Successfully processed SCORM package')
 
     return new Response(
       JSON.stringify({ success: true }),
