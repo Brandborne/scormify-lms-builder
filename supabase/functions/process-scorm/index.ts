@@ -215,7 +215,10 @@ serve(async (req) => {
 
     // Parse manifest data
     const result = parser.parse(manifestText);
+    console.log('Raw parsed XML:', JSON.stringify(result, null, 2));
+
     const manifestInfo = parseManifestData(result);
+    console.log('Processed manifest data:', JSON.stringify(manifestInfo, null, 2));
 
     // Update course with manifest data
     const { error: updateError } = await supabaseClient
