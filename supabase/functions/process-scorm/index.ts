@@ -78,6 +78,35 @@ serve(async (req) => {
     const originalZipPath = course.original_zip_path
     const courseFilesPath = course.course_files_path
 
+    // Extract and upload all files from the zip
+    console.log('Extracting and uploading files...')
+    for (const [relativePath, file] of Object.entries(zipContent.files)) {
+      if (!file.dir) {  // Skip directories
+        try {
+          const content = await file.async('arraybuffer')
+          const filePath = `${courseFilesPath}/${relativePath}`
+          
+          console.log('Uploading file:', filePath)
+          
+          const { error: uploadError } = await supabaseClient
+            .storage
+            .from('scorm_packages')
+            .upload(filePath, content, {
+              contentType: 'application/octet-stream',
+              upsert: true
+            })
+
+          if (uploadError) {
+            console.error('Error uploading file:', filePath, uploadError)
+            throw uploadError
+          }
+        } catch (error) {
+          console.error('Error processing file:', relativePath, error)
+          throw error
+        }
+      }
+    }
+
     // Determine index paths
     const startingPage = manifestData.startingPage || 'scormdriver/indexAPI.html'
     const indexPath = `${courseFilesPath}/${startingPage}`
