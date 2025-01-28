@@ -1,6 +1,6 @@
-import { getNodeText, getNodeAttribute, getAllNodes } from '../xml/xmlParser.ts';
-import type { SequencingData } from './types.ts';
-import { logDebug } from '../../utils/logger.ts';
+import { getNodeText, getNodeAttribute, getAllNodes } from '../xml/xmlParser';
+import type { SequencingData } from './types';
+import { logDebug } from '../../utils/logger';
 
 export function parseSequencing(node: any): SequencingData {
   logDebug('Parsing sequencing from node:', node);

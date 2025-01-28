@@ -1,16 +1,15 @@
-import { parseXML } from '../xml/xmlParser.ts';
-import { parseMetadata } from './metadataParser.ts';
-import { parseOrganizations } from './organizationsParser.ts';
-import { parseResources } from './resourcesParser.ts';
-import { detectScormVersion } from './versionParser.ts';
-import type { ManifestResult } from '../../types/manifest.ts';
-import { logDebug, logError } from '../../utils/logger.ts';
-import { ScormError } from '../../utils/errorHandler.ts';
+import { parseMetadata } from './metadataParser';
+import { parseOrganizations } from './organizationsParser';
+import { parseResources } from './resourcesParser';
+import { parseSequencing } from './sequencingParser';
+import { detectScormVersion } from './versionParser';
+import type { ManifestResult, Resource, OrganizationsResult } from './types';
+import { logDebug, logError } from '../../utils/logger';
+import { parseXML } from '../xml/xmlParser';
 
 export function parseManifest(manifestXml: string): ManifestResult {
   logDebug('Starting manifest parsing...');
   logDebug('Manifest XML length:', manifestXml.length);
-  logDebug('First 500 chars:', manifestXml.substring(0, 500));
   
   try {
     // Parse XML document
@@ -18,10 +17,7 @@ export function parseManifest(manifestXml: string): ManifestResult {
     const manifestElement = doc.root;
 
     if (!manifestElement) {
-      throw new ScormError(
-        'Invalid manifest: No manifest element found',
-        'MANIFEST_PARSE_ERROR'
-      );
+      throw new Error('Invalid manifest: No manifest element found');
     }
 
     // Log manifest element details
@@ -70,11 +66,7 @@ export function parseManifest(manifestXml: string): ManifestResult {
 
   } catch (error) {
     logError('Error parsing manifest:', error);
-    throw new ScormError(
-      `Failed to parse manifest: ${error.message}`,
-      'MANIFEST_PARSE_ERROR',
-      { originalError: error }
-    );
+    throw error;
   }
 }
 
