@@ -40,7 +40,23 @@ serve(async (req) => {
 
     if (courseError || !course) {
       console.error('Error fetching course:', courseError);
-      throw new Error('Course not found');
+      return new Response(
+        JSON.stringify({
+          error: 'Course not found',
+          toast: {
+            title: 'Error',
+            description: 'Course not found in the database',
+            type: 'error'
+          }
+        }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          },
+          status: 404
+        }
+      );
     }
 
     // List files in course directory
@@ -51,7 +67,23 @@ serve(async (req) => {
 
     if (listError) {
       console.error('Error listing files:', listError);
-      throw new Error('Failed to list course files');
+      return new Response(
+        JSON.stringify({
+          error: 'Failed to list course files',
+          toast: {
+            title: 'Error',
+            description: 'Could not access course files',
+            type: 'error'
+          }
+        }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          },
+          status: 400
+        }
+      );
     }
 
     // Find manifest file (ignore macOS system files)
@@ -63,7 +95,23 @@ serve(async (req) => {
 
     if (!manifestFile) {
       console.error('No manifest file found in directory:', course.course_files_path);
-      throw new Error('No manifest file found in package');
+      return new Response(
+        JSON.stringify({
+          error: 'No manifest file found in package',
+          toast: {
+            title: 'Error',
+            description: 'Could not find the SCORM manifest file in the package',
+            type: 'error'
+          }
+        }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          },
+          status: 400
+        }
+      );
     }
 
     console.log('Found manifest file:', manifestFile.name);
@@ -71,7 +119,12 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true,
-        manifestPath: `${course.course_files_path}/${manifestFile.name}`
+        manifestPath: `${course.course_files_path}/${manifestFile.name}`,
+        toast: {
+          title: 'Success',
+          description: 'SCORM manifest file located successfully',
+          type: 'success'
+        }
       }),
       { 
         headers: { 
@@ -86,7 +139,12 @@ serve(async (req) => {
     console.error('Error processing SCORM package:', error);
     return new Response(
       JSON.stringify({
-        error: error.message
+        error: error.message,
+        toast: {
+          title: 'Error',
+          description: error.message || 'An unexpected error occurred',
+          type: 'error'
+        }
       }),
       { 
         headers: { 
