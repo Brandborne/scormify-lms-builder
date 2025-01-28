@@ -90,13 +90,14 @@ serve(async (req) => {
     }
 
     const manifestContent = await manifestData.text();
+    console.log('Manifest content:', manifestContent);
     console.log('Parsing manifest content...');
     
     const manifestInfo = await parseManifest(manifestContent);
-    console.log('Successfully parsed manifest:', manifestInfo);
+    console.log('Successfully parsed manifest:', JSON.stringify(manifestInfo, null, 2));
 
     // Update course with processed manifest data
-    console.log('Updating course with manifest data');
+    console.log('Updating course with manifest data:', JSON.stringify(manifestInfo, null, 2));
     const { error: updateError } = await supabaseClient
       .from('courses')
       .update({

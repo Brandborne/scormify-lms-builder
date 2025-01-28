@@ -10,6 +10,7 @@ export async function parseManifest(manifestContent: string): Promise<ManifestRe
   console.log('Starting manifest parsing with content length:', manifestContent.length);
   
   try {
+    console.log('Raw manifest content:', manifestContent);
     const xmlObj = parseXML(manifestContent);
     console.log('XML parsing successful, manifest structure:', JSON.stringify(xmlObj, null, 2));
 
