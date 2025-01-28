@@ -3,7 +3,9 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { format, isValid, parseISO } from "date-fns";
 import { CourseActionsModal } from "./course/CourseActionsModal";
-import { Settings } from "lucide-react";
+import { Settings, RefreshCw } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface CourseCardProps {
   id: string;
@@ -31,6 +33,27 @@ export function CourseCard({
     navigate(`/courses/${id}`);
   };
 
+  const handleProcessManifest = async () => {
+    try {
+      toast.info('Processing manifest...');
+      
+      const { error: processError } = await supabase.functions.invoke('process-scorm', {
+        body: { courseId: id }
+      });
+
+      if (processError) {
+        console.error('SCORM processing error:', processError);
+        toast.error('Failed to process manifest');
+        return;
+      }
+
+      toast.success('Manifest processed successfully');
+    } catch (error: any) {
+      console.error('Process manifest error:', error);
+      toast.error('Failed to process manifest: ' + error.message);
+    }
+  };
+
   const formattedDate = (() => {
     try {
       const date = parseISO(createdAt);
@@ -46,12 +69,22 @@ export function CourseCard({
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center justify-between">
           <span>{title}</span>
-          <CourseActionsModal
-            id={id}
-            initialTitle={title}
-            initialDescription={description}
-            onDelete={onDelete}
-          />
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={handleProcessManifest}
+              title="Process Manifest"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            <CourseActionsModal
+              id={id}
+              initialTitle={title}
+              initialDescription={description}
+              onDelete={onDelete}
+            />
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
