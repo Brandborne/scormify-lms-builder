@@ -1,3 +1,4 @@
+import { parse as parseXML } from 'https://deno.land/x/xml@2.1.1/mod.ts';
 import { parseMetadata } from './parsers/metadataParser.ts';
 import { parseOrganizations } from './parsers/organizationsParser.ts';
 import { parseResources } from './parsers/resourcesParser.ts';
@@ -72,32 +73,24 @@ export async function parseManifest(manifestContent: string): Promise<ManifestRe
   console.log('Starting manifest parsing...');
   
   try {
-    // Use Deno's XML parsing
-    const decoder = new TextDecoder('utf-8');
-    const encoder = new TextEncoder();
-    const xmlData = encoder.encode(manifestContent);
-    const doc = await (new DOMParser().parseFromString(
-      decoder.decode(xmlData),
-      'text/xml'
-    ));
+    // Parse XML content using deno-xml-parser
+    const xmlObj = parseXML(manifestContent);
+    console.log('Successfully parsed XML:', xmlObj);
 
-    if (!doc) {
-      throw new Error('Failed to parse XML document');
-    }
-
-    const manifestElement = doc.querySelector('manifest');
-    if (!manifestElement) {
+    if (!xmlObj || !xmlObj.manifest) {
       throw new Error('Invalid manifest: No manifest element found');
     }
 
+    const manifest = xmlObj.manifest;
     console.log('Manifest element found, detecting SCORM version...');
-    const scormVersion = detectScormVersion(manifestElement);
+    
+    const scormVersion = detectScormVersion(manifest);
     console.log('Detected SCORM version:', scormVersion);
 
     // Parse main sections
-    const metadata = parseMetadata(manifestElement.querySelector('metadata'));
-    const organizations = parseOrganizations(manifestElement.querySelector('organizations'));
-    const resources = parseResources(manifestElement.querySelector('resources'));
+    const metadata = parseMetadata(manifest.metadata);
+    const organizations = parseOrganizations(manifest.organizations);
+    const resources = parseResources(manifest.resources);
 
     // Find starting page from resources
     const startingPage = resources.find(r => 
