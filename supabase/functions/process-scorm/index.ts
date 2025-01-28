@@ -63,14 +63,14 @@ serve(async (req) => {
     const zip = await JSZip.loadAsync(zipBuffer)
     
     console.log('Processing zip content')
-    const { indexHtmlPath, originalIndexPath } = await processZipContent(zip, supabase, courseId)
+    const { indexHtmlPath, originalIndexPath, manifestData } = await processZipContent(zip, supabase, courseId)
 
     // Update course with manifest data
     const { error: updateError } = await supabase
       .from('courses')
       .update({
         manifest_data: {
-          ...course.manifest_data,
+          ...manifestData,
           status: 'processed',
           index_path: indexHtmlPath,
           original_index_path: originalIndexPath
@@ -84,7 +84,10 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ message: 'SCORM package processed successfully' }),
+      JSON.stringify({ 
+        message: 'SCORM package processed successfully',
+        manifestData
+      }),
       { headers: corsHeaders }
     )
 
