@@ -1,11 +1,11 @@
-import { parse as parseXML } from "https://deno.land/x/xml@2.1.1/mod.ts";
+import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
 
 export function parseXML(xmlString: string): any {
   console.log('Parsing XML string, length:', xmlString.length);
   console.log('First 500 chars:', xmlString.substring(0, 500));
   
   try {
-    const xmlDoc = parseXML(xmlString);
+    const xmlDoc = parse(xmlString);
     
     if (!xmlDoc) {
       console.error('Failed to create XML document');

@@ -1,4 +1,4 @@
-import { getNodeText } from './xmlParser.ts';
+import { getNodeText, getNodeAttribute, getAllNodes } from './xmlParser.ts';
 import { MetadataResult } from '../types/manifest.ts';
 
 export function parseMetadata(metadataNode: Element | null): MetadataResult {
