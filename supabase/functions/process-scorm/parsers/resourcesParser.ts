@@ -12,14 +12,23 @@ export function parseResources(resourcesNode: any): ResourceData[] {
     ? resourcesNode.resource 
     : [resourcesNode.resource];
 
-  const result = resources.map((resource: any) => ({
-    identifier: resource['$identifier'] || '',
-    type: resource['$type'] || '',
-    href: resource['$href'],
-    scormType: resource['$adlcp:scormtype'] || resource['$adlcp:scormType'],
-    files: parseFiles(resource.file),
-    dependencies: parseDependencies(resource.dependency)
-  }));
+  const result = resources.map((resource: any) => {
+    const parsed: ResourceData = {
+      identifier: resource['$identifier'] || '',
+      type: resource['$type'] || '',
+      href: resource['$href'],
+      scormType: resource['$adlcp:scormtype'] || resource['$adlcp:scormType'],
+      files: parseFiles(resource.file),
+      dependencies: parseDependencies(resource.dependency)
+    };
+
+    // Remove undefined properties
+    Object.keys(parsed).forEach(key => 
+      parsed[key] === undefined && delete parsed[key]
+    );
+
+    return parsed;
+  });
 
   console.log('Parsed resources:', result);
   return result;

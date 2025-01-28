@@ -32,9 +32,13 @@ function parseOrganizationItem(item: any): OrganizationItem | null {
   const description = item.description?.[0]?.['#text'];
   const resourceId = item['$identifierref'];
 
-  const prerequisites = item['adlcp:prerequisites']?.map((prereq: any) => prereq['#text']).filter(Boolean);
+  const prerequisites = item['adlcp:prerequisites']?.map((prereq: any) => 
+    prereq['#text']
+  ).filter(Boolean);
 
-  const children = item.item?.map((childItem: any) => parseOrganizationItem(childItem)).filter(Boolean);
+  const children = item.item?.map((childItem: any) => 
+    parseOrganizationItem(childItem)
+  ).filter(Boolean);
 
   const result: OrganizationItem = {
     identifier,
@@ -44,6 +48,11 @@ function parseOrganizationItem(item: any): OrganizationItem | null {
     resourceId,
     children: children?.length ? children : undefined
   };
+
+  // Remove undefined properties
+  Object.keys(result).forEach(key => 
+    result[key] === undefined && delete result[key]
+  );
 
   return result;
 }

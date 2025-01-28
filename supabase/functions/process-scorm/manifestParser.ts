@@ -18,15 +18,30 @@ export async function parseManifest(manifestContent: string): Promise<ManifestRe
     }
 
     const manifest = xmlObj.manifest[0] || xmlObj.manifest;
-    console.log('Manifest element found, detecting SCORM version...');
+    console.log('Processing manifest element:', manifest);
     
     const scormVersion = detectScormVersion(manifest);
     console.log('Detected SCORM version:', scormVersion);
 
+    // Parse metadata with detailed logging
+    console.log('Parsing metadata from:', manifest.metadata?.[0]);
     const metadata = parseMetadata(manifest.metadata?.[0]);
+    console.log('Parsed metadata:', metadata);
+
+    // Parse organizations with detailed logging
+    console.log('Parsing organizations from:', manifest.organizations?.[0]);
     const organizations = parseOrganizations(manifest.organizations?.[0]);
+    console.log('Parsed organizations:', organizations);
+
+    // Parse resources with detailed logging
+    console.log('Parsing resources from:', manifest.resources?.[0]);
     const resources = parseResources(manifest.resources?.[0]);
+    console.log('Parsed resources:', resources);
+
+    // Parse sequencing with detailed logging
+    console.log('Parsing sequencing from:', manifest['imsss:sequencing']?.[0]);
     const sequencing = parseSequencing(manifest['imsss:sequencing']?.[0]);
+    console.log('Parsed sequencing:', sequencing);
 
     // Find starting page from resources
     const startingPage = resources.find(r => 
@@ -48,10 +63,10 @@ export async function parseManifest(manifestContent: string): Promise<ManifestRe
       metadata,
       organizations,
       resources,
-      sequencing
+      sequencing: Object.keys(sequencing).length > 0 ? sequencing : undefined
     };
 
-    console.log('Successfully parsed manifest:', result);
+    console.log('Final manifest parsing result:', result);
     return result;
 
   } catch (error) {
