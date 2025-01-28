@@ -1,6 +1,4 @@
-import type { ResourceData } from '../types/parser.ts';
-
-export function parseResources(resourcesNode: any): ResourceData[] {
+export function parseResources(resourcesNode: any): any[] {
   console.log('Parsing resources from node:', JSON.stringify(resourcesNode, null, 2));
   
   if (!resourcesNode?.resource) {
@@ -15,25 +13,20 @@ export function parseResources(resourcesNode: any): ResourceData[] {
   const result = resources.map((resource: any) => {
     console.log('Parsing resource:', JSON.stringify(resource, null, 2));
     
-    const parsed: ResourceData = {
-      identifier: resource['$identifier'] || '',
-      type: resource['$type'] || '',
-      href: resource['$href'],
-      scormType: resource['$adlcp:scormtype'] || resource['$adlcp:scormType'],
+    const parsed = {
+      identifier: resource['@identifier'] || '',
+      type: resource['@type'] || '',
+      href: resource['@href'],
+      scormType: resource['@adlcp:scormtype'] || resource['@scormType'],
       files: parseFiles(resource.file),
       dependencies: parseDependencies(resource.dependency)
     };
-
-    // Remove undefined properties
-    Object.keys(parsed).forEach(key => 
-      parsed[key] === undefined && delete parsed[key]
-    );
 
     console.log('Parsed resource:', JSON.stringify(parsed, null, 2));
     return parsed;
   });
 
-  console.log('Parsed resources:', JSON.stringify(result, null, 2));
+  console.log('Parsed all resources:', JSON.stringify(result, null, 2));
   return result;
 }
 
@@ -43,7 +36,7 @@ function parseFiles(files: any): string[] {
   if (!files) return [];
   
   const fileArray = Array.isArray(files) ? files : [files];
-  const result = fileArray.map((file: any) => file['$href'] || '').filter(Boolean);
+  const result = fileArray.map((file: any) => file['@href'] || '').filter(Boolean);
   
   console.log('Parsed files:', result);
   return result;
@@ -55,7 +48,7 @@ function parseDependencies(dependencies: any): string[] {
   if (!dependencies) return [];
   
   const depArray = Array.isArray(dependencies) ? dependencies : [dependencies];
-  const result = depArray.map((dep: any) => dep['$identifierref']).filter(Boolean);
+  const result = depArray.map((dep: any) => dep['@identifierref']).filter(Boolean);
   
   console.log('Parsed dependencies:', result);
   return result;
