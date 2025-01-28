@@ -1,5 +1,5 @@
-import { getNodeText } from '../xml/xmlParser.ts';
-import type { MetadataResult } from '../../types/manifest.ts';
+import { getNodeText, getAllNodes } from '../xml/xmlParser.ts';
+import type { MetadataResult } from './types.ts';
 import { logDebug } from '../../utils/logger.ts';
 
 export function parseMetadata(metadataNode: any): MetadataResult {
@@ -10,30 +10,29 @@ export function parseMetadata(metadataNode: any): MetadataResult {
     return {};
   }
 
-  // Try different metadata schema variations
-  const title = 
-    getNodeText(metadataNode, 'title') ||
-    getNodeText(metadataNode, 'adlcp:title') ||
-    getNodeText(metadataNode, 'imsmd:title') ||
-    getNodeText(metadataNode, 'lom\\:title') ||
-    getNodeText(metadataNode, 'general > title');
+  const lom = getAllNodes(metadataNode, 'lom:lom')[0];
+  if (!lom) {
+    logDebug('No LOM metadata found');
+    return {};
+  }
 
-  const description = 
-    getNodeText(metadataNode, 'description') ||
-    getNodeText(metadataNode, 'adlcp:description') ||
-    getNodeText(metadataNode, 'imsmd:description') ||
-    getNodeText(metadataNode, 'lom\\:description') ||
-    getNodeText(metadataNode, 'general > description');
-
-  const result = {
-    title,
-    description,
-    version: getNodeText(metadataNode, 'version')
+  const result: MetadataResult = {
+    schema: getNodeText(lom, 'lom:schema'),
+    schemaVersion: getNodeText(lom, 'lom:schemaversion'),
+    title: getNodeText(lom, 'lom:general > lom:title > lom:string'),
+    description: getNodeText(lom, 'lom:general > lom:description > lom:string'),
+    keywords: getAllNodes(lom, 'lom:general > lom:keyword')
+      .map(k => getNodeText(k, 'lom:string'))
+      .filter((k): k is string => !!k),
+    version: getNodeText(lom, 'lom:lifecycle > lom:version > lom:string'),
+    duration: getNodeText(lom, 'lom:technical > lom:duration'),
+    copyright: getNodeText(lom, 'lom:rights > lom:copyrightAndOtherRestrictions > lom:value')
   };
 
   // Remove undefined properties
   Object.keys(result).forEach(key => 
-    result[key] === undefined && delete result[key]
+    result[key as keyof MetadataResult] === undefined && 
+    delete result[key as keyof MetadataResult]
   );
 
   logDebug('Parsed metadata:', result);
