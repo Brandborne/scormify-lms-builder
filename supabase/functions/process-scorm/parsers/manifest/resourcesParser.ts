@@ -1,5 +1,5 @@
 import { getNodeAttribute, getAllNodes } from '../xml/xmlParser.ts';
-import type { Resource } from '../../types/manifest.ts';
+import type { Resource } from './types.ts';
 import { logDebug } from '../../utils/logger.ts';
 
 export function parseResources(resourcesNode: any): Resource[] {

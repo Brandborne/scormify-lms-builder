@@ -1,5 +1,5 @@
 import { getNodeText, getNodeAttribute, getAllNodes } from '../xml/xmlParser.ts';
-import type { OrganizationItem, OrganizationsResult } from '../../types/manifest.ts';
+import type { OrganizationItem, OrganizationsResult } from './types.ts';
 import { logDebug } from '../../utils/logger.ts';
 
 export function parseOrganizations(organizationsNode: any): OrganizationsResult {

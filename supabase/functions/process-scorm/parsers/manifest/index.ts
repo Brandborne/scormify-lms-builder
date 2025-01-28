@@ -1,11 +1,11 @@
-import { parseMetadata } from './metadataParser';
-import { parseOrganizations } from './organizationsParser';
-import { parseResources } from './resourcesParser';
-import { parseSequencing } from './sequencingParser';
-import { detectScormVersion } from './versionParser';
-import type { ManifestResult, Resource, OrganizationsResult } from './types';
-import { logDebug, logError } from '../../utils/logger';
-import { parseXML } from '../xml/xmlParser';
+import { parseMetadata } from './metadataParser.ts';
+import { parseOrganizations } from './organizationsParser.ts';
+import { parseResources } from './resourcesParser.ts';
+import { parseSequencing } from './sequencingParser.ts';
+import { detectScormVersion } from './versionParser.ts';
+import type { ManifestResult, Resource, OrganizationsResult } from './types.ts';
+import { logDebug, logError } from '../../utils/logger.ts';
+import { parseXML } from '../xml/xmlParser.ts';
 
 export function parseManifest(manifestXml: string): ManifestResult {
   logDebug('Starting manifest parsing...');
