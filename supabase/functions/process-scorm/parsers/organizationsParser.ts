@@ -1,3 +1,5 @@
+import { getNodeText, getNodeAttribute, getAllNodes } from '../utils/xmlUtils.ts';
+
 interface OrganizationItem {
   identifier: string;
   title: string;
@@ -57,37 +59,37 @@ function parseObjectives(objectivesElement: Element | null): OrganizationItem['o
   if (!objectivesElement) return undefined;
 
   const primaryObjective = objectivesElement.querySelector('imsss\\:primaryObjective, primaryObjective');
-  const secondaryObjectives = Array.from(objectivesElement.querySelectorAll('imsss\\:objective, objective'));
+  const secondaryObjectives = getAllNodes(objectivesElement, 'imsss\\:objective, objective');
 
   return {
     primary: primaryObjective ? {
       id: primaryObjective.getAttribute('objectiveID') || '',
       satisfiedByMeasure: primaryObjective.getAttribute('satisfiedByMeasure') === 'true',
-      minNormalizedMeasure: parseFloat(primaryObjective.querySelector('imsss\\:minNormalizedMeasure, minNormalizedMeasure')?.textContent || '0')
+      minNormalizedMeasure: parseFloat(getNodeText(primaryObjective, 'imsss\\:minNormalizedMeasure, minNormalizedMeasure') || '0')
     } : undefined,
     secondary: secondaryObjectives.map(obj => ({
       id: obj.getAttribute('objectiveID') || '',
-      description: obj.querySelector('imsss\\:description, description')?.textContent
+      description: getNodeText(obj, 'imsss\\:description, description')
     }))
   };
 }
 
 function parseOrganizationItem(itemElement: Element): OrganizationItem {
-  const children = Array.from(itemElement.querySelectorAll(':scope > item'))
+  const children = getAllNodes(itemElement, ':scope > item')
     .map(child => parseOrganizationItem(child));
 
-  const prerequisites = Array.from(itemElement.querySelectorAll('adlcp\\:prerequisites, prerequisites'))
+  const prerequisites = getAllNodes(itemElement, 'adlcp\\:prerequisites, prerequisites')
     .map(prereq => prereq.textContent || '')
     .filter(Boolean);
 
   return {
-    identifier: itemElement.getAttribute('identifier') || '',
-    title: itemElement.querySelector('title')?.textContent || '',
-    description: itemElement.querySelector('description')?.textContent,
+    identifier: getNodeAttribute(itemElement, 'identifier') || '',
+    title: getNodeText(itemElement, 'title') || '',
+    description: getNodeText(itemElement, 'description'),
     objectives: parseObjectives(itemElement.querySelector('imsss\\:objectives, objectives')),
     sequencing: parseSequencing(itemElement.querySelector('imsss\\:sequencing, sequencing')),
     prerequisites: prerequisites.length > 0 ? prerequisites : undefined,
-    resourceId: itemElement.getAttribute('identifierref'),
+    resourceId: getNodeAttribute(itemElement, 'identifierref'),
     children: children.length > 0 ? children : undefined
   };
 }
@@ -98,7 +100,7 @@ export function parseOrganizations(organizationsElement: Element | null): Organi
   }
 
   const defaultOrg = organizationsElement.getAttribute('default') || '';
-  const organizations = Array.from(organizationsElement.querySelectorAll(':scope > organization'));
+  const organizations = getAllNodes(organizationsElement, ':scope > organization');
 
   return {
     default: defaultOrg,

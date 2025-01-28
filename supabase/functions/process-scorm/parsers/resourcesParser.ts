@@ -1,3 +1,5 @@
+import { getNodeText, getNodeAttribute, getAllNodes } from '../utils/xmlUtils.ts';
+
 interface ResourceFile {
   href: string;
   type?: string;
@@ -19,27 +21,27 @@ interface Resource {
 export function parseResources(resourcesElement: Element | null): Resource[] {
   if (!resourcesElement) return [];
 
-  return Array.from(resourcesElement.querySelectorAll('resource')).map(resource => {
-    const files = Array.from(resource.querySelectorAll('file')).map(file => ({
-      href: file.getAttribute('href') || '',
-      type: file.getAttribute('type')
+  return getAllNodes(resourcesElement, 'resource').map(resource => {
+    const files = getAllNodes(resource, 'file').map(file => ({
+      href: getNodeAttribute(file, 'href') || '',
+      type: getNodeAttribute(file, 'type')
     }));
 
-    const dependencies = Array.from(resource.querySelectorAll('dependency'))
-      .map(dep => dep.getAttribute('identifierref'))
-      .filter((id): id is string => id !== null);
+    const dependencies = getAllNodes(resource, 'dependency')
+      .map(dep => getNodeAttribute(dep, 'identifierref'))
+      .filter((id): id is string => id !== undefined);
 
     const metadata = resource.querySelector('metadata');
-    const description = metadata?.querySelector('description string')?.textContent;
-    const requirements = Array.from(metadata?.querySelectorAll('requirement') || [])
+    const description = getNodeText(metadata, 'description string');
+    const requirements = getAllNodes(metadata, 'requirement')
       .map(req => req.textContent || '')
       .filter(Boolean);
 
     return {
-      identifier: resource.getAttribute('identifier') || '',
-      type: resource.getAttribute('type') || '',
-      href: resource.getAttribute('href'),
-      scormType: resource.getAttribute('adlcp:scormtype') || resource.getAttribute('scormtype'),
+      identifier: getNodeAttribute(resource, 'identifier') || '',
+      type: getNodeAttribute(resource, 'type') || '',
+      href: getNodeAttribute(resource, 'href'),
+      scormType: getNodeAttribute(resource, 'adlcp:scormtype') || getNodeAttribute(resource, 'scormtype'),
       files,
       dependencies: dependencies.length > 0 ? dependencies : undefined,
       metadata: (description || requirements.length > 0) ? {

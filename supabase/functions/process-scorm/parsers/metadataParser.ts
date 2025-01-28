@@ -1,3 +1,5 @@
+import { getNodeText, getAllNodes } from '../utils/xmlUtils.ts';
+
 interface MetadataResult {
   schema?: string;
   schemaVersion?: string;
@@ -12,38 +14,24 @@ interface MetadataResult {
 export function parseMetadata(metadataElement: Element | null): MetadataResult {
   if (!metadataElement) return {};
 
-  const result: MetadataResult = {
-    schema: metadataElement.querySelector('schema')?.textContent,
-    schemaVersion: metadataElement.querySelector('schemaversion')?.textContent,
-    keywords: Array.from(metadataElement.querySelectorAll('keyword string'))
-      .map(k => k.textContent || '')
-      .filter(Boolean)
+  const lom = metadataElement.querySelector('lom\\:lom, lom');
+  if (!lom) return {};
+
+  const general = lom.querySelector('lom\\:general, general');
+  const technical = lom.querySelector('lom\\:technical, technical');
+  const rights = lom.querySelector('lom\\:rights, rights');
+  const lifecycle = lom.querySelector('lom\\:lifecycle, lifecycle');
+
+  return {
+    schema: getNodeText(lom, 'lom\\:schema, schema'),
+    schemaVersion: getNodeText(lom, 'lom\\:schemaversion, schemaversion'),
+    title: getNodeText(general, 'lom\\:title string, title string'),
+    description: getNodeText(general, 'lom\\:description string, description string'),
+    keywords: getAllNodes(general, 'lom\\:keyword string, keyword string')
+      .map(node => node.textContent?.trim())
+      .filter((text): text is string => !!text),
+    version: getNodeText(lifecycle, 'lom\\:version string, version string'),
+    duration: getNodeText(technical, 'lom\\:duration, duration'),
+    copyright: getNodeText(rights, 'lom\\:description string, description string')
   };
-
-  // Parse LOM metadata if present
-  const lomElement = metadataElement.querySelector('lom\\:lom, lom');
-  if (lomElement) {
-    const general = lomElement.querySelector('lom\\:general, general');
-    if (general) {
-      result.title = general.querySelector('lom\\:title string, title string')?.textContent;
-      result.description = general.querySelector('lom\\:description string, description string')?.textContent;
-    }
-
-    const lifecycle = lomElement.querySelector('lom\\:lifecycle, lifecycle');
-    if (lifecycle) {
-      result.version = lifecycle.querySelector('lom\\:version string, version string')?.textContent;
-    }
-
-    const technical = lomElement.querySelector('lom\\:technical, technical');
-    if (technical) {
-      result.duration = technical.querySelector('lom\\:duration, duration')?.textContent;
-    }
-
-    const rights = lomElement.querySelector('lom\\:rights, rights');
-    if (rights) {
-      result.copyright = rights.querySelector('lom\\:description string, description string')?.textContent;
-    }
-  }
-
-  return result;
 }

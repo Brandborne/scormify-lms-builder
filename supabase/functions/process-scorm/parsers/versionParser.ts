@@ -1,3 +1,5 @@
+import { hasNamespace } from '../utils/xmlUtils.ts';
+
 export function detectScormVersion(manifest: Element): string {
   // Check schema definition
   const schemaVersion = manifest.getAttribute('version');
@@ -11,7 +13,10 @@ export function detectScormVersion(manifest: Element): string {
     metadataSchema?.includes('2004') ||
     manifest.querySelector('imsss\\:sequencing, sequencing') || // SCORM 2004 specific element
     manifest.querySelector('adlseq\\:objectives, objectives') || // SCORM 2004 specific element
-    manifest.querySelector('adlnav\\:presentation, presentation') // SCORM 2004 specific element
+    manifest.querySelector('adlnav\\:presentation, presentation') || // SCORM 2004 specific element
+    hasNamespace(manifest, 'adlseq') ||
+    hasNamespace(manifest, 'imsss') ||
+    hasNamespace(manifest, 'adlnav')
   ) {
     return 'SCORM 2004';
   }
@@ -21,20 +26,10 @@ export function detectScormVersion(manifest: Element): string {
     xmlns?.includes('1.2') || 
     schemaVersion?.includes('1.2') || 
     metadataSchema?.includes('1.2') ||
-    manifest.querySelector('adlcp\\:masteryscore, masteryscore') // SCORM 1.2 specific element
+    manifest.querySelector('adlcp\\:masteryscore, masteryscore') || // SCORM 1.2 specific element
+    hasNamespace(manifest, 'adlcp')
   ) {
     return 'SCORM 1.2';
-  }
-  
-  // Additional namespace checks
-  const hasScorm2004Namespace = Array.from(manifest.attributes).some(attr => 
-    attr.value.includes('adlseq') || 
-    attr.value.includes('imsss') || 
-    attr.value.includes('adlnav')
-  );
-  
-  if (hasScorm2004Namespace) {
-    return 'SCORM 2004';
   }
   
   // Default to SCORM 1.2 if no specific version is detected
