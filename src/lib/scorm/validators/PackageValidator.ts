@@ -1,21 +1,21 @@
 import { ScormError } from '../errors/ScormError';
-import ManifestParser, { ScormManifest } from '../ManifestParser';
+import { XsdValidator } from './XsdValidator';
+import ManifestParser from '../ManifestParser';
 
 export class PackageValidator {
   static async validatePackageStructure(zip: any): Promise<{
     isValid: boolean;
-    manifest?: ScormManifest;
+    manifest?: any;
     errors: string[];
   }> {
     const errors: string[] = [];
-    let manifest: ScormManifest | undefined;
+    let manifest;
 
     try {
-      // Check for imsmanifest.xml in root directory first
+      // Check for imsmanifest.xml
       let manifestFile = zip.files['imsmanifest.xml'];
-      
-      // If not in root, search in nested directories
       if (!manifestFile) {
+        // Look for manifest in nested directories
         const manifestPath = Object.keys(zip.files).find(path => 
           path.toLowerCase().endsWith('imsmanifest.xml')
         );
@@ -29,55 +29,48 @@ export class PackageValidator {
         return { isValid: false, errors };
       }
 
-      console.log('Found manifest file');
-
-      // Validate manifest content
+      // Get manifest content
       const manifestContent = await manifestFile.async('text');
+      console.log('Manifest content:', manifestContent);
+
+      // Detect SCORM version from manifest content
+      const scormVersion = manifestContent.includes('2004') ? 'SCORM 2004' : 'SCORM 1.2';
+      console.log('Detected SCORM version:', scormVersion);
+
+      // Validate manifest against XSD
+      const validationResult = XsdValidator.validateManifest(manifestContent, scormVersion);
+      if (!validationResult.isValid) {
+        console.error('XSD validation failed:', validationResult.errors);
+        return {
+          isValid: false,
+          errors: validationResult.errors
+        };
+      }
+
+      // If validation passes, parse the manifest
       manifest = await ManifestParser.parse(manifestContent);
+      console.log('Parsed manifest:', manifest);
 
-      if (!manifest.startingPage) {
-        errors.push('Missing starting page in manifest');
-      }
-
-      // Check if starting page exists in package
-      if (manifest.startingPage) {
-        const hasStartingPage = Object.keys(zip.files).some(file => 
-          file.endsWith(manifest.startingPage!)
-        );
-        
-        if (!hasStartingPage) {
-          errors.push(`Starting page ${manifest.startingPage} not found in package`);
-        }
-      }
-
-      // Check for common required directories/files
-      const requiredPaths = ['common', 'scripts'];
-      requiredPaths.forEach(path => {
-        const hasPath = Object.keys(zip.files).some(file => 
-          file.toLowerCase().includes(path.toLowerCase() + '/')
-        );
-        if (!hasPath) {
-          console.warn(`Missing recommended ${path} directory`);
-        }
-      });
-
-      // Validate file extensions
-      const allowedExtensions = ['.html', '.htm', '.js', '.css', '.jpg', '.jpeg', '.png', '.gif', '.xml', '.xsd'];
-      Object.keys(zip.files).forEach(file => {
-        if (!file.endsWith('/')) { // Skip directories
-          const ext = '.' + file.split('.').pop()?.toLowerCase();
-          if (!allowedExtensions.includes(ext)) {
-            console.warn(`Unsupported file type: ${file}`);
+      // Additional package structure validation
+      if (manifest.resources) {
+        for (const resource of manifest.resources) {
+          if (resource.href) {
+            const hasResource = Object.keys(zip.files).some(path => 
+              path.endsWith(resource.href)
+            );
+            if (!hasResource) {
+              errors.push(`Missing resource file: ${resource.href}`);
+            }
           }
         }
-      });
+      }
 
       return {
         isValid: errors.length === 0,
-        manifest: manifest,
+        manifest,
         errors
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error('Package validation error:', error);
       errors.push(`Validation error: ${error.message}`);
       return { isValid: false, errors };
