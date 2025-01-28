@@ -34,11 +34,11 @@ export async function parseManifest(xmlString: string): Promise<ScormManifest> {
     
     // Get metadata
     const metadata = findNode(xmlDoc, 'metadata');
-    const schemaVersion = findNode(metadata, 'schemaversion')?.value;
+    const schemaVersion = metadata ? findNode(metadata, 'schemaversion')?.value : undefined;
     console.log('Schema version:', schemaVersion);
 
     // Determine SCORM version from metadata
-    let scormVersion = schemaVersion || 'SCORM 1.2';
+    const scormVersion = schemaVersion || 'SCORM 1.2';
     
     // Parse organizations
     const organizations: ScormManifest['organizations'] = {
@@ -52,6 +52,8 @@ export async function parseManifest(xmlString: string): Promise<ScormManifest> {
       
       const orgNodes = findNodes(orgsNode, 'organization');
       orgNodes.forEach(org => {
+        if (!org) return;
+        
         const orgItem = {
           identifier: org.attributes?.identifier || '',
           title: findNode(org, 'title')?.value || '',
@@ -60,6 +62,8 @@ export async function parseManifest(xmlString: string): Promise<ScormManifest> {
 
         const itemNodes = findNodes(org, 'item');
         itemNodes.forEach(item => {
+          if (!item) return;
+          
           orgItem.items?.push({
             identifier: item.attributes?.identifier || '',
             title: findNode(item, 'title')?.value || '',
@@ -72,35 +76,34 @@ export async function parseManifest(xmlString: string): Promise<ScormManifest> {
     }
 
     // Parse resources
-    const resources = findNodes(xmlDoc, 'resource').map(resource => ({
-      identifier: resource.attributes?.identifier || '',
-      type: resource.attributes?.type || '',
-      href: resource.attributes?.href,
-      files: findNodes(resource, 'file').map(file => file.attributes?.href).filter(Boolean),
-      dependencies: findNodes(resource, 'dependency')
-        .map(dep => dep.attributes?.identifierref)
-        .filter(Boolean)
-    }));
+    const resources = findNodes(xmlDoc, 'resource').map(resource => {
+      if (!resource) return null;
+      
+      return {
+        identifier: resource.attributes?.identifier || '',
+        type: resource.attributes?.type || '',
+        href: resource.attributes?.href,
+        files: findNodes(resource, 'file')
+          .map(file => file?.attributes?.href)
+          .filter((href): href is string => !!href),
+        dependencies: findNodes(resource, 'dependency')
+          .map(dep => dep?.attributes?.identifierref)
+          .filter((ref): ref is string => !!ref)
+      };
+    }).filter((res): res is NonNullable<typeof res> => res !== null);
 
-    // Find starting page
-    let startingPage: string | undefined;
+    // Find starting page from the first resource with href
+    let startingPage = resources[0]?.href;
 
-    // First try to get the href from the resource referenced by the first item
-    if (organizations.default && organizations.items.length > 0) {
-      const defaultOrg = organizations.items.find(org => 
-        org.identifier === organizations.default
-      );
-      if (defaultOrg?.items?.[0]?.launch) {
-        const resourceNode = resources.find(res => 
-          res.identifier === defaultOrg.items[0].launch
+    // If no starting page found in resources, try to get it from organization items
+    if (!startingPage && organizations.items.length > 0) {
+      const firstItem = organizations.items[0].items?.[0];
+      if (firstItem?.launch) {
+        const resourceWithLaunch = resources.find(res => 
+          res.identifier === firstItem.launch
         );
-        startingPage = resourceNode?.href;
+        startingPage = resourceWithLaunch?.href;
       }
-    }
-
-    // If no starting page found in organizations, try first resource with href
-    if (!startingPage && resources.length > 0) {
-      startingPage = resources[0].href;
     }
 
     // Get title from first organization
@@ -128,8 +131,9 @@ export async function parseManifest(xmlString: string): Promise<ScormManifest> {
   }
 }
 
-// Helper functions to traverse XML nodes
+// Helper functions to traverse XML nodes with null checks
 function findNode(node: any, name: string): any {
+  if (!node) return null;
   if (node.name === name) return node;
   if (node.children) {
     for (const child of node.children) {
@@ -142,6 +146,8 @@ function findNode(node: any, name: string): any {
 
 function findNodes(node: any, name: string): any[] {
   const results: any[] = [];
+  if (!node) return results;
+  
   if (node.name === name) results.push(node);
   if (node.children) {
     for (const child of node.children) {
