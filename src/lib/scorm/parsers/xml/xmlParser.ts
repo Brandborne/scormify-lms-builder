@@ -1,6 +1,5 @@
-import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
-import { logDebug, logError } from "../../utils/logger";
-import { ScormError } from "../../utils/errorHandler";
+import { logDebug, logError } from '../../utils/logger';
+import { ScormError } from '../../utils/errorHandler';
 
 export function parseXML(xmlString: string): Document {
   logDebug('Parsing XML string, length:', xmlString.length);
