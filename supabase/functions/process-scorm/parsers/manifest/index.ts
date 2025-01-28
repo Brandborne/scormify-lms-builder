@@ -1,28 +1,31 @@
-import { parseMetadata } from './metadataParser.ts';
-import { parseOrganizations } from './organizationsParser.ts';
-import { parseResources } from './resourcesParser.ts';
-import { parseSequencing } from './sequencingParser.ts';
-import { detectScormVersion } from './versionParser.ts';
-import type { ManifestResult, Resource, OrganizationsResult } from './types.ts';
+import { parseMetadata } from './MetadataParser.ts';
+import { parseOrganizations } from './OrganizationsParser.ts';
+import { parseResources } from './ResourcesParser.ts';
+import { parseSequencing } from './SequencingParser.ts';
+import { detectScormVersion } from './VersionParser.ts';
+import type { ManifestData, Resource, OrganizationsResult } from './types.ts';
 import { logDebug, logError } from '../../utils/logger.ts';
 import { parseXML } from '../xml/xmlParser.ts';
 
-export function parseManifest(manifestXml: string): ManifestResult {
+export function parseManifest(manifestXml: string): ManifestData {
   logDebug('Starting manifest parsing...');
   logDebug('Manifest XML length:', manifestXml.length);
   
   try {
     // Parse XML document
     const doc = parseXML(manifestXml);
-    const manifestElement = doc.root;
-
-    if (!manifestElement) {
+    if (!doc || !doc.documentElement) {
       throw new Error('Invalid manifest: No manifest element found');
+    }
+
+    const manifestElement = doc.documentElement;
+    if (manifestElement.tagName.toLowerCase() !== 'manifest') {
+      throw new Error('Invalid manifest: Root element is not a manifest');
     }
 
     // Log manifest element details
     logDebug('Manifest element:', {
-      name: manifestElement.name,
+      tagName: manifestElement.tagName,
       attributes: manifestElement.attributes
     });
 
@@ -31,26 +34,26 @@ export function parseManifest(manifestXml: string): ManifestResult {
     logDebug('Detected SCORM version:', scormVersion);
 
     // Parse main sections
-    const metadata = parseMetadata(manifestElement.children?.find((child: any) => 
-      child.name === 'metadata'
-    ));
+    const metadataNode = Array.from(manifestElement.children)
+      .find(child => child.nodeName.toLowerCase() === 'metadata');
+    const metadata = parseMetadata(metadataNode);
     logDebug('Parsed metadata:', metadata);
 
-    const organizations = parseOrganizations(manifestElement.children?.find((child: any) => 
-      child.name === 'organizations'
-    ));
+    const organizationsNode = Array.from(manifestElement.children)
+      .find(child => child.nodeName.toLowerCase() === 'organizations');
+    const organizations = parseOrganizations(organizationsNode);
     logDebug('Parsed organizations:', organizations);
 
-    const resources = parseResources(manifestElement.children?.find((child: any) => 
-      child.name === 'resources'
-    ));
+    const resourcesNode = Array.from(manifestElement.children)
+      .find(child => child.nodeName.toLowerCase() === 'resources');
+    const resources = parseResources(resourcesNode);
     logDebug('Parsed resources:', resources);
 
     // Find starting page
     const startingPage = findStartingPage(resources, organizations);
     logDebug('Determined starting page:', startingPage);
 
-    const result: ManifestResult = {
+    const result: ManifestData = {
       title: metadata.title || organizations.items[0]?.title || 'Untitled Course',
       version: metadata.version,
       scormVersion,

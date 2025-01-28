@@ -60,7 +60,12 @@ serve(async (req) => {
 
     if (listError) {
       logError('Error listing files:', listError);
-      throw listError;
+      throw new ScormError('Failed to list course files', 'STORAGE_ERROR', listError);
+    }
+
+    if (!files || files.length === 0) {
+      logError('No files found in course directory');
+      throw new ScormError('No files found in course directory', 'NO_FILES_FOUND');
     }
 
     // Find manifest file (ignore macOS system files)
@@ -86,49 +91,60 @@ serve(async (req) => {
       .from('scorm_packages')
       .download(manifestPath);
 
-    if (downloadError) {
+    if (downloadError || !manifestData) {
       logError('Error downloading manifest:', downloadError);
-      throw downloadError;
+      throw new ScormError('Failed to download manifest file', 'DOWNLOAD_ERROR', downloadError);
     }
 
     const manifestContent = await manifestData.text();
+    if (!manifestContent || manifestContent.trim().length === 0) {
+      throw new ScormError('Manifest file is empty', 'INVALID_MANIFEST');
+    }
     logInfo('Successfully downloaded manifest content');
 
-    // Parse the manifest
-    const manifestInfo = parseManifest(manifestContent);
-    logInfo('Successfully parsed manifest:', manifestInfo);
+    try {
+      // Parse the manifest
+      const manifestInfo = parseManifest(manifestContent);
+      logInfo('Successfully parsed manifest:', manifestInfo);
 
-    // Update course with processed manifest data
-    logInfo('Updating course with manifest data');
-    const { error: updateError } = await supabaseClient
-      .from('courses')
-      .update({
-        manifest_data: manifestInfo,
-        processing_stage: 'processed'
-      })
-      .eq('id', courseId);
+      // Update course with processed manifest data
+      logInfo('Updating course with manifest data');
+      const { error: updateError } = await supabaseClient
+        .from('courses')
+        .update({
+          manifest_data: manifestInfo,
+          processing_stage: 'processed'
+        })
+        .eq('id', courseId);
 
-    if (updateError) {
-      logError('Error updating course:', updateError);
-      throw updateError;
-    }
-
-    logInfo('Successfully processed SCORM package');
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        manifestInfo 
-      }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-store'
-        } 
+      if (updateError) {
+        logError('Error updating course:', updateError);
+        throw new ScormError('Failed to update course with manifest data', 'UPDATE_ERROR', updateError);
       }
-    );
 
+      logInfo('Successfully processed SCORM package');
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          manifestInfo 
+        }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store'
+          } 
+        }
+      );
+    } catch (parseError) {
+      logError('Error parsing manifest:', parseError);
+      throw new ScormError(
+        'Failed to parse manifest file', 
+        'PARSE_ERROR',
+        parseError instanceof Error ? parseError.message : String(parseError)
+      );
+    }
   } catch (error) {
     return handleError(error);
   }
