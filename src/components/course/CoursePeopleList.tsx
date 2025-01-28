@@ -7,7 +7,8 @@ import { useCourseAssignments } from "@/hooks/people/use-course-assignments";
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { PersonProgress } from "../people/PersonProgress";
+import { CourseProgress } from "./CourseProgress";
+import { UserMinus } from "lucide-react";
 
 interface CoursePeopleListProps {
   courseId: string;
@@ -107,18 +108,17 @@ export function CoursePeopleList({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <PersonProgress
+                  <CourseProgress
                     assignments={person.assignments?.filter(a => a.course_id === courseId)}
-                    onOpenDetails={() => {}}
                   />
                 </TableCell>
                 <TableCell className="text-right">
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size="icon"
                     onClick={() => onToggleAssignment?.(person.id)}
                   >
-                    Remove
+                    <UserMinus className="h-4 w-4" />
                   </Button>
                 </TableCell>
               </TableRow>
