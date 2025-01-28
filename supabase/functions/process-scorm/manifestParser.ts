@@ -1,8 +1,170 @@
-import { parseMetadata } from '../../../src/lib/scorm/parsers/manifest/MetadataParser';
-import { parseOrganizations } from '../../../src/lib/scorm/parsers/manifest/OrganizationsParser';
-import { parseResources } from '../../../src/lib/scorm/parsers/manifest/ResourcesParser';
-import { parseSequencing } from '../../../src/lib/scorm/parsers/manifest/SequencingParser';
-import { parseObjectives } from '../../../src/lib/scorm/parsers/manifest/ObjectivesParser';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+
+// Type definitions
+interface ObjectiveData {
+  primary?: {
+    id: string;
+    satisfiedByMeasure: boolean;
+    minNormalizedMeasure: number;
+  };
+  secondary: Array<{
+    id: string;
+    description?: string;
+  }>;
+}
+
+interface SequencingData {
+  controlMode?: {
+    choice: boolean;
+    flow: boolean;
+  };
+  deliveryControls?: {
+    completionSetByContent: boolean;
+    objectiveSetByContent: boolean;
+  };
+}
+
+interface ResourceData {
+  identifier: string;
+  type: string;
+  href?: string;
+  scormType?: string;
+  files: string[];
+}
+
+interface OrganizationItem {
+  identifier: string;
+  title: string;
+  objectives?: ObjectiveData;
+  sequencing?: SequencingData;
+  resourceId?: string;
+}
+
+interface OrganizationsResult {
+  default: string;
+  items: OrganizationItem[];
+}
+
+interface MetadataResult {
+  schema?: string;
+  schemaVersion?: string;
+  title?: string;
+  description?: string;
+  keywords?: string[];
+  version?: string;
+  duration?: string;
+  copyright?: string;
+}
+
+// Parser functions
+function parseMetadata(metadataNode: any): MetadataResult {
+  if (!metadataNode) return {};
+
+  const lom = metadataNode['lom:lom']?.[0];
+  if (!lom) return {};
+
+  return {
+    schema: lom['lom:schema']?.[0]?.['#text'],
+    schemaVersion: lom['lom:schemaversion']?.[0]?.['#text'],
+    title: lom['lom:general']?.[0]?.['lom:title']?.[0]?.['lom:string']?.[0]?.['#text'],
+    description: lom['lom:general']?.[0]?.['lom:description']?.[0]?.['lom:string']?.[0]?.['#text'],
+    keywords: lom['lom:general']?.[0]?.['lom:keyword']?.map((k: any) => k['lom:string']?.[0]?.['#text']),
+    version: lom['lom:lifecycle']?.[0]?.['lom:version']?.[0]?.['lom:string']?.[0]?.['#text'],
+    duration: lom['lom:technical']?.[0]?.['lom:duration']?.[0]?.['#text'],
+    copyright: lom['lom:rights']?.[0]?.['lom:copyrightAndOtherRestrictions']?.[0]?.['lom:value']?.[0]?.['#text']
+  };
+}
+
+function parseOrganizations(organizationsNode: any): OrganizationsResult {
+  if (!organizationsNode) {
+    return { default: '', items: [] };
+  }
+
+  const defaultOrg = organizationsNode['$default'];
+  const organizations = organizationsNode['organization'] || [];
+
+  const items = Array.isArray(organizations) 
+    ? organizations.map(parseOrganizationItem)
+    : [parseOrganizationItem(organizations)];
+
+  return {
+    default: defaultOrg || '',
+    items
+  };
+}
+
+function parseOrganizationItem(item: any): OrganizationItem {
+  if (!item) return { identifier: '', title: '' };
+
+  return {
+    identifier: item['$identifier'] || '',
+    title: item['title']?.[0]?.['#text'] || '',
+    resourceId: item['$identifierref'],
+  };
+}
+
+function parseResources(resourcesNode: any): ResourceData[] {
+  if (!resourcesNode?.resource) return [];
+
+  const resources = Array.isArray(resourcesNode.resource) 
+    ? resourcesNode.resource 
+    : [resourcesNode.resource];
+
+  return resources.map((resource: any) => ({
+    identifier: resource['$identifier'] || '',
+    type: resource['$type'] || '',
+    href: resource['$href'],
+    scormType: resource['$adlcp:scormtype'] || resource['$adlcp:scormType'],
+    files: parseFiles(resource.file)
+  }));
+}
+
+function parseFiles(files: any): string[] {
+  if (!files) return [];
+  
+  const fileArray = Array.isArray(files) ? files : [files];
+  return fileArray.map((file: any) => file['$href']).filter(Boolean);
+}
+
+function parseSequencing(sequencingNode: any): SequencingData {
+  if (!sequencingNode) return {};
+
+  const controlMode = sequencingNode['imsss:controlMode']?.[0];
+  const deliveryControls = sequencingNode['imsss:deliveryControls']?.[0];
+
+  return {
+    controlMode: controlMode ? {
+      choice: controlMode['$choice'] === 'true',
+      flow: controlMode['$flow'] === 'true'
+    } : undefined,
+    deliveryControls: deliveryControls ? {
+      completionSetByContent: deliveryControls['$completionSetByContent'] === 'true',
+      objectiveSetByContent: deliveryControls['$objectiveSetByContent'] === 'true'
+    } : undefined
+  };
+}
+
+function parseObjectives(objectivesNode: any): ObjectiveData {
+  if (!objectivesNode) return { secondary: [] };
+
+  const primaryObjective = objectivesNode['imsss:primaryObjective']?.[0];
+  const secondaryObjectives = objectivesNode['imsss:objective'] || [];
+
+  return {
+    primary: primaryObjective ? {
+      id: primaryObjective['$objectiveID'] || '',
+      satisfiedByMeasure: primaryObjective['$satisfiedByMeasure'] === 'true',
+      minNormalizedMeasure: parseFloat(primaryObjective['imsss:minNormalizedMeasure']?.[0]?.['#text'] || '0')
+    } : undefined,
+    secondary: Array.isArray(secondaryObjectives) 
+      ? secondaryObjectives.map((obj: any) => ({
+          id: obj['$objectiveID'] || '',
+          description: obj['#text'] || undefined
+        }))
+      : []
+  };
+}
 
 export async function parseManifestFile(manifestContent: string) {
   console.log('Processing manifest content:', manifestContent);
