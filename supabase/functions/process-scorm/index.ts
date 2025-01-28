@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { corsHeaders } from '../_shared/cors.ts';
-import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.36-alpha/deno-dom-wasm.ts";
+import { XMLParser } from 'npm:fast-xml-parser';
 
 console.log('Process SCORM function initialized');
 
@@ -9,41 +9,38 @@ function validateManifestXML(xmlString: string): { isValid: boolean; errors: str
   const errors: string[] = [];
 
   try {
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      attributeNamePrefix: "@_"
+    });
+
     // Parse XML string
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlString, "application/xml");
+    const result = parser.parse(xmlString);
+    console.log('Parsed XML:', JSON.stringify(result, null, 2));
 
-    // Check for XML parsing errors
-    const parseError = xmlDoc.querySelector('parsererror');
-    if (parseError) {
-      errors.push('Invalid XML format: ' + parseError.textContent);
-      return { isValid: false, errors };
-    }
-
-    // Check for required root element
-    const manifest = xmlDoc.querySelector('manifest');
-    if (!manifest) {
+    // Check for manifest element
+    if (!result.manifest) {
       errors.push('Missing required root element: manifest');
       return { isValid: false, errors };
     }
 
     // Check for required identifier attribute
-    if (!manifest.getAttribute('identifier')) {
+    if (!result.manifest['@_identifier']) {
       errors.push('Missing required attribute: manifest identifier');
     }
 
     // Check for required organizations element
-    if (!xmlDoc.querySelector('organizations')) {
+    if (!result.manifest.organizations) {
       errors.push('Missing required element: organizations');
     }
 
     // Check for required resources element
-    if (!xmlDoc.querySelector('resources')) {
+    if (!result.manifest.resources) {
       errors.push('Missing required element: resources');
     }
 
     // Check for metadata (optional but recommended)
-    if (!xmlDoc.querySelector('metadata')) {
+    if (!result.manifest.metadata) {
       console.warn('Warning: metadata element not found');
     }
 
