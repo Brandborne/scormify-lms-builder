@@ -3,16 +3,14 @@ import { parseOrganizations } from './OrganizationsParser';
 import { parseResources } from './ResourcesParser';
 import { parseSequencing } from './SequencingParser';
 import { parseObjectives } from './ObjectivesParser';
-
-export interface ManifestData {
-  scormVersion: string;
-  status: string;
-  metadata: ReturnType<typeof parseMetadata>;
-  organizations: ReturnType<typeof parseOrganizations>;
-  resources: ReturnType<typeof parseResources>;
-  sequencing: ReturnType<typeof parseSequencing>;
-  objectives: ReturnType<typeof parseObjectives>;
-}
+import {
+  ManifestData,
+  MetadataResult,
+  OrganizationsResult,
+  Resource,
+  SequencingData,
+  ObjectiveData
+} from './types';
 
 export function parseManifest(manifestXml: string): ManifestData {
   console.log('Parsing manifest XML:', manifestXml);
@@ -101,13 +99,9 @@ function xmlToObj(node: Node): any {
 }
 
 export type { 
-  Objective,
-  ObjectivesData,
-  ControlMode,
-  DeliveryControls,
-  SequencingRules,
+  MetadataResult,
+  OrganizationsResult,
   Resource,
-  ResourceFile,
-  OrganizationItem,
-  OrganizationsResult
-} from './types';
+  SequencingData,
+  ObjectiveData
+};

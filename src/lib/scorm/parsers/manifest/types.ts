@@ -1,3 +1,10 @@
+export interface Objective {
+  id: string;
+  description?: string;
+  satisfiedByMeasure?: boolean;
+  minNormalizedMeasure?: number;
+}
+
 export interface ObjectiveData {
   primary?: {
     id: string;
@@ -10,23 +17,37 @@ export interface ObjectiveData {
   }>;
 }
 
-export interface SequencingData {
-  controlMode?: {
-    choice: boolean;
-    flow: boolean;
-  };
-  deliveryControls?: {
-    completionSetByContent: boolean;
-    objectiveSetByContent: boolean;
-  };
+export interface ControlMode {
+  choice: boolean;
+  flow: boolean;
+  forwardOnly?: boolean;
 }
 
-export interface ResourceData {
+export interface DeliveryControls {
+  completionSetByContent: boolean;
+  objectiveSetByContent: boolean;
+}
+
+export interface SequencingRules {
+  conditions: Array<{
+    type: string;
+    operator: string;
+    value: string;
+  }>;
+  action: string;
+}
+
+export interface ResourceFile {
+  href: string;
+  type?: string;
+}
+
+export interface Resource {
   identifier: string;
   type: string;
   href?: string;
   scormType?: string;
-  files: string[];
+  files: ResourceFile[];
 }
 
 export interface OrganizationItem {
@@ -40,6 +61,12 @@ export interface OrganizationItem {
 export interface OrganizationsResult {
   default: string;
   items: OrganizationItem[];
+}
+
+export interface SequencingData {
+  controlMode?: ControlMode;
+  deliveryControls?: DeliveryControls;
+  rules?: SequencingRules[];
 }
 
 export interface MetadataResult {
@@ -58,7 +85,7 @@ export interface ManifestData {
   status: string;
   metadata: MetadataResult;
   organizations: OrganizationsResult;
-  resources: ResourceData[];
+  resources: Resource[];
   sequencing: SequencingData;
   objectives: ObjectiveData;
 }
