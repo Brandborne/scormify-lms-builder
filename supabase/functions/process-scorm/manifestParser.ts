@@ -81,16 +81,17 @@ export async function parseManifest(manifestContent: string): Promise<ManifestRe
       throw new Error('Invalid manifest: No manifest element found');
     }
 
-    const manifest = xmlObj.manifest;
+    // Get the manifest object (it's the root element)
+    const manifest = xmlObj.manifest[0] || xmlObj.manifest;
     console.log('Manifest element found, detecting SCORM version...');
     
     const scormVersion = detectScormVersion(manifest);
     console.log('Detected SCORM version:', scormVersion);
 
     // Parse main sections
-    const metadata = parseMetadata(manifest.metadata);
-    const organizations = parseOrganizations(manifest.organizations);
-    const resources = parseResources(manifest.resources);
+    const metadata = parseMetadata(manifest.metadata?.[0]);
+    const organizations = parseOrganizations(manifest.organizations?.[0]);
+    const resources = parseResources(manifest.resources?.[0]);
 
     // Find starting page from resources
     const startingPage = resources.find(r => 
