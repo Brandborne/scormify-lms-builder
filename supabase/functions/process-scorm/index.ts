@@ -19,15 +19,14 @@ serve(async (req) => {
   }
 
   try {
-    // Parse request body
+    console.log('Processing SCORM request');
     const { courseId } = await req.json();
-    console.log('Processing SCORM package for course:', courseId);
 
     if (!courseId) {
       throw new Error('Course ID is required');
     }
 
-    // Initialize Supabase client
+    console.log('Initializing Supabase client');
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -39,6 +38,7 @@ serve(async (req) => {
     );
 
     // Fetch course data
+    console.log('Fetching course data for:', courseId);
     const { data: course, error: courseError } = await supabaseClient
       .from('courses')
       .select('*')
@@ -49,8 +49,6 @@ serve(async (req) => {
       console.error('Error fetching course:', courseError);
       throw new Error('Course not found');
     }
-
-    console.log('Course data:', course);
 
     // List files in course directory
     console.log('Listing files in:', course.course_files_path);
@@ -99,6 +97,7 @@ serve(async (req) => {
     console.log('Parsed Manifest Info:', manifestInfo);
 
     // Update course with processed manifest data
+    console.log('Updating course with manifest data');
     const { error: updateError } = await supabaseClient
       .from('courses')
       .update({
@@ -115,7 +114,10 @@ serve(async (req) => {
     console.log('Successfully processed SCORM package');
 
     return new Response(
-      JSON.stringify({ success: true, manifestInfo }),
+      JSON.stringify({ 
+        success: true, 
+        manifestInfo 
+      }),
       { 
         headers: { 
           ...corsHeaders, 
@@ -130,11 +132,11 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        details: error.stack,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        stack: error.stack
       }),
       { 
-        status: 500, 
+        status: 500,
         headers: { 
           ...corsHeaders, 
           'Content-Type': 'application/json',
