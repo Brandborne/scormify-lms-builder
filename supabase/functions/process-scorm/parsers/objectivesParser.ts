@@ -1,4 +1,4 @@
-import { ObjectiveData } from '../types/manifest';
+import { ObjectiveData } from '../types/manifest.ts';
 
 export function parseObjectives(node: any): ObjectiveData {
   const primaryObjective = node?.['imsss:primaryObjective']?.[0];

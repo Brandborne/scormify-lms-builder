@@ -1,4 +1,4 @@
-import { SequencingData } from '../types/manifest';
+import { SequencingData } from '../types/manifest.ts';
 
 export function parseSequencing(node: any): SequencingData {
   if (!node) return {};

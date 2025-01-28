@@ -1,4 +1,4 @@
-import { ResourceData } from '../types/manifest';
+import { ResourceData } from '../types/manifest.ts';
 
 export function parseResources(resources: any[]): ResourceData[] {
   if (!Array.isArray(resources)) {
