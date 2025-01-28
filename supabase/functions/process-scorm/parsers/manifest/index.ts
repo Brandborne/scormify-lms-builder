@@ -24,16 +24,14 @@ export function parseManifest(manifestXml: string): ManifestResult {
       tagName: manifestElement.tagName,
       attributes: Array.from(manifestElement.attributes).map(attr => 
         `${attr.name}=${attr.value}`
-      ),
-      firstChildTags: Array.from(manifestElement.children)
-        .map(child => child.tagName)
+      )
     });
 
     // Detect SCORM version
     const scormVersion = detectScormVersion(manifestElement);
     console.log('Detected SCORM version:', scormVersion);
 
-    // Parse main sections with detailed logging
+    // Parse main sections
     const metadata = parseMetadata(manifestElement.querySelector('metadata'));
     console.log('Parsed metadata:', metadata);
 
@@ -43,7 +41,7 @@ export function parseManifest(manifestXml: string): ManifestResult {
     const resources = parseResources(manifestElement.querySelector('resources'));
     console.log('Parsed resources:', resources);
 
-    // Find starting page with fallbacks
+    // Find starting page
     const startingPage = findStartingPage(resources, organizations);
     console.log('Determined starting page:', startingPage);
 
