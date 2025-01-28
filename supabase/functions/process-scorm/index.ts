@@ -59,7 +59,7 @@ serve(async (req) => {
     
     // Find manifest file
     const manifestFile = Object.keys(zipContent.files).find(path => 
-      path.toLowerCase().endsWith('imsmanifest.xml')
+      path.toLowerCase().endsWith('imsmanifest.xml') && !path.startsWith('__MACOSX/')
     )
 
     if (!manifestFile) {
@@ -81,7 +81,8 @@ serve(async (req) => {
     // Extract and upload all files from the zip
     console.log('Extracting and uploading files...')
     for (const [relativePath, file] of Object.entries(zipContent.files)) {
-      if (!file.dir) {  // Skip directories
+      // Skip macOS system files and directories
+      if (!file.dir && !relativePath.startsWith('__MACOSX/')) {
         try {
           const content = await file.async('arraybuffer')
           const filePath = `${courseFilesPath}/${relativePath}`
@@ -107,10 +108,15 @@ serve(async (req) => {
       }
     }
 
+    // Get the manifest directory to adjust relative paths
+    const manifestDir = manifestFile.substring(0, manifestFile.lastIndexOf('/') + 1)
+    console.log('Manifest directory:', manifestDir)
+
     // Determine index paths
     const startingPage = manifestData.startingPage || 'scormdriver/indexAPI.html'
-    const indexPath = `${courseFilesPath}/${startingPage}`
-    const originalIndexPath = `${courseFilesPath}/${startingPage}`
+    // Adjust the paths to be relative to the course files directory
+    const indexPath = `${courseFilesPath}/${manifestDir}${startingPage}`
+    const originalIndexPath = indexPath
 
     console.log('Paths:', {
       originalZipPath,
