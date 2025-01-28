@@ -22,7 +22,7 @@ export function parseManifest(manifestXml: string): ManifestData {
 
     // Log manifest element details
     logDebug('Manifest element:', {
-      name: manifestElement.name,
+      tagName: manifestElement.tagName,
       attributes: manifestElement.attributes
     });
 
@@ -31,19 +31,19 @@ export function parseManifest(manifestXml: string): ManifestData {
     logDebug('Detected SCORM version:', scormVersion);
 
     // Parse main sections
-    const metadata = parseMetadata(manifestElement.children?.find((child: any) => 
-      child.name === 'metadata'
-    ));
+    const metadataNode = Array.from(manifestElement.children)
+      .find(child => child.nodeName.toLowerCase() === 'metadata');
+    const metadata = parseMetadata(metadataNode);
     logDebug('Parsed metadata:', metadata);
 
-    const organizations = parseOrganizations(manifestElement.children?.find((child: any) => 
-      child.name === 'organizations'
-    ));
+    const organizationsNode = Array.from(manifestElement.children)
+      .find(child => child.nodeName.toLowerCase() === 'organizations');
+    const organizations = parseOrganizations(organizationsNode);
     logDebug('Parsed organizations:', organizations);
 
-    const resources = parseResources(manifestElement.children?.find((child: any) => 
-      child.name === 'resources'
-    ));
+    const resourcesNode = Array.from(manifestElement.children)
+      .find(child => child.nodeName.toLowerCase() === 'resources');
+    const resources = parseResources(resourcesNode);
     logDebug('Parsed resources:', resources);
 
     // Find starting page
