@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { corsHeaders } from '../_shared/cors.ts'
-import { parseManifest } from './manifestParser.ts'
 
 serve(async (req) => {
   // Handle CORS
@@ -23,12 +22,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Update course status to processing
-    await supabaseClient
-      .from('courses')
-      .update({ processing_stage: 'processing' })
-      .eq('id', courseId)
-
     // Get course data
     const { data: course, error: courseError } = await supabaseClient
       .from('courses')
@@ -36,73 +29,90 @@ serve(async (req) => {
       .eq('id', courseId)
       .single()
 
-    if (courseError) {
-      throw courseError
-    }
-
-    if (!course) {
+    if (courseError || !course) {
+      console.error('Error fetching course:', courseError)
       throw new Error('Course not found')
     }
 
     console.log('Found course:', course.title)
 
-    // Find manifest file in the course files
+    // List files in the course directory
     const { data: files, error: listError } = await supabaseClient
       .storage
       .from('scorm_packages')
-      .list(`Courses/${courseId}/course_files`)
+      .list(course.course_files_path)
 
     if (listError) {
+      console.error('Error listing files:', listError)
       throw listError
     }
 
-    const manifestFile = files.find(f => 
-      f.name.toLowerCase() === 'imsmanifest.xml'
+    console.log('Files in course directory:', files.map(f => f.name))
+
+    // Find manifest file (case-insensitive)
+    const manifestFile = files.find(file => 
+      file.name.toLowerCase() === 'imsmanifest.xml'
     )
 
     if (!manifestFile) {
+      console.error('No manifest file found in:', course.course_files_path)
       throw new Error('No manifest file found in package')
     }
 
     console.log('Found manifest file:', manifestFile.name)
 
-    // Download and parse manifest
+    // Download manifest file
     const { data: manifestData, error: downloadError } = await supabaseClient
       .storage
       .from('scorm_packages')
-      .download(`Courses/${courseId}/course_files/imsmanifest.xml`)
+      .download(`${course.course_files_path}/imsmanifest.xml`)
 
     if (downloadError) {
+      console.error('Error downloading manifest:', downloadError)
       throw downloadError
     }
 
+    // Parse manifest content
     const manifestContent = await manifestData.text()
-    const manifest = await parseManifest(manifestContent)
-    
-    console.log('Parsed manifest data:', manifest)
+    console.log('Manifest content length:', manifestContent.length)
 
-    // Update course with manifest data and mark as processed
+    // Parse XML
+    const parser = new DOMParser()
+    const xmlDoc = parser.parseFromString(manifestContent, "text/xml")
+
+    // Extract manifest data
+    const manifestInfo = {
+      title: xmlDoc.querySelector('organization > title')?.textContent || course.title,
+      description: xmlDoc.querySelector('description')?.textContent || null,
+      version: xmlDoc.querySelector('schemaversion')?.textContent || '1.2',
+      scormVersion: 
+        xmlDoc.querySelector('metadata > schema')?.textContent?.includes('2004') 
+          ? 'SCORM 2004' 
+          : 'SCORM 1.2'
+    }
+
+    console.log('Parsed manifest info:', manifestInfo)
+
+    // Update course with manifest data
     const { error: updateError } = await supabaseClient
       .from('courses')
       .update({
-        manifest_data: {
-          ...manifest,
-          status: 'processed',
-          index_path: `Courses/${courseId}/course_files/${manifest.startingPage || 'index.html'}`,
-          original_index_path: `Courses/${courseId}/course_files/${manifest.startingPage || 'index.html'}`
-        },
+        title: manifestInfo.title,
+        description: manifestInfo.description,
+        manifest_data: manifestInfo,
         processing_stage: 'processed'
       })
       .eq('id', courseId)
 
     if (updateError) {
+      console.error('Error updating course:', updateError)
       throw updateError
     }
 
     console.log('Successfully processed SCORM package')
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, manifestInfo }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
@@ -111,8 +121,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     )
   }
