@@ -1,6 +1,7 @@
 import { parse as parseXML } from 'https://deno.land/x/xml@2.1.1/mod.ts'
 
 export interface ScormManifest {
+  identifier?: string;
   version?: string;
   title?: string;
   description?: string;
@@ -9,101 +10,34 @@ export interface ScormManifest {
   metadata: {
     schema?: string;
     schemaVersion?: string;
-    authors: Array<{
-      name?: string;
-      date?: string;
-      role?: string;
-    }>;
-    objectives: Array<{
-      id?: string;
-      description?: string;
-      primaryObjective?: boolean;
-      minNormalizedMeasure?: number;
-      satisfiedByMeasure?: boolean;
-    }>;
-    prerequisites: string[];
-    technicalRequirements?: {
-      type?: string;
-      name?: string;
-      minimumVersion?: string;
-      maximumVersion?: string;
-      platform?: string;
-      browserRequirements?: string[];
+    objectives: {
+      primary?: {
+        id: string;
+        satisfiedByMeasure: boolean;
+        minNormalizedMeasure?: number;
+      };
+      secondary: Array<{
+        id: string;
+        description?: string;
+      }>;
     };
-    masteryCriteria?: {
-      masteryScore?: number;
-      minAttempts?: number;
-      maxAttempts?: number;
+    sequencing?: {
+      controlMode?: {
+        choice?: boolean;
+        flow?: boolean;
+      };
+      deliveryControls?: {
+        completionSetByContent?: boolean;
+        objectiveSetByContent?: boolean;
+      };
     };
-    timeConstraints?: {
-      attemptLimit?: number;
-      timeLimitAction?: string;
-      maxTimeAllowed?: string;
-    };
-    completionRequirements?: {
-      completionThreshold?: number;
-      requiredProgress?: number;
-      minimumTime?: string;
-    };
-    keywords?: string[];
-    rights?: {
-      copyright?: string;
-      description?: string;
-      cost?: string;
-    };
-    language?: string;
-    difficulty?: string;
-    typicalLearningTime?: string;
   };
   organizations: {
     default: string;
     items: Array<{
       identifier: string;
       title: string;
-      description?: string;
-      objectives?: Array<{
-        id: string;
-        description?: string;
-      }>;
-      prerequisites?: string[];
-      masteryScore?: number;
-      maxTimeAllowed?: string;
-      timeLimitAction?: string;
-      dataFromLMS?: string;
-      completionThreshold?: number;
-      sequencing?: {
-        controlMode?: {
-          choice?: boolean;
-          choiceExit?: boolean;
-          flow?: boolean;
-          forwardOnly?: boolean;
-        };
-        limitConditions?: {
-          attemptLimit?: number;
-          attemptAbsoluteDurationLimit?: string;
-        };
-        rollupRules?: Array<{
-          childActivitySet?: string;
-          minimumCount?: number;
-          minimumPercent?: number;
-          action?: string;
-          conditions?: Array<{
-            operator?: string;
-            condition?: string;
-          }>;
-        }>;
-      };
-      items?: Array<{
-        identifier: string;
-        title: string;
-        launch?: string;
-        masteryScore?: number;
-        prerequisites?: string[];
-        objectives?: Array<{
-          id: string;
-          description?: string;
-        }>;
-      }>;
+      resourceId?: string;
     }>;
   };
   resources: Array<{
@@ -111,85 +45,72 @@ export interface ScormManifest {
     type: string;
     href?: string;
     scormType?: string;
-    base?: string;
-    metadata?: {
-      description?: string;
-      requirements?: string;
-    };
-    dependencies?: string[];
-    files?: string[];
+    files: string[];
   }>;
-  sequencing?: {
-    controlMode?: {
-      choice?: boolean;
-      choiceExit?: boolean;
-      flow?: boolean;
-      forwardOnly?: boolean;
-    };
-    limitConditions?: {
-      attemptLimit?: number;
-      attemptAbsoluteDurationLimit?: string;
-    };
-    rollupRules?: Array<{
-      childActivitySet?: string;
-      minimumCount?: number;
-      minimumPercent?: number;
-      action?: string;
-      conditions?: Array<{
-        operator?: string;
-        condition?: string;
-      }>;
-    }>;
-  };
 }
 
 export async function parseManifest(xmlString: string): Promise<ScormManifest> {
   try {
     console.log('Parsing manifest XML...');
     const xmlDoc = parseXML(xmlString);
-    
+    const manifest = xmlDoc.manifest;
+
     // Extract metadata
-    const metadata = findNode(xmlDoc, 'metadata');
-    const schema = metadata ? findNode(metadata, 'schema')?.value : undefined;
-    const schemaVersion = metadata ? findNode(metadata, 'schemaversion')?.value : undefined;
-    
-    // Determine SCORM version
-    const scormVersion = determineScormVersion(schema, schemaVersion);
-    
+    const metadata = findNode(manifest, 'metadata');
+    const schema = metadata ? findValue(metadata, 'schema') : undefined;
+    const schemaVersion = metadata ? findValue(metadata, 'schemaversion') : undefined;
+
     // Extract organizations
-    const organizations = extractOrganizations(xmlDoc);
+    const organizations = manifest.organizations;
+    const defaultOrg = organizations?.['@default'];
+    const organization = findNode(organizations, 'organization');
+
+    // Extract title
+    const title = findValue(organization, 'title');
+
+    // Extract objectives
+    const sequencingNode = findNode(organization, 'sequencing') || findNode(findNode(organization, 'item'), 'sequencing');
+    const objectivesNode = sequencingNode ? findNode(sequencingNode, 'objectives') : null;
     
-    // Extract resources
-    const resources = extractResources(xmlDoc);
-    
-    // Extract metadata details
-    const manifestMetadata = extractMetadata(metadata);
-    
-    // Find starting page
-    const startingPage = findStartingPage(xmlDoc, organizations, resources);
-    
-    // Get title from organization or metadata
-    const title = organizations.items[0]?.title || manifestMetadata.title || findValue(xmlDoc, 'organization > title');
-    
+    const objectives = {
+      primary: extractPrimaryObjective(objectivesNode),
+      secondary: extractSecondaryObjectives(objectivesNode)
+    };
+
     // Extract sequencing information
-    const sequencing = extractSequencing(findNode(xmlDoc, 'sequencing'));
+    const sequencing = {
+      controlMode: extractControlMode(sequencingNode),
+      deliveryControls: extractDeliveryControls(sequencingNode)
+    };
+
+    // Extract resources
+    const resources = extractResources(manifest.resources);
+
+    // Find starting page
+    const startingPage = findStartingPage(resources);
 
     console.log('Successfully parsed manifest:', {
       title,
-      scormVersion,
-      metadata: manifestMetadata,
-      organizations,
+      metadata: { schema, schemaVersion, objectives, sequencing },
+      organizations: { default: defaultOrg, items: extractOrganizationItems(organization) },
       resources,
-      sequencing
+      startingPage
     });
 
     return {
       title,
-      scormVersion,
-      metadata: manifestMetadata,
-      organizations,
+      scormVersion: determineScormVersion(schema, schemaVersion),
+      metadata: {
+        schema,
+        schemaVersion,
+        objectives,
+        sequencing
+      },
+      organizations: {
+        default: defaultOrg || '',
+        items: extractOrganizationItems(organization)
+      },
       resources,
-      sequencing,
       startingPage
     };
   } catch (error) {
@@ -198,146 +119,124 @@ export async function parseManifest(xmlString: string): Promise<ScormManifest> {
   }
 }
 
-function extractMetadata(metadataNode: any): ScormManifest['metadata'] {
-  if (!metadataNode) {
-    return {
-      authors: [],
-      objectives: [],
-      prerequisites: []
-    };
-  }
+function extractPrimaryObjective(objectivesNode: any) {
+  if (!objectivesNode) return undefined;
 
-  const lom = findNode(metadataNode, 'lom');
-  
+  const primaryObj = findNode(objectivesNode, 'primaryObjective');
+  if (!primaryObj) return undefined;
+
   return {
-    schema: findValue(metadataNode, 'schema'),
-    schemaVersion: findValue(metadataNode, 'schemaversion'),
-    authors: extractAuthors(findNode(metadataNode, 'contribute')),
-    objectives: extractObjectives(findNode(metadataNode, 'objective')),
-    prerequisites: extractPrerequisites(metadataNode),
-    technicalRequirements: extractTechnicalRequirements(lom),
-    masteryCriteria: extractMasteryCriteria(metadataNode),
-    timeConstraints: extractTimeConstraints(metadataNode),
-    completionRequirements: extractCompletionRequirements(metadataNode),
-    keywords: extractKeywords(lom),
-    rights: extractRights(lom),
-    language: findValue(lom, 'language'),
-    difficulty: findValue(lom, 'difficulty'),
-    typicalLearningTime: findValue(lom, 'typicalLearningTime')
+    id: primaryObj['@objectiveID'] || '',
+    satisfiedByMeasure: primaryObj['@satisfiedByMeasure'] === 'true',
+    minNormalizedMeasure: parseFloat(findValue(primaryObj, 'minNormalizedMeasure') || '0')
   };
 }
 
-function extractAuthors(contributeNode: any): Array<{ name?: string; date?: string; role?: string }> {
-  if (!contributeNode) return [];
-  
-  const contributors = Array.isArray(contributeNode) ? contributeNode : [contributeNode];
-  return contributors
-    .filter(c => findValue(c, 'role') === 'author')
-    .map(c => ({
-      name: findValue(c, 'entity'),
-      date: findValue(c, 'date'),
-      role: findValue(c, 'role')
+function extractSecondaryObjectives(objectivesNode: any): Array<{ id: string; description?: string }> {
+  if (!objectivesNode) return [];
+
+  const objectives = findNodes(objectivesNode, 'objective');
+  return objectives
+    .filter(obj => !obj['@primary'])
+    .map(obj => ({
+      id: obj['@objectiveID'] || '',
+      description: obj['description']?.['#text']
     }));
 }
 
-function extractObjectives(objectiveNode: any): Array<{
-  id?: string;
-  description?: string;
-  primaryObjective?: boolean;
-  minNormalizedMeasure?: number;
-  satisfiedByMeasure?: boolean;
+function extractControlMode(sequencingNode: any) {
+  if (!sequencingNode) return undefined;
+
+  const controlMode = findNode(sequencingNode, 'controlMode');
+  if (!controlMode) return undefined;
+
+  return {
+    choice: controlMode['@choice'] === 'true',
+    flow: controlMode['@flow'] === 'true'
+  };
+}
+
+function extractDeliveryControls(sequencingNode: any) {
+  if (!sequencingNode) return undefined;
+
+  const deliveryControls = findNode(sequencingNode, 'deliveryControls');
+  if (!deliveryControls) return undefined;
+
+  return {
+    completionSetByContent: deliveryControls['@completionSetByContent'] === 'true',
+    objectiveSetByContent: deliveryControls['@objectiveSetByContent'] === 'true'
+  };
+}
+
+function extractResources(resourcesNode: any): Array<{
+  identifier: string;
+  type: string;
+  href?: string;
+  scormType?: string;
+  files: string[];
 }> {
-  if (!objectiveNode) return [];
-  
-  const objectives = Array.isArray(objectiveNode) ? objectiveNode : [objectiveNode];
-  return objectives.map(obj => ({
-    id: obj.attributes?.identifier,
-    description: findValue(obj, 'description'),
-    primaryObjective: obj.attributes?.primaryObjective === 'true',
-    minNormalizedMeasure: parseFloat(findValue(obj, 'minNormalizedMeasure') || '0'),
-    satisfiedByMeasure: obj.attributes?.satisfiedByMeasure === 'true'
+  if (!resourcesNode) return [];
+
+  const resources = findNodes(resourcesNode, 'resource');
+  return resources.map(resource => ({
+    identifier: resource['@identifier'] || '',
+    type: resource['@type'] || '',
+    href: resource['@href'],
+    scormType: resource['@scormType'],
+    files: extractFiles(resource)
   }));
 }
 
-function extractTechnicalRequirements(lomNode: any) {
-  if (!lomNode) return null;
-  
-  const technical = findNode(lomNode, 'technical');
-  if (!technical) return null;
-  
-  return {
-    type: findValue(technical, 'type'),
-    name: findValue(technical, 'name'),
-    minimumVersion: findValue(technical, 'minimumversion'),
-    maximumVersion: findValue(technical, 'maximumversion'),
-    platform: findValue(technical, 'platform'),
-    browserRequirements: extractMultipleValues(technical, 'otherPlatformRequirements')
-  };
+function extractFiles(resourceNode: any): string[] {
+  if (!resourceNode) return [];
+
+  const files = findNodes(resourceNode, 'file');
+  return files.map(file => file['@href']).filter(Boolean);
 }
 
-function extractMasteryCriteria(metadataNode: any) {
-  const masteryScore = findValue(metadataNode, 'masteryscore');
-  if (!masteryScore) return undefined;
-  
-  return {
-    masteryScore: parseFloat(masteryScore),
-    minAttempts: parseInt(findValue(metadataNode, 'minattempts') || '0'),
-    maxAttempts: parseInt(findValue(metadataNode, 'maxattempts') || '0')
-  };
+function extractOrganizationItems(organizationNode: any): Array<{
+  identifier: string;
+  title: string;
+  resourceId?: string;
+}> {
+  if (!organizationNode) return [];
+
+  const items = findNodes(organizationNode, 'item');
+  return items.map(item => ({
+    identifier: item['@identifier'] || '',
+    title: findValue(item, 'title') || '',
+    resourceId: item['@identifierref']
+  }));
 }
 
-function extractTimeConstraints(metadataNode: any) {
-  const timeLimit = findValue(metadataNode, 'timelimitaction');
-  if (!timeLimit) return undefined;
-  
-  return {
-    attemptLimit: parseInt(findValue(metadataNode, 'attemptlimit') || '0'),
-    timeLimitAction: timeLimit,
-    maxTimeAllowed: findValue(metadataNode, 'maxtimeallowed')
-  };
+function findStartingPage(resources: any[]): string | undefined {
+  const mainResource = resources.find(r => r.scormType?.toLowerCase() === 'sco');
+  return mainResource?.href;
 }
 
-function extractCompletionRequirements(metadataNode: any) {
-  const completionThreshold = findValue(metadataNode, 'completionthreshold');
-  if (!completionThreshold) return undefined;
-  
-  return {
-    completionThreshold: parseFloat(completionThreshold),
-    requiredProgress: parseFloat(findValue(metadataNode, 'requiredprogress') || '0'),
-    minimumTime: findValue(metadataNode, 'minimumtime')
-  };
+function determineScormVersion(schema?: string, schemaVersion?: string): string {
+  if (schema?.includes('2004') || schemaVersion?.includes('2004')) {
+    return 'SCORM 2004';
+  }
+  return 'SCORM 1.2';
 }
 
-function extractKeywords(lomNode: any): string[] {
-  if (!lomNode) return [];
-  
-  const keywords = findNodes(lomNode, 'keyword');
-  return keywords.map(k => findValue(k, 'string')).filter(Boolean);
-}
-
-function extractRights(lomNode: any) {
-  if (!lomNode) return undefined;
-  
-  const rights = findNode(lomNode, 'rights');
-  if (!rights) return undefined;
-  
-  return {
-    copyright: findValue(rights, 'copyrightAndOtherRestrictions'),
-    description: findValue(rights, 'description'),
-    cost: findValue(rights, 'cost')
-  };
-}
-
-// Helper functions to traverse XML nodes with null checks
+// Helper functions
 function findNode(node: any, name: string): any {
   if (!node) return null;
-  if (node.name === name) return node;
-  if (node.children) {
+  
+  // Check direct properties first
+  if (node[name]) return node[name];
+  
+  // Check children array if it exists
+  if (Array.isArray(node.children)) {
     for (const child of node.children) {
+      if (child.name === name) return child;
       const found = findNode(child, name);
       if (found) return found;
     }
   }
+  
   return null;
 }
 
@@ -345,106 +244,36 @@ function findNodes(node: any, name: string): any[] {
   const results: any[] = [];
   if (!node) return results;
   
-  if (node.name === name) results.push(node);
-  if (node.children) {
+  // Check direct properties
+  if (node[name]) {
+    if (Array.isArray(node[name])) {
+      results.push(...node[name]);
+    } else {
+      results.push(node[name]);
+    }
+  }
+  
+  // Check children array
+  if (Array.isArray(node.children)) {
     for (const child of node.children) {
+      if (child.name === name) results.push(child);
       results.push(...findNodes(child, name));
     }
   }
+  
   return results;
 }
 
 function findValue(node: any, path: string): string | undefined {
-  const parts = path.split('>')
-  let current = node
+  if (!node) return undefined;
+  
+  const parts = path.split('.');
+  let current = node;
   
   for (const part of parts) {
-    const trimmed = part.trim()
-    if (!current[trimmed]) return undefined
-    current = current[trimmed]
+    if (!current[part]) return undefined;
+    current = current[part];
   }
   
-  return current?.['$text'] || undefined
-}
-
-function determineScormVersion(schema: string | undefined, schemaVersion: string | undefined): string {
-  if (schema?.includes('2004')) return 'SCORM 2004';
-  if (schema?.includes('1.2')) return 'SCORM 1.2';
-  if (schemaVersion?.includes('2004')) return 'SCORM 2004';
-  if (schemaVersion?.includes('1.2')) return 'SCORM 1.2';
-  
-  // Default to 1.2 if version cannot be determined
-  return 'SCORM 1.2';
-}
-
-function findStartingPage(xmlDoc: any, organizations: any, resources: any): string | undefined {
-  // Try to find in default organization
-  const organizationsDefault = organizations.default;
-  if (organizationsDefault) {
-    const org = Array.isArray(organizations.items) ?
-      organizations.items.find((o: any) => o.identifier === organizationsDefault) :
-      organizations.items;
-    
-    if (org?.items) {
-      const firstItem = Array.isArray(org.items) ? org.items[0] : org.items;
-      const resourceId = firstItem?.launch;
-      if (resourceId) {
-        const resource = resources.find((r: any) => r.identifier === resourceId);
-        if (resource?.href) return resource.href;
-      }
-    }
-  }
-  
-  // Fallback to first resource with href
-  const resourceArray = Array.isArray(resources) ? resources : [resources];
-  const firstResource = resourceArray.find(r => r.href && r.scormType === 'sco');
-  return firstResource?.href;
-}
-
-function extractOrganizations(xmlDoc: any): any {
-  const organizationsNode = findNode(xmlDoc, 'organizations');
-  if (!organizationsNode) return { default: '', items: [] };
-  
-  const defaultOrg = organizationsNode.attributes?.default || '';
-  const items = findNodes(organizationsNode, 'organization').map(org => ({
-    identifier: org.attributes?.identifier || '',
-    title: findValue(org, 'title'),
-    description: findValue(org, 'description'),
-    items: findNodes(org, 'item').map(item => ({
-      identifier: item.attributes?.identifier || '',
-      title: findValue(item, 'title'),
-      launch: item.attributes?.identifierref
-    }))
-  }));
-  
-  return { default: defaultOrg, items };
-}
-
-function extractResources(xmlDoc: any): any[] {
-  const resourcesNode = findNode(xmlDoc, 'resources');
-  if (!resourcesNode) return [];
-  
-  return findNodes(resourcesNode, 'resource').map(resource => ({
-    identifier: resource.attributes?.identifier || '',
-    type: resource.attributes?.type || '',
-    href: resource.attributes?.href,
-    scormType: resource.attributes?.scormtype,
-    base: resource.attributes?.base,
-    metadata: {
-      description: findValue(resource, 'metadata > description'),
-      requirements: findValue(resource, 'metadata > requirements')
-    },
-    dependencies: extractDependencies(resource),
-    files: extractFiles(resource)
-  }));
-}
-
-function extractDependencies(resource: any): string[] {
-  const dependenciesNode = findNodes(resource, 'dependency');
-  return dependenciesNode.map(dep => dep.attributes?.identifierref).filter(Boolean);
-}
-
-function extractFiles(resource: any): string[] {
-  const filesNode = findNodes(resource, 'file');
-  return filesNode.map(file => file.attributes?.href).filter(Boolean);
+  return current['#text'] || current;
 }
