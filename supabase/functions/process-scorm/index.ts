@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { corsHeaders } from '../_shared/cors.ts'
+import { DOMParser } from "https://deno.land/x/deno_dom/deno-dom-wasm.ts";
 
 console.log('Process SCORM function started');
 
@@ -40,11 +41,15 @@ function parseManifest(xmlContent: string): ManifestResult {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
     
-    if (!xmlDoc || xmlDoc.getElementsByTagName('parsererror').length > 0) {
-      throw new Error('Invalid XML content');
+    if (!xmlDoc) {
+      throw new Error('Failed to parse XML content');
     }
 
     const manifest = xmlDoc.documentElement;
+    if (!manifest) {
+      throw new Error('No manifest element found');
+    }
+
     console.log('Manifest element found');
 
     // Detect SCORM version
