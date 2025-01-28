@@ -1,153 +1,168 @@
-import { DOMParser } from 'https://deno.land/x/deno_dom/deno-dom-wasm.ts';
+import { parse as parseXML } from 'https://deno.land/x/xml@2.1.1/mod.ts'
 
-interface ManifestResource {
-  identifier: string;
-  type: string;
-  href?: string;
-  dependencies?: string[];
-}
-
-interface ManifestOrganization {
-  identifier: string;
-  title?: string;
-  items: Array<{
-    identifier: string;
-    title?: string;
-    launch?: string;
-  }>;
-}
-
-interface ManifestData {
-  scormVersion: string;
+export interface ScormManifest {
+  version?: string;
   title?: string;
   description?: string;
   startingPage?: string;
+  prerequisites?: string[];
+  scormVersion?: string;
   organizations?: {
     default: string;
-    items: ManifestOrganization[];
+    items: Array<{
+      identifier: string;
+      title: string;
+      items?: Array<{
+        identifier: string;
+        title: string;
+        launch?: string;
+      }>;
+    }>;
   };
-  resources?: ManifestResource[];
-  status: 'pending_processing' | 'processed' | 'error';
+  resources?: Array<{
+    identifier: string;
+    type: string;
+    href?: string;
+    dependencies?: string[];
+  }>;
 }
 
-export async function parseManifest(xmlContent: string): Promise<ManifestData> {
+export async function parseManifest(xmlString: string): Promise<ScormManifest> {
   try {
-    console.log('Starting manifest parsing...');
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
-
-    if (!xmlDoc) {
-      throw new Error('Failed to parse XML document');
-    }
-
-    // Check for parsing errors
-    const parseError = xmlDoc.querySelector('parsererror');
-    if (parseError) {
-      console.error('XML Parse Error:', parseError.textContent);
-      throw new Error('Invalid manifest XML format');
-    }
-
+    console.log('Parsing manifest XML...');
+    const xmlDoc = parseXML(xmlString);
+    
     // Determine SCORM version
     let scormVersion = 'SCORM 1.2'; // Default version
-    const metadata = xmlDoc.querySelector('metadata');
-    const schemaVersion = xmlDoc.querySelector('schemaversion');
+    const schemaVersion = findNode(xmlDoc, 'schemaversion');
+    if (schemaVersion?.value?.includes('2004')) {
+      scormVersion = 'SCORM 2004';
+    }
 
+    // Get metadata
+    const metadata = findNode(xmlDoc, 'metadata');
     if (metadata) {
-      const schema = metadata.querySelector('schema');
-      if (schema?.textContent?.includes('2004')) {
-        scormVersion = 'SCORM 2004';
+      const schema = findNode(metadata, 'schema');
+      if (schema?.value?.includes('SCORM')) {
+        scormVersion = schema.value;
       }
     }
 
-    console.log('Detected SCORM version:', scormVersion);
+    // Get title and description
+    const title = findNode(xmlDoc, 'title')?.value;
+    const description = findNode(xmlDoc, 'description')?.value;
 
-    // Get basic metadata with better error handling
-    const title = xmlDoc.querySelector('organization > title')?.textContent || 
-                 xmlDoc.querySelector('title')?.textContent;
-    const description = xmlDoc.querySelector('description')?.textContent;
-
-    // Parse organizations (course structure)
-    const organizations: ManifestData['organizations'] = {
+    // Parse organizations
+    const organizations: ScormManifest['organizations'] = {
       default: '',
       items: []
     };
 
-    const orgsElement = xmlDoc.querySelector('organizations');
-    if (orgsElement) {
-      organizations.default = orgsElement.getAttribute('default') || '';
+    const orgsNode = findNode(xmlDoc, 'organizations');
+    if (orgsNode) {
+      organizations.default = orgsNode.attributes?.default || '';
       
-      const orgElements = orgsElement.querySelectorAll('organization');
-      orgElements.forEach(org => {
-        const items: ManifestOrganization['items'] = [];
-        
-        org.querySelectorAll('item').forEach(item => {
-          items.push({
-            identifier: item.getAttribute('identifier') || '',
-            title: item.querySelector('title')?.textContent,
-            launch: item.getAttribute('identifierref')
+      const orgNodes = findNodes(orgsNode, 'organization');
+      orgNodes.forEach(org => {
+        const orgItem = {
+          identifier: org.attributes?.identifier || '',
+          title: findNode(org, 'title')?.value || '',
+          items: []
+        };
+
+        const itemNodes = findNodes(org, 'item');
+        itemNodes.forEach(item => {
+          orgItem.items?.push({
+            identifier: item.attributes?.identifier || '',
+            title: findNode(item, 'title')?.value || '',
+            launch: item.attributes?.identifierref
           });
         });
 
-        organizations.items.push({
-          identifier: org.getAttribute('identifier') || '',
-          title: org.querySelector('title')?.textContent,
-          items
-        });
+        organizations.items.push(orgItem);
       });
     }
 
-    // Find starting page with improved logic
+    // Find starting page
     let startingPage: string | undefined;
 
-    // First try to find it in organizations
+    // First try organizations
     if (organizations.default) {
       const defaultOrg = organizations.items.find(org => 
         org.identifier === organizations.default
       );
       if (defaultOrg?.items?.[0]?.launch) {
-        const resourceElement = xmlDoc.querySelector(
-          `resource[identifier="${defaultOrg.items[0].launch}"]`
+        const resourceNode = findNodes(xmlDoc, 'resource').find(res => 
+          res.attributes?.identifier === defaultOrg.items[0].launch
         );
-        startingPage = resourceElement?.getAttribute('href') || undefined;
+        startingPage = resourceNode?.attributes?.href;
       }
     }
 
-    // Fallback: look in resources
+    // Fallback to first resource
     if (!startingPage) {
-      const firstResource = xmlDoc.querySelector('resource[href]');
-      startingPage = firstResource?.getAttribute('href') || undefined;
+      const firstResource = findNode(xmlDoc, 'resource');
+      startingPage = firstResource?.attributes?.href;
     }
 
-    console.log('Found starting page:', startingPage);
+    // Parse prerequisites
+    const prerequisiteNodes = findNodes(xmlDoc, 'prerequisites');
+    const prerequisites = prerequisiteNodes
+      .map(node => node.value)
+      .filter(Boolean);
 
-    // Parse resources with better type handling
-    const resources: ManifestResource[] = [];
-    xmlDoc.querySelectorAll('resource').forEach(resource => {
-      resources.push({
-        identifier: resource.getAttribute('identifier') || '',
-        type: resource.getAttribute('type') || '',
-        href: resource.getAttribute('href'),
-        dependencies: Array.from(resource.querySelectorAll('dependency'))
-          .map(dep => dep.getAttribute('identifierref'))
-          .filter((id): id is string => id !== null)
-      });
+    // Parse resources
+    const resources = findNodes(xmlDoc, 'resource').map(resource => ({
+      identifier: resource.attributes?.identifier || '',
+      type: resource.attributes?.type || '',
+      href: resource.attributes?.href,
+      dependencies: findNodes(resource, 'dependency')
+        .map(dep => dep.attributes?.identifierref)
+        .filter(Boolean)
+    }));
+
+    console.log('Successfully parsed manifest:', {
+      scormVersion,
+      title,
+      startingPage,
+      organizations
     });
 
-    const manifestData: ManifestData = {
+    return {
+      version: schemaVersion?.value,
       scormVersion,
       title,
       description,
       startingPage,
+      prerequisites: prerequisites.length > 0 ? prerequisites : undefined,
       organizations,
-      resources,
-      status: 'pending_processing'
+      resources
     };
-
-    console.log('Successfully parsed manifest data:', manifestData);
-    return manifestData;
-
   } catch (error) {
     console.error('Error parsing manifest:', error);
-    throw new Error(`Failed to parse manifest: ${error.message}`);
+    throw new Error('Failed to parse SCORM manifest: ' + error.message);
   }
+}
+
+// Helper functions to traverse XML nodes
+function findNode(node: any, name: string): any {
+  if (node.name === name) return node;
+  if (node.children) {
+    for (const child of node.children) {
+      const found = findNode(child, name);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function findNodes(node: any, name: string): any[] {
+  const results: any[] = [];
+  if (node.name === name) results.push(node);
+  if (node.children) {
+    for (const child of node.children) {
+      results.push(...findNodes(child, name));
+    }
+  }
+  return results;
 }
