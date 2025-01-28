@@ -1,17 +1,4 @@
-interface OrganizationItem {
-  identifier: string;
-  title: string;
-  description?: string;
-  objectives?: string[];
-  prerequisites?: string[];
-  resourceId?: string;
-  children?: OrganizationItem[];
-}
-
-interface OrganizationsResult {
-  default: string;
-  items: OrganizationItem[];
-}
+import { OrganizationItem, OrganizationsResult, ObjectiveData } from './types';
 
 export function parseOrganizations(organizationsNode: any): OrganizationsResult {
   if (!organizationsNode) {
@@ -39,8 +26,13 @@ function parseOrganizationItem(item: any): OrganizationItem {
   const description = item['description']?.[0]?.['#text'];
   const resourceId = item['$identifierref'];
 
-  const objectives = item['adlcp:objectives']?.map((obj: any) => obj['#text']) || [];
-  const prerequisites = item['adlcp:prerequisites']?.map((pre: any) => pre['#text']) || [];
+  // Convert objectives to proper ObjectiveData format
+  const objectives: ObjectiveData = {
+    secondary: item['adlcp:objectives']?.map((obj: any) => ({
+      id: obj['#text'] || '',
+      description: obj['description']?.[0]?.['#text']
+    })) || []
+  };
 
   const children = item['item']?.map(parseOrganizationItem) || [];
 
@@ -49,7 +41,6 @@ function parseOrganizationItem(item: any): OrganizationItem {
     title,
     description,
     objectives,
-    prerequisites,
     resourceId,
     children
   };

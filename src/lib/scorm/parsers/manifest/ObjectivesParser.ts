@@ -1,16 +1,6 @@
-interface Objective {
-  id: string;
-  satisfiedByMeasure?: boolean;
-  minNormalizedMeasure?: number;
-  description?: string;
-}
+import { ObjectiveData } from './types';
 
-interface ObjectivesData {
-  primary?: Objective;
-  secondary: Objective[];
-}
-
-export function parseObjectives(objectivesNode: any): ObjectivesData {
+export function parseObjectives(objectivesNode: any): ObjectiveData {
   if (!objectivesNode) return { secondary: [] };
 
   const primaryObjective = objectivesNode['imsss:primaryObjective']?.[0];
@@ -20,8 +10,7 @@ export function parseObjectives(objectivesNode: any): ObjectivesData {
     primary: primaryObjective ? {
       id: primaryObjective['$objectiveID'] || '',
       satisfiedByMeasure: primaryObjective['$satisfiedByMeasure'] === 'true',
-      minNormalizedMeasure: parseFloat(primaryObjective['imsss:minNormalizedMeasure']?.[0]?.['#text'] || '0'),
-      description: primaryObjective['imsss:description']?.[0]?.['#text']
+      minNormalizedMeasure: parseFloat(primaryObjective['imsss:minNormalizedMeasure']?.[0]?.['#text'] || '0')
     } : undefined,
     secondary: (Array.isArray(secondaryObjectives) ? secondaryObjectives : [secondaryObjectives])
       .map((obj: any) => ({

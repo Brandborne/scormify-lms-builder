@@ -1,46 +1,34 @@
-interface ControlMode {
-  choice?: boolean;
-  choiceExit?: boolean;
-  flow?: boolean;
-  forwardOnly?: boolean;
-  useCurrentAttemptObjectiveInfo?: boolean;
-  useCurrentAttemptProgressInfo?: boolean;
-}
+import { SequencingData, ControlMode, DeliveryControls, SequencingRules } from './types';
 
-interface DeliveryControls {
-  tracked?: boolean;
-  completionSetByContent?: boolean;
-  objectiveSetByContent?: boolean;
-}
-
-interface SequencingRules {
-  controlMode?: ControlMode;
-  deliveryControls?: DeliveryControls;
-  constrainChoice?: boolean;
-  preventActivation?: boolean;
-}
-
-export function parseSequencing(sequencingNode: any): SequencingRules {
+export function parseSequencing(sequencingNode: any): SequencingData {
   if (!sequencingNode) return {};
 
   const controlMode = sequencingNode['imsss:controlMode']?.[0];
   const deliveryControls = sequencingNode['imsss:deliveryControls']?.[0];
 
+  const parsedControlMode: ControlMode | undefined = controlMode ? {
+    choice: controlMode['$choice'] === 'true',
+    flow: controlMode['$flow'] === 'true',
+    forwardOnly: controlMode['$forwardOnly'] === 'true'
+  } : undefined;
+
+  const parsedDeliveryControls: DeliveryControls | undefined = deliveryControls ? {
+    completionSetByContent: deliveryControls['$completionSetByContent'] === 'true',
+    objectiveSetByContent: deliveryControls['$objectiveSetByContent'] === 'true'
+  } : undefined;
+
+  const rules: SequencingRules[] = sequencingNode['imsss:sequencingRules']?.map((rule: any) => ({
+    conditions: rule.conditions?.map((condition: any) => ({
+      type: condition['$type'] || '',
+      operator: condition['$operator'] || '',
+      value: condition['$value'] || ''
+    })) || [],
+    action: rule['$action'] || ''
+  })) || [];
+
   return {
-    controlMode: controlMode ? {
-      choice: controlMode['$choice'] === 'true',
-      choiceExit: controlMode['$choiceExit'] === 'true',
-      flow: controlMode['$flow'] === 'true',
-      forwardOnly: controlMode['$forwardOnly'] === 'true',
-      useCurrentAttemptObjectiveInfo: controlMode['$useCurrentAttemptObjectiveInfo'] === 'true',
-      useCurrentAttemptProgressInfo: controlMode['$useCurrentAttemptProgressInfo'] === 'true'
-    } : undefined,
-    deliveryControls: deliveryControls ? {
-      tracked: deliveryControls['$tracked'] === 'true',
-      completionSetByContent: deliveryControls['$completionSetByContent'] === 'true',
-      objectiveSetByContent: deliveryControls['$objectiveSetByContent'] === 'true'
-    } : undefined,
-    constrainChoice: sequencingNode['imsss:constrainChoice']?.[0] === 'true',
-    preventActivation: sequencingNode['imsss:preventActivation']?.[0] === 'true'
+    controlMode: parsedControlMode,
+    deliveryControls: parsedDeliveryControls,
+    rules
   };
 }
