@@ -53,9 +53,11 @@ export interface Resource {
 export interface OrganizationItem {
   identifier: string;
   title: string;
+  description?: string;  // Added this line
   objectives?: ObjectiveData;
   sequencing?: SequencingData;
   resourceId?: string;
+  children?: OrganizationItem[];  // Added this for nested items
 }
 
 export interface OrganizationsResult {

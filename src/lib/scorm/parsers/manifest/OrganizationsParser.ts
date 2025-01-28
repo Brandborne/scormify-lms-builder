@@ -34,7 +34,7 @@ function parseOrganizationItem(item: any): OrganizationItem {
     })) || []
   };
 
-  const children = item['item']?.map(parseOrganizationItem) || [];
+  const children = item['item']?.map((childItem: any) => parseOrganizationItem(childItem)) || [];
 
   return {
     identifier,
