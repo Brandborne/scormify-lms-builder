@@ -47,6 +47,8 @@ serve(async (req) => {
       throw new Error('Course not found');
     }
 
+    console.log('Course data:', course);
+
     // First, let's try to get the DTD file
     const { data: dtdData, error: dtdError } = await supabaseClient
       .storage
@@ -62,11 +64,40 @@ serve(async (req) => {
       console.log('DTD Content:', dtdContent);
     }
 
+    // List files in course directory
+    console.log('Listing files in:', course.course_files_path);
+    const { data: files, error: listError } = await supabaseClient
+      .storage
+      .from('scorm_packages')
+      .list(course.course_files_path);
+
+    if (listError) {
+      console.error('Error listing files:', listError);
+      throw listError;
+    }
+
+    console.log('Files found:', files);
+
+    // Find manifest file
+    const manifestFile = files.find(file => 
+      file.name.toLowerCase() === 'imsmanifest.xml'
+    );
+
+    if (!manifestFile) {
+      console.error('No manifest file found in directory:', course.course_files_path);
+      throw new Error('No manifest file found in package');
+    }
+
+    console.log('Found manifest file:', manifestFile.name);
+
     // Download and parse manifest
+    const manifestPath = `${course.course_files_path}/${manifestFile.name}`;
+    console.log('Downloading manifest from:', manifestPath);
+    
     const { data: manifestData, error: downloadError } = await supabaseClient
       .storage
       .from('scorm_packages')
-      .download(`${course.course_files_path}/imsmanifest.xml`);
+      .download(manifestPath);
 
     if (downloadError) {
       console.error('Error downloading manifest:', downloadError);
