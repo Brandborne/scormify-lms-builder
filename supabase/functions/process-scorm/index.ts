@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { corsHeaders } from '../_shared/cors.ts';
-import { DOMParser } from "https://deno.land/x/deno_dom/deno-dom-wasm.ts";
+import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38-alpha/deno-dom-wasm.ts";
 
 console.log('Process SCORM function initialized');
 
@@ -11,7 +11,7 @@ function validateManifestXML(xmlString: string): { isValid: boolean; errors: str
   try {
     // Parse XML string
     const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+    const xmlDoc = parser.parseFromString(xmlString, "application/xml");
 
     // Check for XML parsing errors
     const parseError = xmlDoc.querySelector('parsererror');
