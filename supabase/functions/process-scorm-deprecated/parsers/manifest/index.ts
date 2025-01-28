@@ -1,13 +1,13 @@
-import { parseMetadata } from './MetadataParser.ts';
-import { parseOrganizations } from './OrganizationsParser.ts';
-import { parseResources } from './ResourcesParser.ts';
-import { parseSequencing } from './SequencingParser.ts';
-import { detectScormVersion } from './VersionParser.ts';
-import type { ManifestData, Resource, OrganizationsResult } from './types.ts';
+import { parseMetadata } from './metadataParser.ts';
+import { parseOrganizations } from './organizationsParser.ts';
+import { parseResources } from './resourcesParser.ts';
+import { parseSequencing } from './sequencingParser.ts';
+import { detectScormVersion } from './versionParser.ts';
+import type { ManifestResult, Resource, OrganizationsResult } from '../../types/manifest.ts';
 import { logDebug, logError } from '../../utils/logger.ts';
 import { parseXML } from '../xml/xmlParser.ts';
 
-export function parseManifest(manifestXml: string): ManifestData {
+export function parseManifest(manifestXml: string): ManifestResult {
   logDebug('Starting manifest parsing...');
   logDebug('Manifest XML length:', manifestXml.length);
   
@@ -34,18 +34,15 @@ export function parseManifest(manifestXml: string): ManifestData {
     logDebug('Detected SCORM version:', scormVersion);
 
     // Parse main sections
-    const metadataNode = Array.from(manifestElement.children)
-      .find(child => child.nodeName.toLowerCase() === 'metadata');
+    const metadataNode = manifestElement.querySelector('metadata');
     const metadata = parseMetadata(metadataNode);
     logDebug('Parsed metadata:', metadata);
 
-    const organizationsNode = Array.from(manifestElement.children)
-      .find(child => child.nodeName.toLowerCase() === 'organizations');
+    const organizationsNode = manifestElement.querySelector('organizations');
     const organizations = parseOrganizations(organizationsNode);
     logDebug('Parsed organizations:', organizations);
 
-    const resourcesNode = Array.from(manifestElement.children)
-      .find(child => child.nodeName.toLowerCase() === 'resources');
+    const resourcesNode = manifestElement.querySelector('resources');
     const resources = parseResources(resourcesNode);
     logDebug('Parsed resources:', resources);
 
@@ -53,7 +50,7 @@ export function parseManifest(manifestXml: string): ManifestData {
     const startingPage = findStartingPage(resources, organizations);
     logDebug('Determined starting page:', startingPage);
 
-    const result: ManifestData = {
+    const result: ManifestResult = {
       title: metadata.title || organizations.items[0]?.title || 'Untitled Course',
       version: metadata.version,
       scormVersion,
