@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { corsHeaders } from '../_shared/cors.ts'
-import { DOMParser } from "https://deno.land/x/deno_dom/deno-dom-wasm.ts";
+import { parse as parseXML } from "https://deno.land/x/xml@2.1.1/mod.ts";
 
 console.log('Process SCORM function started');
 
@@ -38,34 +38,35 @@ function parseManifest(xmlContent: string): ManifestResult {
   console.log('Starting manifest parsing');
   
   try {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
-    
-    if (!xmlDoc) {
-      throw new Error('Failed to parse XML content');
-    }
+    // Parse XML using Deno's XML parser
+    const manifestObj = parseXML(xmlContent);
+    console.log('XML parsed successfully');
 
-    const manifest = xmlDoc.documentElement;
-    if (!manifest) {
+    if (!manifestObj || !manifestObj.manifest) {
       throw new Error('No manifest element found');
     }
 
     console.log('Manifest element found');
 
-    // Detect SCORM version
-    const scormVersion = detectScormVersion(manifest);
+    // Helper function to safely access nested properties
+    const getNestedValue = (obj: any, path: string[], defaultValue: any = undefined) => {
+      return path.reduce((curr, key) => (curr && curr[key] ? curr[key] : defaultValue), obj);
+    };
+
+    // Detect SCORM version from metadata or namespace
+    const scormVersion = detectScormVersion(manifestObj.manifest);
     console.log('Detected SCORM version:', scormVersion);
 
     // Parse metadata
-    const metadata = parseMetadata(manifest.querySelector('metadata'));
+    const metadata = parseMetadata(manifestObj.manifest.metadata);
     console.log('Metadata parsed:', metadata);
 
     // Parse organizations
-    const organizations = parseOrganizations(manifest.querySelector('organizations'));
+    const organizations = parseOrganizations(manifestObj.manifest.organizations);
     console.log('Organizations parsed:', organizations);
 
     // Parse resources
-    const resources = parseResources(manifest.querySelector('resources'));
+    const resources = parseResources(manifestObj.manifest.resources);
     console.log('Resources parsed:', resources);
 
     // Find starting page
@@ -88,89 +89,88 @@ function parseManifest(xmlContent: string): ManifestResult {
   }
 }
 
-function detectScormVersion(manifest: Element): string {
-  const xmlns = manifest.getAttribute('xmlns');
-  const schemaVersion = manifest.querySelector('metadata schemaversion')?.textContent;
+function detectScormVersion(manifest: any): string {
+  const xmlns = manifest['@xmlns'] || '';
+  const schemaVersion = getNestedValue(manifest, ['metadata', 'schemaversion', '#text'], '');
   
-  if (xmlns?.includes('2004') || schemaVersion?.includes('2004')) {
+  if (xmlns.includes('2004') || schemaVersion.includes('2004')) {
     return 'SCORM 2004';
   }
-  if (xmlns?.includes('1.2') || schemaVersion?.includes('1.2')) {
+  if (xmlns.includes('1.2') || schemaVersion.includes('1.2')) {
     return 'SCORM 1.2';
   }
   return 'Unknown';
 }
 
-function parseMetadata(metadataElement: Element | null) {
+function parseMetadata(metadataElement: any) {
   const metadata: ManifestResult['metadata'] = {};
   
   if (metadataElement) {
-    metadata.schema = metadataElement.querySelector('schema')?.textContent || undefined;
-    metadata.schemaVersion = metadataElement.querySelector('schemaversion')?.textContent || undefined;
-    metadata.keywords = Array.from(metadataElement.querySelectorAll('keyword'))
-      .map(k => k.textContent || '')
-      .filter(k => k.length > 0);
-    metadata.duration = metadataElement.querySelector('duration')?.textContent || undefined;
+    metadata.schema = getNestedValue(metadataElement, ['schema', '#text']);
+    metadata.schemaVersion = getNestedValue(metadataElement, ['schemaversion', '#text']);
+    metadata.keywords = getNestedValue(metadataElement, ['keywords'], [])
+      .map((k: any) => k['#text'])
+      .filter((k: string) => k && k.length > 0);
+    metadata.duration = getNestedValue(metadataElement, ['duration', '#text']);
   }
   
   return metadata;
 }
 
-function parseOrganizations(organizationsElement: Element | null) {
+function parseOrganizations(organizationsElement: any) {
   const result = {
     default: '',
     items: [] as ManifestResult['organizations']['items']
   };
 
   if (organizationsElement) {
-    result.default = organizationsElement.getAttribute('default') || '';
+    result.default = organizationsElement['@default'] || '';
     
-    const organizations = organizationsElement.querySelectorAll('organization');
-    organizations.forEach(org => {
-      result.items.push({
-        identifier: org.getAttribute('identifier') || '',
-        title: org.querySelector('title')?.textContent || 'Untitled',
-        resourceId: org.getAttribute('identifierref')
-      });
-    });
+    const organizations = organizationsElement.organization || [];
+    const orgArray = Array.isArray(organizations) ? organizations : [organizations];
+    
+    result.items = orgArray.map((org: any) => ({
+      identifier: org['@identifier'] || '',
+      title: getNestedValue(org, ['title', '#text'], 'Untitled'),
+      resourceId: org['@identifierref']
+    }));
   }
 
   return result;
 }
 
-function parseResources(resourcesElement: Element | null) {
+function parseResources(resourcesElement: any) {
   const resources: ManifestResult['resources'] = [];
 
-  if (resourcesElement) {
-    const resourceElements = resourcesElement.querySelectorAll('resource');
-    resourceElements.forEach(resource => {
-      resources.push({
-        identifier: resource.getAttribute('identifier') || '',
-        type: resource.getAttribute('type') || '',
-        href: resource.getAttribute('href') || undefined,
-        scormType: resource.getAttribute('adlcp:scormtype') || resource.getAttribute('scormtype') || undefined,
-        files: Array.from(resource.querySelectorAll('file'))
-          .map(file => file.getAttribute('href') || '')
-          .filter(href => href.length > 0)
-      });
-    });
+  if (resourcesElement && resourcesElement.resource) {
+    const resourceList = Array.isArray(resourcesElement.resource) 
+      ? resourcesElement.resource 
+      : [resourcesElement.resource];
+
+    resources.push(...resourceList.map((resource: any) => ({
+      identifier: resource['@identifier'] || '',
+      type: resource['@type'] || '',
+      href: resource['@href'],
+      scormType: resource['@adlcp:scormtype'] || resource['@scormtype'],
+      files: (resource.file || []).map((file: any) => file['@href']).filter(Boolean)
+    })));
   }
 
   return resources;
 }
 
 function findStartingPage(resources: ManifestResult['resources']): string | undefined {
-  // First try to find a SCO resource
   const scoResource = resources.find(r => 
     r.scormType?.toLowerCase() === 'sco' && r.href
   );
   
-  if (scoResource?.href) {
-    return scoResource.href;
-  }
-  
-  // Fallback to first resource with an href
-  return resources.find(r => r.href)?.href;
+  return scoResource?.href || resources.find(r => r.href)?.href;
+}
+
+// Helper function to safely get nested values
+function getNestedValue(obj: any, path: string[], defaultValue: any = undefined) {
+  if (!obj) return defaultValue;
+  return path.reduce((curr, key) => (curr && curr[key] !== undefined ? curr[key] : defaultValue), obj);
 }
 
 serve(async (req) => {
