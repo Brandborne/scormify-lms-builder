@@ -57,7 +57,7 @@ serve(async (req) => {
     const zip = new JSZip()
     const zipContent = await zip.loadAsync(await fileData.arrayBuffer())
     
-    // Find manifest file
+    // Find manifest file (excluding __MACOSX)
     const manifestFile = Object.keys(zipContent.files).find(path => 
       path.toLowerCase().endsWith('imsmanifest.xml') && !path.startsWith('__MACOSX/')
     )
@@ -74,10 +74,6 @@ serve(async (req) => {
     
     console.log('Parsed manifest data:', manifestData)
 
-    // Store both the original zip path and the extracted course files path
-    const originalZipPath = course.original_zip_path
-    const courseFilesPath = course.course_files_path
-
     // Extract and upload all files from the zip
     console.log('Extracting and uploading files...')
     for (const [relativePath, file] of Object.entries(zipContent.files)) {
@@ -85,7 +81,7 @@ serve(async (req) => {
       if (!file.dir && !relativePath.startsWith('__MACOSX/')) {
         try {
           const content = await file.async('arraybuffer')
-          const filePath = `${courseFilesPath}/${relativePath}`
+          const filePath = `${course.course_files_path}/${relativePath}`
           
           console.log('Uploading file:', filePath)
           
@@ -112,20 +108,6 @@ serve(async (req) => {
     const manifestDir = manifestFile.substring(0, manifestFile.lastIndexOf('/') + 1)
     console.log('Manifest directory:', manifestDir)
 
-    // Determine index paths
-    const startingPage = manifestData.startingPage || 'scormdriver/indexAPI.html'
-    // Adjust the paths to be relative to the course files directory
-    const indexPath = `${courseFilesPath}/${manifestDir}${startingPage}`
-    const originalIndexPath = indexPath
-
-    console.log('Paths:', {
-      originalZipPath,
-      courseFilesPath,
-      startingPage,
-      indexPath,
-      originalIndexPath
-    })
-
     // Update course with processing results
     const { error: updateError } = await supabaseClient
       .from('courses')
@@ -133,9 +115,7 @@ serve(async (req) => {
         manifest_data: {
           ...manifestData,
           status: 'processed',
-          index_path: indexPath,
-          original_index_path: originalIndexPath,
-          startingPage
+          startingPage: manifestData.startingPage || 'shared/launchpage.html'
         }
       })
       .eq('id', courseId)

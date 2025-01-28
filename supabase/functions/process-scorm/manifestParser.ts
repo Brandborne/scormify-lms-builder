@@ -23,6 +23,7 @@ export interface ScormManifest {
     type: string;
     href?: string;
     dependencies?: string[];
+    files?: string[];
   }>;
 }
 
@@ -31,26 +32,14 @@ export async function parseManifest(xmlString: string): Promise<ScormManifest> {
     console.log('Parsing manifest XML...');
     const xmlDoc = parseXML(xmlString);
     
-    // Determine SCORM version
-    let scormVersion = 'SCORM 1.2'; // Default version
-    const schemaVersion = findNode(xmlDoc, 'schemaversion');
-    if (schemaVersion?.value?.includes('2004')) {
-      scormVersion = 'SCORM 2004';
-    }
-
     // Get metadata
     const metadata = findNode(xmlDoc, 'metadata');
-    if (metadata) {
-      const schema = findNode(metadata, 'schema');
-      if (schema?.value?.includes('SCORM')) {
-        scormVersion = schema.value;
-      }
-    }
+    const schemaVersion = findNode(metadata, 'schemaversion')?.value;
+    console.log('Schema version:', schemaVersion);
 
-    // Get title and description
-    const title = findNode(xmlDoc, 'title')?.value;
-    const description = findNode(xmlDoc, 'description')?.value;
-
+    // Determine SCORM version from metadata
+    let scormVersion = schemaVersion || 'SCORM 1.2';
+    
     // Parse organizations
     const organizations: ScormManifest['organizations'] = {
       default: '',
@@ -82,41 +71,40 @@ export async function parseManifest(xmlString: string): Promise<ScormManifest> {
       });
     }
 
-    // Find starting page
-    let startingPage: string | undefined;
-
-    // First try organizations
-    if (organizations.default) {
-      const defaultOrg = organizations.items.find(org => 
-        org.identifier === organizations.default
-      );
-      if (defaultOrg?.items?.[0]?.launch) {
-        const resourceNode = findNodes(xmlDoc, 'resource').find(res => 
-          res.attributes?.identifier === defaultOrg.items[0].launch
-        );
-        startingPage = resourceNode?.attributes?.href;
-      }
-    }
-
     // Parse resources
     const resources = findNodes(xmlDoc, 'resource').map(resource => ({
       identifier: resource.attributes?.identifier || '',
       type: resource.attributes?.type || '',
       href: resource.attributes?.href,
+      files: findNodes(resource, 'file').map(file => file.attributes?.href).filter(Boolean),
       dependencies: findNodes(resource, 'dependency')
         .map(dep => dep.attributes?.identifierref)
         .filter(Boolean)
     }));
 
-    // If no starting page found in organizations, try first resource with href
-    if (!startingPage) {
-      startingPage = resources.find(r => r.href)?.href;
+    // Find starting page
+    let startingPage: string | undefined;
+
+    // First try to get the href from the resource referenced by the first item
+    if (organizations.default && organizations.items.length > 0) {
+      const defaultOrg = organizations.items.find(org => 
+        org.identifier === organizations.default
+      );
+      if (defaultOrg?.items?.[0]?.launch) {
+        const resourceNode = resources.find(res => 
+          res.identifier === defaultOrg.items[0].launch
+        );
+        startingPage = resourceNode?.href;
+      }
     }
 
-    // Default to scormdriver/indexAPI.html if no starting page found
-    if (!startingPage) {
-      startingPage = 'scormdriver/indexAPI.html';
+    // If no starting page found in organizations, try first resource with href
+    if (!startingPage && resources.length > 0) {
+      startingPage = resources[0].href;
     }
+
+    // Get title from first organization
+    const title = organizations.items[0]?.title;
 
     console.log('Successfully parsed manifest:', {
       scormVersion,
@@ -127,10 +115,9 @@ export async function parseManifest(xmlString: string): Promise<ScormManifest> {
     });
 
     return {
-      version: schemaVersion?.value,
+      version: schemaVersion,
       scormVersion,
       title,
-      description,
       startingPage,
       organizations,
       resources
