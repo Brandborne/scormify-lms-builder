@@ -12,6 +12,11 @@ export async function downloadZipFile(supabase: any, path: string): Promise<Arra
     throw new Error(`Failed to download zip file: ${error.message}`);
   }
 
+  if (!data) {
+    console.error('No data received from storage download');
+    throw new Error('No data received from storage download');
+  }
+
   return await data.arrayBuffer();
 }
 

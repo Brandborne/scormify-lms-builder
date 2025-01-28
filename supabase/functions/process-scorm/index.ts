@@ -56,8 +56,8 @@ serve(async (req) => {
       throw new Error('Course not found')
     }
 
-    console.log('Downloading zip file:', course.package_path)
-    const zipBuffer = await downloadZipFile(supabase, course.package_path)
+    console.log('Downloading zip file:', course.original_zip_path)
+    const zipBuffer = await downloadZipFile(supabase, course.original_zip_path)
     
     console.log('Loading zip content')
     const zip = await JSZip.loadAsync(zipBuffer)
