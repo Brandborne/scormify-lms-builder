@@ -1,7 +1,7 @@
-import { detectScormVersion } from './parsers/versionParser.ts';
 import { parseMetadata } from './parsers/metadataParser.ts';
 import { parseOrganizations } from './parsers/organizationsParser.ts';
 import { parseResources } from './parsers/resourcesParser.ts';
+import { detectScormVersion } from './parsers/versionParser.ts';
 
 export interface ManifestResult {
   title?: string;
@@ -68,29 +68,21 @@ export interface ManifestResult {
   }>;
 }
 
-function findStartingPage(resources: ManifestResult['resources']): string | undefined {
-  // Look for SCO resource first
-  const scoResource = resources.find(r => 
-    r.scormType?.toLowerCase() === 'sco' && r.href
-  );
-  
-  if (scoResource?.href) {
-    return scoResource.href;
-  }
-
-  // Fallback to first resource with href
-  return resources.find(r => r.href)?.href;
-}
-
 export async function parseManifest(manifestContent: string): Promise<ManifestResult> {
   console.log('Starting manifest parsing...');
   
   try {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(manifestContent, 'text/xml');
-    
+    // Use Deno's XML parsing
+    const decoder = new TextDecoder('utf-8');
+    const encoder = new TextEncoder();
+    const xmlData = encoder.encode(manifestContent);
+    const doc = await (new DOMParser().parseFromString(
+      decoder.decode(xmlData),
+      'text/xml'
+    ));
+
     if (!doc) {
-      throw new Error('Failed to parse manifest XML');
+      throw new Error('Failed to parse XML document');
     }
 
     const manifestElement = doc.querySelector('manifest');
@@ -106,23 +98,19 @@ export async function parseManifest(manifestContent: string): Promise<ManifestRe
     const metadata = parseMetadata(manifestElement.querySelector('metadata'));
     const organizations = parseOrganizations(manifestElement.querySelector('organizations'));
     const resources = parseResources(manifestElement.querySelector('resources'));
-    
-    // Find starting page
-    const startingPage = findStartingPage(resources);
-    console.log('Starting page:', startingPage);
 
-    // Get prerequisites from organizations
+    // Find starting page from resources
+    const startingPage = resources.find(r => 
+      r.scormType?.toLowerCase() === 'sco' && r.href
+    )?.href || resources[0]?.href;
+
+    // Extract prerequisites from organizations
     const prerequisites = organizations.items
       .flatMap(item => item.prerequisites || [])
       .filter(Boolean);
 
-    // Get title from organizations or metadata
-    const title = organizations.items[0]?.title || 
-                 metadata.title ||
-                 'Untitled Course';
-
     const result: ManifestResult = {
-      title,
+      title: organizations.items[0]?.title || metadata.title || 'Untitled Course',
       version: metadata.schemaVersion,
       scormVersion,
       status: 'processed',
