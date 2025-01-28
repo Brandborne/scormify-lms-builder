@@ -1,40 +1,24 @@
 import { parse } from "https://deno.land/x/xml@2.1.1/mod.ts";
 import { logDebug, logError } from "../../utils/logger.ts";
-import { ScormError } from "../../utils/errorHandler.ts";
 
 export function parseXML(xmlString: string): any {
-  logDebug('Parsing XML string, length:', xmlString.length);
-  logDebug('First 500 chars:', xmlString.substring(0, 500));
+  logDebug('Parsing XML string');
   
   try {
     const xmlDoc = parse(xmlString);
-    
     if (!xmlDoc) {
-      logError('Failed to create XML document');
-      throw new ScormError(
-        'Failed to create XML document',
-        'XML_PARSE_ERROR'
-      );
+      throw new Error('Failed to create XML document');
     }
-
-    logDebug('Successfully parsed XML document');
-    logDebug('Root element:', xmlDoc.root?.name);
-    
     return xmlDoc;
   } catch (error) {
-    logError('Error in parseXML:', error);
-    throw new ScormError(
-      `XML parsing failed: ${error.message}`,
-      'XML_PARSE_ERROR',
-      { originalError: error }
-    );
+    logError('Error parsing XML:', error);
+    throw error;
   }
 }
 
 export function getNodeText(node: any, selector: string): string | undefined {
   if (!node) return undefined;
   try {
-    // Split selector by '>' to handle nested elements
     const parts = selector.split('>').map(p => p.trim());
     let current = node;
     
@@ -65,16 +49,12 @@ export function getNodeAttribute(node: any, attribute: string): string | undefin
 export function getAllNodes(node: any, selector: string): any[] {
   if (!node) return [];
   try {
-    // Split selector by ',' to handle multiple selectors
-    const selectors = selector.split(',').map(s => s.trim());
     const results: any[] = [];
     
     function traverse(currentNode: any) {
       if (!currentNode) return;
       
-      if (selectors.some(sel => 
-        currentNode.name?.toLowerCase() === sel.toLowerCase()
-      )) {
+      if (currentNode.name?.toLowerCase() === selector.toLowerCase()) {
         results.push(currentNode);
       }
       
@@ -89,39 +69,4 @@ export function getAllNodes(node: any, selector: string): any[] {
     logError(`Error getting nodes for "${selector}":`, error);
     return [];
   }
-}
-
-export function validateManifest(manifest: any): { isValid: boolean; errors: string[] } {
-  const errors: string[] = [];
-
-  // Check for required elements
-  if (!getAllNodes(manifest, 'organizations').length) {
-    errors.push('Missing required element: organizations');
-  }
-
-  if (!getAllNodes(manifest, 'resources').length) {
-    errors.push('Missing required element: resources');
-  }
-
-  // Check for required attributes
-  if (!getNodeAttribute(manifest, 'identifier')) {
-    errors.push('Missing required attribute: manifest identifier');
-  }
-
-  // Check for valid organization structure
-  const organizations = getAllNodes(manifest, 'organizations')[0];
-  if (organizations) {
-    const defaultOrg = getNodeAttribute(organizations, 'default');
-    const hasDefaultOrg = getAllNodes(organizations, 'organization')
-      .some(org => getNodeAttribute(org, 'identifier') === defaultOrg);
-    
-    if (!hasDefaultOrg) {
-      errors.push('Invalid organizations structure: default organization not found');
-    }
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
 }
