@@ -1,4 +1,4 @@
-import { DOMParser } from 'https://deno.land/x/deno_dom/deno-dom-wasm.ts';
+import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 
 export interface ScormManifest {
   version?: string;
@@ -28,13 +28,15 @@ export interface ScormManifest {
 }
 
 export async function parseManifest(xmlString: string): Promise<ScormManifest> {
-  console.log('Starting manifest parsing with XML length:', xmlString.length);
-  console.log('First 500 chars of manifest:', xmlString.substring(0, 500));
+  console.log('Starting manifest parsing...');
+  console.log('Manifest XML length:', xmlString.length);
+  console.log('First 500 chars:', xmlString.substring(0, 500));
   
   try {
+    // Parse XML document using Deno DOM
     const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlString, "text/xml");
-    
+    const xmlDoc = parser.parseFromString(xmlString, "application/xml");
+
     if (!xmlDoc) {
       console.error('Failed to parse XML document');
       throw new Error('Failed to parse XML document');
@@ -47,14 +49,12 @@ export async function parseManifest(xmlString: string): Promise<ScormManifest> {
       throw new Error(`Invalid XML format in manifest: ${parseError.textContent}`);
     }
 
-    // Get manifest element and log its structure
-    const manifest = xmlDoc.documentElement;
-    console.log('Manifest element found:', manifest.tagName);
-    console.log('Manifest attributes:', Array.from(manifest.attributes).map(attr => `${attr.name}=${attr.value}`));
+    const manifestElement = xmlDoc.documentElement;
+    console.log('Manifest element found:', manifestElement.tagName);
 
-    // Determine SCORM version from metadata or namespace
+    // Detect SCORM version from metadata or namespace
     let scormVersion = 'SCORM 1.2'; // Default version
-    const metadata = manifest.querySelector('metadata');
+    const metadata = manifestElement.querySelector('metadata');
     if (metadata) {
       const schema = metadata.querySelector('schema')?.textContent;
       console.log('Schema found in metadata:', schema);
@@ -64,7 +64,7 @@ export async function parseManifest(xmlString: string): Promise<ScormManifest> {
     }
 
     // Parse title with multiple fallbacks
-    const title = getFirstMatchingElement(manifest, [
+    const title = getFirstMatchingElement(manifestElement, [
       'organization > title',
       'organizations > organization > title',
       'metadata > title',
@@ -73,7 +73,7 @@ export async function parseManifest(xmlString: string): Promise<ScormManifest> {
     console.log('Parsed title:', title);
 
     // Parse description
-    const description = getFirstMatchingElement(manifest, [
+    const description = getFirstMatchingElement(manifestElement, [
       'description',
       'metadata > description',
       'organization > description'
@@ -81,35 +81,28 @@ export async function parseManifest(xmlString: string): Promise<ScormManifest> {
     console.log('Parsed description:', description);
 
     // Parse organizations
-    const organizations = parseOrganizations(manifest);
+    const organizations = parseOrganizations(manifestElement);
     console.log('Parsed organizations:', organizations);
 
     // Parse resources
-    const resources = parseResources(manifest);
+    const resources = parseResources(manifestElement);
     console.log('Parsed resources:', resources);
 
     // Find starting page
     const startingPage = findStartingPage(resources, organizations);
     console.log('Found starting page:', startingPage);
 
-    // Parse prerequisites
-    const prerequisites = Array.from(manifest.querySelectorAll('prerequisites'))
-      .map(el => el.textContent?.trim())
-      .filter((text): text is string => !!text);
-    console.log('Found prerequisites:', prerequisites);
-
     const result: ScormManifest = {
-      version: manifest.getAttribute('version') || undefined,
+      version: manifestElement.getAttribute('version') || undefined,
       title,
       description,
       startingPage,
-      prerequisites: prerequisites.length > 0 ? prerequisites : undefined,
       scormVersion,
       organizations,
       resources
     };
 
-    console.log('Final parsed manifest:', JSON.stringify(result, null, 2));
+    console.log('Final manifest parsing result:', JSON.stringify(result, null, 2));
     return result;
 
   } catch (error) {
