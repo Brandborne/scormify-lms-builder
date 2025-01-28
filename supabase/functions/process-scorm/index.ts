@@ -29,25 +29,28 @@ interface ManifestData {
 }
 
 async function parseManifest(xmlString: string): Promise<ManifestData> {
-  console.log('Parsing manifest XML, length:', xmlString.length);
+  console.log('Starting manifest parsing...');
+  console.log('XML string length:', xmlString.length);
   console.log('First 500 chars:', xmlString.substring(0, 500));
 
   try {
     const parsedXml = parse(xmlString);
     console.log('Parsed XML structure:', JSON.stringify(parsedXml, null, 2));
 
-    if (!parsedXml) {
-      console.error('Failed to parse XML document');
+    // Validate parsed XML
+    if (!parsedXml || typeof parsedXml !== 'object') {
+      console.error('Invalid XML parsing result:', parsedXml);
       throw new Error('Failed to parse XML document');
     }
 
     // Get the manifest element (root)
     const manifestElement = parsedXml.root;
+    console.log('Root element:', manifestElement);
+
     if (!manifestElement || manifestElement.name !== 'manifest') {
+      console.error('Invalid manifest structure:', manifestElement);
       throw new Error('Invalid manifest: No manifest element found');
     }
-
-    console.log('Manifest element:', manifestElement);
 
     // Detect SCORM version from metadata or namespace
     let scormVersion = 'SCORM 1.2'; // Default version
