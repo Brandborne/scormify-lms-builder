@@ -5,11 +5,12 @@ import { generateNonce } from "@/lib/utils";
 interface ScormFrameProps {
   url: string;
   title: string;
+  scormVersion?: string;
 }
 
-export function ScormFrame({ url, title }: ScormFrameProps) {
+export function ScormFrame({ url, title, scormVersion }: ScormFrameProps) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
-  const nonce = generateNonce(); // Generate a unique nonce for this render
+  const nonce = generateNonce();
 
   useEffect(() => {
     const iframe = iframeRef.current;
@@ -17,6 +18,7 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
 
     const handleLoad = debounce(() => {
       console.log('SCORM content frame loaded:', iframe.src);
+      console.log('SCORM Version:', scormVersion);
       
       try {
         if (iframe.contentWindow) {
@@ -52,11 +54,7 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
           console.log('SCORM 2004 API available:', !!iframe.contentWindow.API_1484_11);
         }
       } catch (error) {
-        console.error('Error accessing iframe content:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        });
+        console.error('Error accessing iframe content:', error);
       }
     }, 300);
 
@@ -69,7 +67,7 @@ export function ScormFrame({ url, title }: ScormFrameProps) {
       iframe.removeEventListener('load', handleLoad);
       iframe.removeEventListener('error', () => {});
     };
-  }, [url, nonce]);
+  }, [url, nonce, scormVersion]);
 
   return (
     <iframe

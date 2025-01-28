@@ -57,6 +57,7 @@ export function CourseViewer() {
         description: "Failed to process the course. Please try again.",
         variant: "destructive",
       });
+      console.error('Processing error:', error);
     }
   });
 
@@ -68,17 +69,21 @@ export function CourseViewer() {
         throw new Error('Missing course path');
       }
 
-      // Construct the path to the SCORM driver
-      const scormDriverPath = `${course.course_files_path}/scormdriver/indexAPI.html`;
+      // Use the starting page from manifest if available
+      const startingPage = course.manifest_data?.startingPage || 'scormdriver/indexAPI.html';
+      const coursePath = `${course.course_files_path}/${startingPage}`;
       
       // Get the public URL
       const { data } = supabase
         .storage
         .from('scorm_packages')
-        .getPublicUrl(scormDriverPath);
+        .getPublicUrl(coursePath);
       
       console.log('Course URL:', data.publicUrl);
-      return data.publicUrl;
+      return {
+        url: data.publicUrl,
+        scormVersion: course.manifest_data?.scormVersion || 'SCORM 1.2'
+      };
     }
   });
 
@@ -106,7 +111,11 @@ export function CourseViewer() {
 
   return (
     <div className="container mx-auto p-8">
-      <CourseHeader title={course.title} description={course.description} />
+      <CourseHeader 
+        title={course.title} 
+        description={course.description}
+        scormVersion={course.manifest_data?.scormVersion}
+      />
       
       {course.manifest_data?.status === 'pending_processing' && (
         <CourseProcessingAlert 
@@ -118,7 +127,8 @@ export function CourseViewer() {
       <CourseContent 
         courseId={courseId!} 
         title={course.title} 
-        publicUrl={courseUrl} 
+        courseUrl={courseUrl}
+        manifestData={course.manifest_data}
       />
     </div>
   );

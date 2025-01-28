@@ -1,13 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 
 interface CourseHeaderProps {
   title: string;
   description?: string | null;
+  scormVersion?: string;
 }
 
-export function CourseHeader({ title, description }: CourseHeaderProps) {
+export function CourseHeader({ title, description, scormVersion }: CourseHeaderProps) {
   const navigate = useNavigate();
   
   return (
@@ -20,9 +22,18 @@ export function CourseHeader({ title, description }: CourseHeaderProps) {
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back to Courses
       </Button>
-      <h1 className="text-3xl font-bold">{title}</h1>
+      
+      <div className="flex items-center gap-3 mb-2">
+        <h1 className="text-2xl font-bold">{title}</h1>
+        {scormVersion && (
+          <Badge variant="secondary">
+            {scormVersion}
+          </Badge>
+        )}
+      </div>
+      
       {description && (
-        <p className="text-muted-foreground mt-2">{description}</p>
+        <p className="text-muted-foreground">{description}</p>
       )}
     </div>
   );

@@ -5,9 +5,10 @@ import { ScormApiCleanup } from "./cleanup/ScormApiCleanup";
 
 interface ScormInitializerProps {
   courseId: string;
+  scormVersion?: string;
 }
 
-export function ScormInitializer({ courseId }: ScormInitializerProps) {
+export function ScormInitializer({ courseId, scormVersion }: ScormInitializerProps) {
   const scormApiRef = useRef<ScormAPI | null>(null);
 
   const handleInitialized = (api: ScormAPI) => {
@@ -18,6 +19,7 @@ export function ScormInitializer({ courseId }: ScormInitializerProps) {
     <>
       <ScormApiInitializer 
         courseId={courseId} 
+        scormVersion={scormVersion}
         onInitialized={handleInitialized} 
       />
       <ScormApiCleanup api={scormApiRef.current} />
