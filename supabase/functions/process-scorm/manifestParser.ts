@@ -1,227 +1,204 @@
-import { parse as parseXML } from 'https://deno.land/x/xml@2.1.1/mod.ts';
+import { DOMParser } from 'https://deno.land/x/deno_dom/deno-dom-wasm.ts';
 
-export async function parseManifest(manifestContent: string): Promise<any> {
-  console.log('Starting manifest parsing...');
+export interface ScormManifest {
+  version?: string;
+  title?: string;
+  description?: string;
+  startingPage?: string;
+  prerequisites?: string[];
+  scormVersion?: string;
+  organizations?: {
+    default: string;
+    items: Array<{
+      identifier: string;
+      title: string;
+      items?: Array<{
+        identifier: string;
+        title: string;
+        launch?: string;
+      }>;
+    }>;
+  };
+  resources?: Array<{
+    identifier: string;
+    type: string;
+    href?: string;
+    dependencies?: string[];
+  }>;
+}
+
+export async function parseManifest(xmlString: string): Promise<ScormManifest> {
+  console.log('Starting manifest parsing with XML length:', xmlString.length);
+  console.log('First 500 chars of manifest:', xmlString.substring(0, 500));
   
   try {
-    const xmlObj = parseXML(manifestContent);
-    console.log('XML parsing successful');
-
-    if (!xmlObj || !xmlObj.manifest) {
-      throw new Error('Invalid manifest: No manifest element found');
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+    
+    if (!xmlDoc) {
+      console.error('Failed to parse XML document');
+      throw new Error('Failed to parse XML document');
     }
 
-    const manifest = xmlObj.manifest[0] || xmlObj.manifest;
-    console.log('Processing manifest element:', manifest);
-    
-    // Get basic manifest attributes
-    const identifier = manifest['@identifier'];
-    const version = manifest['@version'];
-    
-    // Parse metadata
-    const metadata = parseMetadata(manifest.metadata?.[0]);
-    console.log('Parsed metadata:', metadata);
+    // Check for XML parsing errors
+    const parseError = xmlDoc.querySelector('parsererror');
+    if (parseError) {
+      console.error('XML Parse Error:', parseError.textContent);
+      throw new Error(`Invalid XML format in manifest: ${parseError.textContent}`);
+    }
+
+    // Get manifest element and log its structure
+    const manifest = xmlDoc.documentElement;
+    console.log('Manifest element found:', manifest.tagName);
+    console.log('Manifest attributes:', Array.from(manifest.attributes).map(attr => `${attr.name}=${attr.value}`));
+
+    // Determine SCORM version from metadata or namespace
+    let scormVersion = 'SCORM 1.2'; // Default version
+    const metadata = manifest.querySelector('metadata');
+    if (metadata) {
+      const schema = metadata.querySelector('schema')?.textContent;
+      console.log('Schema found in metadata:', schema);
+      if (schema?.includes('2004')) {
+        scormVersion = 'SCORM 2004';
+      }
+    }
+
+    // Parse title with multiple fallbacks
+    const title = getFirstMatchingElement(manifest, [
+      'organization > title',
+      'organizations > organization > title',
+      'metadata > title',
+      'title'
+    ])?.textContent?.trim() || 'Untitled Course';
+    console.log('Parsed title:', title);
+
+    // Parse description
+    const description = getFirstMatchingElement(manifest, [
+      'description',
+      'metadata > description',
+      'organization > description'
+    ])?.textContent?.trim();
+    console.log('Parsed description:', description);
 
     // Parse organizations
-    const organizations = parseOrganizations(manifest.organizations?.[0]);
+    const organizations = parseOrganizations(manifest);
     console.log('Parsed organizations:', organizations);
 
     // Parse resources
-    const resources = parseResources(manifest.resources?.[0]);
+    const resources = parseResources(manifest);
     console.log('Parsed resources:', resources);
 
     // Find starting page
     const startingPage = findStartingPage(resources, organizations);
     console.log('Found starting page:', startingPage);
 
-    // Detect SCORM version
-    const scormVersion = detectScormVersion(manifest);
-    console.log('Detected SCORM version:', scormVersion);
+    // Parse prerequisites
+    const prerequisites = Array.from(manifest.querySelectorAll('prerequisites'))
+      .map(el => el.textContent?.trim())
+      .filter((text): text is string => !!text);
+    console.log('Found prerequisites:', prerequisites);
 
-    const result = {
-      identifier,
-      version,
-      title: metadata.title || organizations.items[0]?.title || 'Untitled Course',
-      description: metadata.description,
-      scormVersion,
-      status: 'processed',
+    const result: ScormManifest = {
+      version: manifest.getAttribute('version') || undefined,
+      title,
+      description,
       startingPage,
-      metadata,
+      prerequisites: prerequisites.length > 0 ? prerequisites : undefined,
+      scormVersion,
       organizations,
       resources
     };
 
-    console.log('Final manifest parsing result:', result);
+    console.log('Final parsed manifest:', JSON.stringify(result, null, 2));
     return result;
 
   } catch (error) {
     console.error('Error parsing manifest:', error);
-    throw new Error(`Failed to parse manifest: ${error.message}`);
+    throw new Error(`Failed to parse SCORM manifest: ${error.message}`);
   }
 }
 
-function parseMetadata(metadataNode: any): any {
-  console.log('Parsing metadata from node:', metadataNode);
-  
-  if (!metadataNode) {
-    return {};
+function getFirstMatchingElement(root: Element, selectors: string[]): Element | null {
+  for (const selector of selectors) {
+    const element = root.querySelector(selector);
+    if (element) {
+      console.log(`Found element using selector "${selector}":`, element.textContent);
+      return element;
+    }
   }
-
-  // Try both namespaced and non-namespaced nodes
-  const title = 
-    metadataNode?.['title']?.[0]?.['#text'] ||
-    metadataNode?.['adlcp:title']?.[0]?.['#text'] ||
-    metadataNode?.['imsmd:title']?.[0]?.['#text'];
-    
-  const description = 
-    metadataNode?.['description']?.[0]?.['#text'] ||
-    metadataNode?.['adlcp:description']?.[0]?.['#text'] ||
-    metadataNode?.['imsmd:description']?.[0]?.['#text'];
-
-  const result = {
-    title,
-    description,
-    version: metadataNode?.['version']?.[0]?.['#text']
-  };
-
-  console.log('Parsed metadata result:', result);
-  return result;
+  return null;
 }
 
-function parseOrganizations(organizationsNode: any): any {
-  console.log('Parsing organizations from node:', organizationsNode);
-  
-  if (!organizationsNode) {
+function parseOrganizations(manifest: Element) {
+  console.log('Parsing organizations...');
+  const orgsElement = manifest.querySelector('organizations');
+  if (!orgsElement) {
+    console.log('No organizations element found');
     return { default: '', items: [] };
   }
 
-  const defaultOrg = organizationsNode['@default'];
-  const organizations = organizationsNode['organization'] || [];
+  const defaultOrg = orgsElement.getAttribute('default') || '';
+  const items = Array.from(orgsElement.querySelectorAll('organization')).map(org => {
+    const identifier = org.getAttribute('identifier') || '';
+    const title = org.querySelector('title')?.textContent?.trim() || '';
+    const items = Array.from(org.querySelectorAll('item')).map(item => ({
+      identifier: item.getAttribute('identifier') || '',
+      title: item.querySelector('title')?.textContent?.trim() || '',
+      launch: item.getAttribute('identifierref')
+    }));
 
-  const items = (Array.isArray(organizations) ? organizations : [organizations])
-    .map(parseOrganizationItem)
-    .filter(Boolean);
+    console.log('Parsed organization:', { identifier, title, items });
+    return { identifier, title, items };
+  });
 
-  const result = {
-    default: defaultOrg || '',
-    items
-  };
-
-  console.log('Parsed organizations result:', result);
-  return result;
+  return { default: defaultOrg, items };
 }
 
-function parseOrganizationItem(item: any): any {
-  if (!item) return null;
-
-  const identifier = item['@identifier'];
-  const title = item['title']?.[0]?.['#text'];
-  const resourceId = item['@identifierref'];
-
-  // Handle both namespaced and non-namespaced prerequisites
-  const prerequisites = item['adlcp:prerequisites']?.map((prereq: any) => 
-    prereq['#text']
-  ).filter(Boolean);
-
-  const children = item['item']?.map((childItem: any) => 
-    parseOrganizationItem(childItem)
-  ).filter(Boolean);
-
-  return {
-    identifier,
-    title,
-    prerequisites: prerequisites?.length ? prerequisites : undefined,
-    resourceId,
-    children: children?.length ? children : undefined
-  };
-}
-
-function parseResources(resourcesNode: any): any[] {
-  console.log('Parsing resources from node:', resourcesNode);
-  
-  if (!resourcesNode?.resource) {
-    return [];
-  }
-
-  const resources = Array.isArray(resourcesNode.resource) 
-    ? resourcesNode.resource 
-    : [resourcesNode.resource];
-
-  return resources.map((resource: any) => {
+function parseResources(manifest: Element) {
+  console.log('Parsing resources...');
+  const resources = Array.from(manifest.querySelectorAll('resource')).map(resource => {
     const parsed = {
-      identifier: resource['@identifier'],
-      type: resource['@type'],
-      href: resource['@href'],
-      scormType: resource['@adlcp:scormtype'] || resource['@scormType'],
-      files: parseFiles(resource.file),
-      dependencies: parseDependencies(resource.dependency)
+      identifier: resource.getAttribute('identifier') || '',
+      type: resource.getAttribute('type') || '',
+      href: resource.getAttribute('href'),
+      dependencies: Array.from(resource.querySelectorAll('dependency'))
+        .map(dep => dep.getAttribute('identifierref'))
+        .filter((id): id is string => !!id)
     };
-
     console.log('Parsed resource:', parsed);
     return parsed;
   });
+
+  return resources;
 }
 
-function parseFiles(files: any): string[] {
-  if (!files) return [];
+function findStartingPage(
+  resources: Array<{ identifier: string; type: string; href?: string }>,
+  organizations: { default: string; items: Array<any> }
+): string | undefined {
+  console.log('Finding starting page...');
   
-  const fileArray = Array.isArray(files) ? files : [files];
-  return fileArray.map((file: any) => file['@href']).filter(Boolean);
-}
-
-function parseDependencies(dependencies: any): string[] {
-  if (!dependencies) return [];
-  
-  const depArray = Array.isArray(dependencies) ? dependencies : [dependencies];
-  return depArray.map((dep: any) => dep['@identifierref']).filter(Boolean);
-}
-
-function findStartingPage(resources: any[], organizations: any): string | undefined {
   // First try to find it in organizations
-  const defaultOrg = organizations.items.find((org: any) => 
-    org.identifier === organizations.default
-  );
-
-  if (defaultOrg?.items?.[0]?.resourceId) {
-    const resource = resources.find(r => 
-      r.identifier === defaultOrg.items[0].resourceId
+  if (organizations.default && organizations.items.length > 0) {
+    const defaultOrg = organizations.items.find(org => 
+      org.identifier === organizations.default
     );
-    if (resource?.href) return resource.href;
+    if (defaultOrg?.items?.[0]?.launch) {
+      const resource = resources.find(r => r.identifier === defaultOrg.items[0].launch);
+      if (resource?.href) {
+        console.log('Found starting page in default organization:', resource.href);
+        return resource.href;
+      }
+    }
   }
 
-  // If not found in organizations, look for first SCO resource
-  const scoResource = resources.find(r => 
-    r.scormType?.toLowerCase() === 'sco' && r.href
-  );
-  if (scoResource?.href) return scoResource.href;
-
-  // Fallback to first resource with href
-  return resources.find(r => r.href)?.href;
-}
-
-function detectScormVersion(manifest: any): string {
-  // Check metadata schema version first
-  const schema = manifest.metadata?.[0]?.['schema']?.[0]?.['#text'];
-  if (schema) {
-    if (schema.includes('2004')) return 'SCORM 2004';
-    if (schema.includes('1.2')) return 'SCORM 1.2';
-  }
-  
-  // Check namespace attributes
-  const xmlns = manifest['@xmlns'];
-  if (xmlns) {
-    if (xmlns.includes('2004')) return 'SCORM 2004';
-    if (xmlns.includes('1.2')) return 'SCORM 1.2';
+  // Then look for first resource with href
+  const firstResourceWithHref = resources.find(r => r.href);
+  if (firstResourceWithHref?.href) {
+    console.log('Using first resource with href as starting page:', firstResourceWithHref.href);
+    return firstResourceWithHref.href;
   }
 
-  // Check for version-specific elements
-  const hasScorm2004Elements = manifest['imsss:sequencing'] || 
-                              manifest['adlseq:objectives'] ||
-                              manifest['adlnav:presentation'];
-  
-  if (hasScorm2004Elements) {
-    return 'SCORM 2004';
-  }
-
-  return 'SCORM 1.2';
+  console.log('No starting page found');
+  return undefined;
 }
