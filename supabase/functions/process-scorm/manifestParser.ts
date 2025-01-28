@@ -36,17 +36,6 @@ export interface ManifestResult {
           description?: string;
         }>;
       };
-      sequencing?: {
-        controlMode?: {
-          choice: boolean;
-          flow: boolean;
-          forwardOnly?: boolean;
-        };
-        deliveryControls?: {
-          completionSetByContent: boolean;
-          objectiveSetByContent: boolean;
-        };
-      };
       prerequisites?: string[];
       resourceId?: string;
       children?: any[];
@@ -62,10 +51,6 @@ export interface ManifestResult {
       type?: string;
     }>;
     dependencies?: string[];
-    metadata?: {
-      description?: string;
-      requirements?: string[];
-    };
   }>;
 }
 
@@ -73,7 +58,6 @@ export async function parseManifest(manifestContent: string): Promise<ManifestRe
   console.log('Starting manifest parsing...');
   
   try {
-    // Parse XML content using deno-xml-parser
     const xmlObj = parseXML(manifestContent);
     console.log('Successfully parsed XML:', xmlObj);
 
@@ -81,24 +65,20 @@ export async function parseManifest(manifestContent: string): Promise<ManifestRe
       throw new Error('Invalid manifest: No manifest element found');
     }
 
-    // Get the manifest object (it's the root element)
     const manifest = xmlObj.manifest[0] || xmlObj.manifest;
     console.log('Manifest element found, detecting SCORM version...');
     
     const scormVersion = detectScormVersion(manifest);
     console.log('Detected SCORM version:', scormVersion);
 
-    // Parse main sections
     const metadata = parseMetadata(manifest.metadata?.[0]);
     const organizations = parseOrganizations(manifest.organizations?.[0]);
     const resources = parseResources(manifest.resources?.[0]);
 
-    // Find starting page from resources
     const startingPage = resources.find(r => 
       r.scormType?.toLowerCase() === 'sco' && r.href
     )?.href || resources[0]?.href;
 
-    // Extract prerequisites from organizations
     const prerequisites = organizations.items
       .flatMap(item => item.prerequisites || [])
       .filter(Boolean);
