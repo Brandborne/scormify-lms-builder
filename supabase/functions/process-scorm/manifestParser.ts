@@ -5,7 +5,6 @@ export interface ScormManifest {
   title?: string;
   description?: string;
   startingPage?: string;
-  prerequisites?: string[];
   scormVersion?: string;
   organizations?: {
     default: string;
@@ -99,12 +98,6 @@ export async function parseManifest(xmlString: string): Promise<ScormManifest> {
       }
     }
 
-    // Fallback to first resource
-    if (!startingPage) {
-      const firstResource = findNode(xmlDoc, 'resource');
-      startingPage = firstResource?.attributes?.href;
-    }
-
     // Parse resources
     const resources = findNodes(xmlDoc, 'resource').map(resource => ({
       identifier: resource.attributes?.identifier || '',
@@ -114,6 +107,16 @@ export async function parseManifest(xmlString: string): Promise<ScormManifest> {
         .map(dep => dep.attributes?.identifierref)
         .filter(Boolean)
     }));
+
+    // If no starting page found in organizations, try first resource with href
+    if (!startingPage) {
+      startingPage = resources.find(r => r.href)?.href;
+    }
+
+    // Default to scormdriver/indexAPI.html if no starting page found
+    if (!startingPage) {
+      startingPage = 'scormdriver/indexAPI.html';
+    }
 
     console.log('Successfully parsed manifest:', {
       scormVersion,

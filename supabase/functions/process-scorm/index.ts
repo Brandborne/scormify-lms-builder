@@ -74,10 +74,22 @@ serve(async (req) => {
     
     console.log('Parsed manifest data:', manifestData)
 
-    // Determine index path
-    const indexPath = manifestData.startingPage 
-      ? `${course.course_files_path}/${manifestData.startingPage}`
-      : `${course.course_files_path}/index.html`
+    // Store both the original zip path and the extracted course files path
+    const originalZipPath = course.original_zip_path
+    const courseFilesPath = course.course_files_path
+
+    // Determine index paths
+    const startingPage = manifestData.startingPage || 'scormdriver/indexAPI.html'
+    const indexPath = `${courseFilesPath}/${startingPage}`
+    const originalIndexPath = `${courseFilesPath}/${startingPage}`
+
+    console.log('Paths:', {
+      originalZipPath,
+      courseFilesPath,
+      startingPage,
+      indexPath,
+      originalIndexPath
+    })
 
     // Update course with processing results
     const { error: updateError } = await supabaseClient
@@ -87,7 +99,8 @@ serve(async (req) => {
           ...manifestData,
           status: 'processed',
           index_path: indexPath,
-          original_index_path: indexPath
+          original_index_path: originalIndexPath,
+          startingPage
         }
       })
       .eq('id', courseId)
