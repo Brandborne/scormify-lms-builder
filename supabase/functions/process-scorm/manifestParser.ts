@@ -1,230 +1,170 @@
 import { DOMParser } from "https://deno.land/x/deno_dom/deno-dom-wasm.ts";
 
-export interface ObjectiveData {
-  primary?: {
-    id: string;
-    satisfiedByMeasure: boolean;
-    minNormalizedMeasure: number;
-  };
-  secondary: Array<{
-    id: string;
-    description?: string;
-  }>;
-}
-
-export interface SequencingData {
-  controlMode?: {
-    choice: boolean;
-    flow: boolean;
-  };
-  deliveryControls?: {
-    completionSetByContent: boolean;
-    objectiveSetByContent: boolean;
-  };
-}
-
-export interface ResourceData {
-  identifier: string;
-  type: string;
-  href?: string;
-  scormType?: string;
-  files: string[];
-}
-
-export interface OrganizationItem {
-  identifier: string;
-  title: string;
-  objectives?: ObjectiveData;
-  sequencing?: SequencingData;
-  resourceId?: string;
-}
-
-export interface ScormManifest {
+export interface ManifestResult {
   title?: string;
   version?: string;
   scormVersion: string;
   status: string;
+  startingPage?: string;
+  prerequisites?: string[];
   metadata: {
     schema?: string;
     schemaVersion?: string;
-    objectives?: ObjectiveData;
+    description?: string;
+    keywords?: string[];
+    duration?: string;
   };
   organizations: {
     default: string;
-    items: OrganizationItem[];
+    items: Array<{
+      identifier: string;
+      title: string;
+      resourceId?: string;
+    }>;
   };
-  resources: ResourceData[];
-  sequencing?: SequencingData;
+  resources: Array<{
+    identifier: string;
+    type: string;
+    href?: string;
+    scormType?: string;
+    files: string[];
+  }>;
 }
 
-export async function parseManifest(manifestContent: string): Promise<ScormManifest> {
-  console.log('Processing manifest content:', manifestContent);
+function detectScormVersion(manifest: Element): string {
+  // Check schema definition
+  const schemaVersion = manifest.getAttribute('version');
+  if (schemaVersion?.includes('2004')) return 'SCORM 2004';
+  if (schemaVersion?.includes('1.2')) return 'SCORM 1.2';
   
-  try {
-    // Convert XML string to JavaScript object
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(manifestContent, 'text/xml');
-    
-    // Convert XML document to a plain object for easier parsing
-    const manifest = xmlToObj(xmlDoc.documentElement);
-    console.log('Converted manifest object:', manifest);
-
-    // Detect SCORM version
-    const scormVersion = detectScormVersion(manifest);
-    console.log('Detected SCORM version:', scormVersion);
-
-    return {
-      scormVersion,
-      status: 'processed',
-      metadata: parseMetadata(manifest.metadata?.[0]),
-      organizations: parseOrganizations(manifest.organizations?.[0]),
-      resources: parseResources(manifest.resources?.[0]),
-      sequencing: parseSequencing(manifest['imsss:sequencing']?.[0]),
-    };
-  } catch (error) {
-    console.error('Error parsing manifest:', error);
-    throw new Error(`Failed to parse manifest: ${error.message}`);
-  }
+  // Check namespace
+  const xmlns = manifest.getAttribute('xmlns');
+  if (xmlns?.includes('2004')) return 'SCORM 2004';
+  if (xmlns?.includes('1.2')) return 'SCORM 1.2';
+  
+  // Default to 1.2 if no version found
+  console.warn('No SCORM version detected, defaulting to 1.2');
+  return 'SCORM 1.2';
 }
 
-function parseMetadata(metadataNode: any): any {
-  if (!metadataNode) return {};
+function parseMetadata(metadataElement: Element | null): ManifestResult['metadata'] {
+  if (!metadataElement) return {};
 
-  const lom = metadataNode['lom:lom']?.[0];
-  if (!lom) return {};
+  const schema = metadataElement.querySelector('schema')?.textContent;
+  const schemaVersion = metadataElement.querySelector('schemaversion')?.textContent;
+  const description = metadataElement.querySelector('description string')?.textContent;
+  const keywords = Array.from(metadataElement.querySelectorAll('keyword string')).map(k => k.textContent || '');
+  const duration = metadataElement.querySelector('duration')?.textContent;
 
   return {
-    schema: lom['lom:schema']?.[0]?.['#text'],
-    schemaVersion: lom['lom:schemaversion']?.[0]?.['#text'],
-    title: lom['lom:general']?.[0]?.['lom:title']?.[0]?.['lom:string']?.[0]?.['#text'],
-    description: lom['lom:general']?.[0]?.['lom:description']?.[0]?.['lom:string']?.[0]?.['#text'],
-    keywords: lom['lom:general']?.[0]?.['lom:keyword']?.map((k: any) => k['lom:string']?.[0]?.['#text']),
-    version: lom['lom:lifecycle']?.[0]?.['lom:version']?.[0]?.['lom:string']?.[0]?.['#text'],
-    duration: lom['lom:technical']?.[0]?.['lom:duration']?.[0]?.['#text'],
-    copyright: lom['lom:rights']?.[0]?.['lom:copyrightAndOtherRestrictions']?.[0]?.['lom:value']?.[0]?.['#text']
+    schema,
+    schemaVersion,
+    description,
+    keywords: keywords.length > 0 ? keywords : undefined,
+    duration
   };
 }
 
-function parseOrganizations(organizationsNode: any): any {
-  if (!organizationsNode) {
+function parseOrganizations(organizationsElement: Element | null): ManifestResult['organizations'] {
+  if (!organizationsElement) {
     return { default: '', items: [] };
   }
 
-  const defaultOrg = organizationsNode['$default'];
-  const organizations = organizationsNode['organization'] || [];
+  const defaultOrg = organizationsElement.getAttribute('default') || '';
+  const organizations = Array.from(organizationsElement.querySelectorAll('organization'));
 
-  const items = Array.isArray(organizations) 
-    ? organizations.map(parseOrganizationItem)
-    : [parseOrganizationItem(organizations)];
+  const items = organizations.map(org => ({
+    identifier: org.getAttribute('identifier') || '',
+    title: org.querySelector('title')?.textContent || '',
+    resourceId: org.getAttribute('identifierref')
+  }));
 
   return {
-    default: defaultOrg || '',
+    default: defaultOrg,
     items
   };
 }
 
-function parseOrganizationItem(item: any): OrganizationItem {
-  if (!item) return { identifier: '', title: '' };
+function parseResources(resourcesElement: Element | null): ManifestResult['resources'] {
+  if (!resourcesElement) return [];
 
-  return {
-    identifier: item['$identifier'] || '',
-    title: item['title']?.[0]?.['#text'] || '',
-    resourceId: item['$identifierref'],
-  };
-}
-
-function parseResources(resourcesNode: any): ResourceData[] {
-  if (!resourcesNode?.resource) return [];
-
-  const resources = Array.isArray(resourcesNode.resource) 
-    ? resourcesNode.resource 
-    : [resourcesNode.resource];
-
-  return resources.map((resource: any) => ({
-    identifier: resource['$identifier'] || '',
-    type: resource['$type'] || '',
-    href: resource['$href'],
-    scormType: resource['$adlcp:scormtype'] || resource['$adlcp:scormType'],
-    files: parseFiles(resource.file)
+  return Array.from(resourcesElement.querySelectorAll('resource')).map(resource => ({
+    identifier: resource.getAttribute('identifier') || '',
+    type: resource.getAttribute('type') || '',
+    href: resource.getAttribute('href'),
+    scormType: resource.getAttribute('adlcp:scormtype') || resource.getAttribute('scormtype'),
+    files: Array.from(resource.querySelectorAll('file')).map(file => file.getAttribute('href') || '')
   }));
 }
 
-function parseFiles(files: any): string[] {
-  if (!files) return [];
-  
-  const fileArray = Array.isArray(files) ? files : [files];
-  return fileArray.map((file: any) => file['$href']).filter(Boolean);
-}
+function findStartingPage(resources: ManifestResult['resources']): string | undefined {
+  // Look for the main SCO resource
+  const scoResource = resources.find(r => 
+    r.scormType?.toLowerCase() === 'sco' && r.href
+  );
 
-function parseSequencing(sequencingNode: any): SequencingData {
-  if (!sequencingNode) return {};
-
-  const controlMode = sequencingNode['imsss:controlMode']?.[0];
-  const deliveryControls = sequencingNode['imsss:deliveryControls']?.[0];
-
-  return {
-    controlMode: controlMode ? {
-      choice: controlMode['$choice'] === 'true',
-      flow: controlMode['$flow'] === 'true'
-    } : undefined,
-    deliveryControls: deliveryControls ? {
-      completionSetByContent: deliveryControls['$completionSetByContent'] === 'true',
-      objectiveSetByContent: deliveryControls['$objectiveSetByContent'] === 'true'
-    } : undefined
-  };
-}
-
-function detectScormVersion(manifest: any): string {
-  const schemaVersion = manifest?.metadata?.[0]?.['schema']?.[0]?.['#text'];
-  if (schemaVersion?.includes('2004')) return 'SCORM 2004';
-  if (schemaVersion?.includes('1.2')) return 'SCORM 1.2';
-  
-  // Fallback to checking namespace
-  const xmlns = manifest['$xmlns'];
-  if (xmlns?.includes('2004')) return 'SCORM 2004';
-  if (xmlns?.includes('1.2')) return 'SCORM 1.2';
-  
-  return 'Unknown';
-}
-
-function xmlToObj(node: Node): any {
-  if (node.nodeType === Node.TEXT_NODE) {
-    const text = node.nodeValue?.trim();
-    return text ? { '#text': text } : undefined;
+  if (scoResource?.href) {
+    return scoResource.href;
   }
 
-  if (node.nodeType === Node.ELEMENT_NODE) {
-    const obj: any = {};
-    
-    // Add attributes
-    const attributes = (node as Element).attributes;
-    for (let i = 0; i < attributes.length; i++) {
-      const attr = attributes[i];
-      obj[`$${attr.name}`] = attr.value;
-    }
-    
-    // Add child nodes
-    const children = node.childNodes;
-    for (let i = 0; i < children.length; i++) {
-      const child = children[i];
-      const childResult = xmlToObj(child);
-      
-      if (childResult !== undefined) {
-        const name = child.nodeName;
-        
-        if (obj[name]) {
-          if (!Array.isArray(obj[name])) {
-            obj[name] = [obj[name]];
-          }
-          obj[name].push(childResult);
-        } else {
-          obj[name] = childResult;
-        }
-      }
-    }
-    
-    return obj;
-  }
+  // Fallback to first resource with an href
+  return resources.find(r => r.href)?.href;
+}
+
+export async function parseManifest(manifestContent: string): Promise<ManifestResult> {
+  console.log('Starting manifest parsing...');
   
-  return undefined;
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(manifestContent, 'text/xml');
+    
+    if (!doc) {
+      throw new Error('Failed to parse manifest XML');
+    }
+
+    const manifestElement = doc.querySelector('manifest');
+    if (!manifestElement) {
+      throw new Error('Invalid manifest: No manifest element found');
+    }
+
+    console.log('Manifest element found, detecting SCORM version...');
+    const scormVersion = detectScormVersion(manifestElement);
+    console.log('Detected SCORM version:', scormVersion);
+
+    // Parse main sections
+    const metadata = parseMetadata(manifestElement.querySelector('metadata'));
+    const organizations = parseOrganizations(manifestElement.querySelector('organizations'));
+    const resources = parseResources(manifestElement.querySelector('resources'));
+    
+    // Find starting page
+    const startingPage = findStartingPage(resources);
+    console.log('Starting page:', startingPage);
+
+    // Extract prerequisites if available
+    const prerequisites = Array.from(manifestElement.querySelectorAll('prerequisites')).map(p => p.textContent || '');
+
+    // Get title from organizations or metadata
+    const title = organizations.items[0]?.title || 
+                 manifestElement.querySelector('title')?.textContent ||
+                 'Untitled Course';
+
+    const result: ManifestResult = {
+      title,
+      version: metadata.schemaVersion,
+      scormVersion,
+      status: 'processed',
+      startingPage,
+      prerequisites: prerequisites.length > 0 ? prerequisites : undefined,
+      metadata,
+      organizations,
+      resources
+    };
+
+    console.log('Successfully parsed manifest:', result);
+    return result;
+
+  } catch (error) {
+    console.error('Error parsing manifest:', error);
+    throw new Error(`Failed to parse manifest: ${error.message}`);
+  }
 }

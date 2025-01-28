@@ -64,10 +64,10 @@ serve(async (req) => {
       throw listError;
     }
 
-    console.log('Files found:', files);
-
-    // Find manifest file
+    // Find manifest file (ignore macOS system files)
     const manifestFile = files.find(file => 
+      !file.name.startsWith('._') && 
+      !file.name.startsWith('__MACOSX') && 
       file.name.toLowerCase() === 'imsmanifest.xml'
     );
 
@@ -93,10 +93,10 @@ serve(async (req) => {
     }
 
     const manifestContent = await manifestData.text();
-    console.log('Manifest Content:', manifestContent);
+    console.log('Parsing manifest content...');
     
     const manifestInfo = await parseManifest(manifestContent);
-    console.log('Parsed Manifest Info:', manifestInfo);
+    console.log('Successfully parsed manifest:', manifestInfo);
 
     // Update course with processed manifest data
     console.log('Updating course with manifest data');
