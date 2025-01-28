@@ -6,7 +6,7 @@ import { parseManifest } from './manifestParser.ts'
 console.log('Process SCORM function started');
 
 serve(async (req) => {
-  console.log('Received request:', req.method);
+  console.log('Received request:', req.method, req.url);
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -21,6 +21,7 @@ serve(async (req) => {
   }
 
   try {
+    // Parse request body
     const { courseId } = await req.json();
     console.log('Processing SCORM package for course:', courseId);
 
@@ -28,6 +29,7 @@ serve(async (req) => {
       throw new Error('Course ID is required');
     }
 
+    // Initialize Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -58,26 +60,6 @@ serve(async (req) => {
       // Log the DTD content for examination
       const dtdContent = await dtdData.text();
       console.log('DTD Content:', dtdContent);
-    }
-
-    // List files in course directory
-    const { data: files, error: listError } = await supabaseClient
-      .storage
-      .from('scorm_packages')
-      .list(course.course_files_path);
-
-    if (listError) {
-      console.error('Error listing files:', listError);
-      throw listError;
-    }
-
-    // Find manifest file
-    const manifestFile = files.find(file => 
-      file.name.toLowerCase() === 'imsmanifest.xml'
-    );
-
-    if (!manifestFile) {
-      throw new Error('No manifest file found in package');
     }
 
     // Download and parse manifest
@@ -129,7 +111,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        details: error.stack 
+        details: error.stack,
+        timestamp: new Date().toISOString()
       }),
       { 
         status: 500, 
