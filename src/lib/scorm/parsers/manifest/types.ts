@@ -61,7 +61,7 @@ export interface DeliveryControls {
   objectiveSetByContent: boolean;
 }
 
-export interface SequencingRules {
+export interface SequencingRule {
   conditions: Array<{
     type: string;
     operator: string;
@@ -73,7 +73,7 @@ export interface SequencingRules {
 export interface SequencingData {
   controlMode?: ControlMode;
   deliveryControls?: DeliveryControls;
-  rules?: SequencingRules[];
+  rules?: SequencingRule[];
 }
 
 export interface ManifestData {
@@ -84,16 +84,4 @@ export interface ManifestData {
   resources: Resource[];
   sequencing?: SequencingData;
   objectives?: ObjectiveData;
-}
-
-export interface ManifestResult {
-  title?: string;
-  version?: string;
-  scormVersion: string;
-  status: string;
-  startingPage?: string;
-  metadata: MetadataResult;
-  organizations: OrganizationsResult;
-  resources: Resource[];
-  sequencing?: SequencingData;
 }

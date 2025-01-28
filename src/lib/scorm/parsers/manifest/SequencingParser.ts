@@ -1,13 +1,19 @@
-import { SequencingData } from './types';
+import { SequencingData, SequencingRule } from './types';
+import { logDebug } from '../../utils/logger';
 
 export function parseSequencing(node: any): SequencingData {
-  if (!node) return {};
+  logDebug('Parsing sequencing from node:', node);
+  
+  if (!node) {
+    logDebug('No sequencing node found');
+    return {};
+  }
 
   const controlMode = node['imsss:controlMode']?.[0];
   const deliveryControls = node['imsss:deliveryControls']?.[0];
   const sequencingRules = node['imsss:sequencingRules']?.[0];
 
-  return {
+  const result: SequencingData = {
     controlMode: controlMode ? {
       choice: controlMode['$choice'] === 'true',
       flow: controlMode['$flow'] === 'true',
@@ -19,16 +25,12 @@ export function parseSequencing(node: any): SequencingData {
     } : undefined,
     rules: sequencingRules ? parseRules(sequencingRules) : undefined
   };
+
+  logDebug('Parsed sequencing:', result);
+  return result;
 }
 
-function parseRules(rulesNode: any): Array<{
-  conditions: Array<{
-    type: string;
-    operator: string;
-    value: string;
-  }>;
-  action: string;
-}> {
+function parseRules(rulesNode: any): SequencingRule[] {
   if (!rulesNode) return [];
 
   const rules = Array.isArray(rulesNode) ? rulesNode : [rulesNode];
