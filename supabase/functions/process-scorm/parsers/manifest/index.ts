@@ -13,7 +13,7 @@ export function parseManifest(manifestXml: string): ManifestResult {
   try {
     // Parse XML document
     const doc = parseXML(manifestXml);
-    const manifestElement = doc.documentElement;
+    const manifestElement = doc.root;
 
     if (!manifestElement) {
       throw new Error('Invalid manifest: No manifest element found');
@@ -21,10 +21,8 @@ export function parseManifest(manifestXml: string): ManifestResult {
 
     // Log manifest element details
     console.log('Manifest element:', {
-      tagName: manifestElement.tagName,
-      attributes: Array.from(manifestElement.attributes).map(attr => 
-        `${attr.name}=${attr.value}`
-      )
+      name: manifestElement.name,
+      attributes: manifestElement.attributes
     });
 
     // Detect SCORM version
@@ -32,13 +30,19 @@ export function parseManifest(manifestXml: string): ManifestResult {
     console.log('Detected SCORM version:', scormVersion);
 
     // Parse main sections
-    const metadata = parseMetadata(manifestElement.querySelector('metadata'));
+    const metadata = parseMetadata(manifestElement.children?.find((child: any) => 
+      child.name === 'metadata'
+    ));
     console.log('Parsed metadata:', metadata);
 
-    const organizations = parseOrganizations(manifestElement.querySelector('organizations'));
+    const organizations = parseOrganizations(manifestElement.children?.find((child: any) => 
+      child.name === 'organizations'
+    ));
     console.log('Parsed organizations:', organizations);
 
-    const resources = parseResources(manifestElement.querySelector('resources'));
+    const resources = parseResources(manifestElement.children?.find((child: any) => 
+      child.name === 'resources'
+    ));
     console.log('Parsed resources:', resources);
 
     // Find starting page
