@@ -1,12 +1,17 @@
-import { SequencingData } from '../types/manifest.ts';
+import type { SequencingData } from '../types/parser.ts';
 
 export function parseSequencing(node: any): SequencingData {
-  if (!node) return {};
+  console.log('Parsing sequencing from node:', node);
+  
+  if (!node) {
+    console.log('No sequencing node found');
+    return {};
+  }
 
   const controlMode = node['imsss:controlMode']?.[0];
   const deliveryControls = node['imsss:deliveryControls']?.[0];
 
-  return {
+  const result: SequencingData = {
     controlMode: controlMode ? {
       choice: controlMode['$choice'] === 'true',
       flow: controlMode['$flow'] === 'true'
@@ -16,4 +21,7 @@ export function parseSequencing(node: any): SequencingData {
       objectiveSetByContent: deliveryControls['$objectiveSetByContent'] === 'true'
     } : undefined
   };
+
+  console.log('Parsed sequencing:', result);
+  return result;
 }

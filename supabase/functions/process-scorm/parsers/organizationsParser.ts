@@ -1,5 +1,10 @@
-export function parseOrganizations(organizationsNode: any) {
+import type { OrganizationsResult, OrganizationItem } from '../types/parser.ts';
+
+export function parseOrganizations(organizationsNode: any): OrganizationsResult {
+  console.log('Parsing organizations from node:', organizationsNode);
+  
   if (!organizationsNode) {
+    console.log('No organizations node found');
     return { default: '', items: [] };
   }
 
@@ -10,13 +15,16 @@ export function parseOrganizations(organizationsNode: any) {
     .map(parseOrganizationItem)
     .filter(Boolean);
 
-  return {
+  const result: OrganizationsResult = {
     default: defaultOrg,
     items
   };
+
+  console.log('Parsed organizations:', result);
+  return result;
 }
 
-function parseOrganizationItem(item: any) {
+function parseOrganizationItem(item: any): OrganizationItem | null {
   if (!item) return null;
 
   const identifier = item['$identifier'] || '';
@@ -28,7 +36,7 @@ function parseOrganizationItem(item: any) {
 
   const children = item.item?.map((childItem: any) => parseOrganizationItem(childItem)).filter(Boolean);
 
-  return {
+  const result: OrganizationItem = {
     identifier,
     title,
     description,
@@ -36,4 +44,6 @@ function parseOrganizationItem(item: any) {
     resourceId,
     children: children?.length ? children : undefined
   };
+
+  return result;
 }

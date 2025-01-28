@@ -1,11 +1,18 @@
-export function parseResources(resourcesNode: any) {
-  if (!resourcesNode?.resource) return [];
+import type { ResourceData } from '../types/parser.ts';
+
+export function parseResources(resourcesNode: any): ResourceData[] {
+  console.log('Parsing resources from node:', resourcesNode);
+  
+  if (!resourcesNode?.resource) {
+    console.log('No resources found');
+    return [];
+  }
 
   const resources = Array.isArray(resourcesNode.resource) 
     ? resourcesNode.resource 
     : [resourcesNode.resource];
 
-  return resources.map((resource: any) => ({
+  const result = resources.map((resource: any) => ({
     identifier: resource['$identifier'] || '',
     type: resource['$type'] || '',
     href: resource['$href'],
@@ -13,19 +20,19 @@ export function parseResources(resourcesNode: any) {
     files: parseFiles(resource.file),
     dependencies: parseDependencies(resource.dependency)
   }));
+
+  console.log('Parsed resources:', result);
+  return result;
 }
 
-function parseFiles(files: any) {
+function parseFiles(files: any): string[] {
   if (!files) return [];
   
   const fileArray = Array.isArray(files) ? files : [files];
-  return fileArray.map((file: any) => ({
-    href: file['$href'] || '',
-    type: file['$type']
-  }));
+  return fileArray.map((file: any) => file['$href'] || '').filter(Boolean);
 }
 
-function parseDependencies(dependencies: any) {
+function parseDependencies(dependencies: any): string[] {
   if (!dependencies) return [];
   
   const depArray = Array.isArray(dependencies) ? dependencies : [dependencies];
