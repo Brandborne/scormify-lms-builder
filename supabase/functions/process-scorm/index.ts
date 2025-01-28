@@ -4,6 +4,7 @@ import { corsHeaders } from '../_shared/cors.ts'
 import { parse as parseXML } from 'https://deno.land/x/xml@2.1.1/mod.ts'
 
 serve(async (req) => {
+  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -21,6 +22,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    // Fetch course data
     const { data: course, error: courseError } = await supabaseClient
       .from('courses')
       .select('*')
@@ -32,8 +34,7 @@ serve(async (req) => {
       throw new Error('Course not found')
     }
 
-    console.log('Found course:', course.title)
-
+    // List files in course directory
     const { data: files, error: listError } = await supabaseClient
       .storage
       .from('scorm_packages')
@@ -44,19 +45,16 @@ serve(async (req) => {
       throw listError
     }
 
-    console.log('Files in course directory:', files.map(f => f.name))
-
+    // Find manifest file
     const manifestFile = files.find(file => 
       file.name.toLowerCase() === 'imsmanifest.xml'
     )
 
     if (!manifestFile) {
-      console.error('No manifest file found in:', course.course_files_path)
       throw new Error('No manifest file found in package')
     }
 
-    console.log('Found manifest file:', manifestFile.name)
-
+    // Download and parse manifest
     const { data: manifestData, error: downloadError } = await supabaseClient
       .storage
       .from('scorm_packages')
@@ -68,47 +66,42 @@ serve(async (req) => {
     }
 
     const manifestContent = await manifestData.text()
-    console.log('Manifest content length:', manifestContent.length)
-
     const xmlDoc = parseXML(manifestContent)
-    console.log('Successfully parsed XML')
 
-    // Extract manifest data with enhanced information
+    // Extract comprehensive manifest data
     const manifestInfo = {
       title: findValue(xmlDoc, 'organization > title') || course.title,
-      description: findValue(xmlDoc, 'description'),
-      version: findValue(xmlDoc, 'schemaversion'),
       status: 'processed',
-      scormVersion: findValue(xmlDoc, 'metadata > schema')?.includes('2004') 
-        ? 'SCORM 2004' 
-        : 'SCORM 1.2',
-      startingPage: findStartingPage(xmlDoc),
-      organizations: extractOrganizations(xmlDoc),
-      resources: extractResources(xmlDoc),
-      prerequisites: extractPrerequisites(xmlDoc),
       metadata: {
         schema: findValue(xmlDoc, 'metadata > schema'),
         schemaVersion: findValue(xmlDoc, 'metadata > schemaversion'),
-        location: findValue(xmlDoc, 'metadata > location'),
-        rights: findValue(xmlDoc, 'metadata > rights'),
-        minimumSCORMVersion: findValue(xmlDoc, 'metadata > minimumSCORMVersion'),
+        objectives: extractObjectives(xmlDoc),
         masteryCriteria: findValue(xmlDoc, 'adlcp:masteryscore'),
         maxTimeAllowed: findValue(xmlDoc, 'adlcp:maxtimeallowed'),
         timeLimitAction: findValue(xmlDoc, 'adlcp:timelimitaction'),
         dataFromLMS: findValue(xmlDoc, 'adlcp:datafromlms'),
         completionThreshold: findValue(xmlDoc, 'adlcp:completionthreshold'),
-        objectives: extractObjectives(xmlDoc),
-        sequencing: extractSequencing(xmlDoc)
-      }
+        prerequisites: extractPrerequisites(xmlDoc),
+        rights: findValue(xmlDoc, 'metadata > rights'),
+        description: findValue(xmlDoc, 'metadata > description'),
+        keywords: findValue(xmlDoc, 'metadata > keywords')?.split(',').map(k => k.trim()),
+        authors: extractAuthors(xmlDoc),
+        technicalRequirements: extractTechnicalRequirements(xmlDoc)
+      },
+      organizations: extractOrganizations(xmlDoc),
+      resources: extractResources(xmlDoc),
+      scormVersion: determineScormVersion(xmlDoc),
+      prerequisites: extractPrerequisites(xmlDoc),
+      sequencing: extractSequencing(xmlDoc),
+      startingPage: findStartingPage(xmlDoc)
     }
 
     console.log('Parsed manifest info:', manifestInfo)
 
+    // Update course with processed manifest data
     const { error: updateError } = await supabaseClient
       .from('courses')
       .update({
-        title: manifestInfo.title,
-        description: manifestInfo.description,
         manifest_data: manifestInfo,
         processing_stage: 'processed'
       })
@@ -119,8 +112,6 @@ serve(async (req) => {
       throw updateError
     }
 
-    console.log('Successfully processed SCORM package')
-
     return new Response(
       JSON.stringify({ success: true, manifestInfo }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -130,15 +121,13 @@ serve(async (req) => {
     console.error('Error processing SCORM package:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })
 
-// Helper function to find XML node values
+// Helper Functions
+
 function findValue(xmlDoc: any, path: string): string | undefined {
   const parts = path.split('>')
   let current = xmlDoc
@@ -152,117 +141,93 @@ function findValue(xmlDoc: any, path: string): string | undefined {
   return current?.['$text'] || undefined
 }
 
-// Helper function to extract organizations structure
-function extractOrganizations(xmlDoc: any): any {
-  const organizations = xmlDoc.organizations
-  if (!organizations) return undefined
-
-  const result = {
-    default: organizations['$default'] || '',
-    items: []
-  }
-
-  const orgs = organizations.organization
-  if (Array.isArray(orgs)) {
-    result.items = orgs.map(org => ({
-      identifier: org['$identifier'] || '',
-      title: org.title?.['$text'] || '',
-      items: extractItems(org.item)
+function extractObjectives(xmlDoc: any): any[] {
+  const objectives = xmlDoc.objectives?.objective || []
+  return (Array.isArray(objectives) ? objectives : [objectives])
+    .filter(Boolean)
+    .map(obj => ({
+      id: obj['$identifier'],
+      primaryObjective: obj['$primaryobjective'] === 'true',
+      satisfiedByMeasure: obj['$satisfiedbymeasure'] === 'true',
+      minNormalizedMeasure: obj.minnormalizedmeasure?.['$text'],
+      description: obj.description?.['$text'],
+      success_status: obj['$successstatus'],
+      completion_status: obj['$completionstatus'],
+      progress_measure: obj['$progressmeasure']
     }))
-  } else if (orgs) {
-    result.items = [{
-      identifier: orgs['$identifier'] || '',
-      title: orgs.title?.['$text'] || '',
-      items: extractItems(orgs.item)
-    }]
-  }
-
-  return result
 }
 
-// Helper function to extract items recursively
-function extractItems(items: any): any[] {
+function extractOrganizations(xmlDoc: any): any {
+  const organizations = xmlDoc.organizations || {}
+  return {
+    default: organizations['$default'] || '',
+    items: extractOrganizationItems(organizations.organization || [])
+  }
+}
+
+function extractOrganizationItems(items: any): any[] {
   if (!items) return []
-  
   const itemArray = Array.isArray(items) ? items : [items]
+  
   return itemArray.map(item => ({
     identifier: item['$identifier'] || '',
     title: item.title?.['$text'] || '',
-    launch: item['$identifierref'],
+    description: item.description?.['$text'],
+    objectives: extractObjectives(item),
     prerequisites: item['$prerequisites'],
     masteryScore: item['$masteryscore'],
     maxTimeAllowed: item['$maxtimeallowed'],
     timeLimitAction: item['$timelimitaction'],
     dataFromLMS: item['$datafromlms'],
     completionThreshold: item['$completionthreshold'],
-    items: extractItems(item.item)
+    sequencing: extractSequencing(item),
+    children: extractOrganizationItems(item.item)
   }))
 }
 
-// Helper function to extract resources
 function extractResources(xmlDoc: any): any[] {
-  const resources = xmlDoc.resources?.resource
-  if (!resources) return []
-
+  const resources = xmlDoc.resources?.resource || []
   const resourceArray = Array.isArray(resources) ? resources : [resources]
+  
   return resourceArray.map(resource => ({
     identifier: resource['$identifier'] || '',
     type: resource['$type'] || '',
     href: resource['$href'],
     scormType: resource['$scormtype'],
+    base: resource['$base'],
+    metadata: {
+      description: findValue(resource, 'metadata > description'),
+      requirements: findValue(resource, 'metadata > requirements')
+    },
     dependencies: extractDependencies(resource.dependency),
     files: extractFiles(resource.file)
   }))
 }
 
-// Helper function to extract files
 function extractFiles(files: any): string[] {
   if (!files) return []
-  
   const fileArray = Array.isArray(files) ? files : [files]
   return fileArray.map(file => file['$href']).filter(Boolean)
 }
 
-// Helper function to extract dependencies
 function extractDependencies(dependencies: any): string[] {
   if (!dependencies) return []
-  
   const depArray = Array.isArray(dependencies) ? dependencies : [dependencies]
   return depArray.map(dep => dep['$identifierref']).filter(Boolean)
 }
 
-// Helper function to extract prerequisites
 function extractPrerequisites(xmlDoc: any): string[] {
-  const prerequisites = xmlDoc.prerequisites
-  if (!prerequisites) return []
-  
+  const prerequisites = xmlDoc.prerequisites || []
   if (Array.isArray(prerequisites)) {
     return prerequisites.map(p => p['$text']).filter(Boolean)
   }
-  
   return prerequisites['$text'] ? [prerequisites['$text']] : []
 }
 
-// Helper function to extract objectives
-function extractObjectives(xmlDoc: any): any[] {
-  const objectives = xmlDoc.objectives?.objective
-  if (!objectives) return []
-
-  const objArray = Array.isArray(objectives) ? objectives : [objectives]
-  return objArray.map(obj => ({
-    id: obj['$identifier'],
-    primaryObjective: obj['$primaryobjective'] === 'true',
-    satisfiedByMeasure: obj['$satisfiedbymeasure'] === 'true',
-    minNormalizedMeasure: obj.minnormalizedmeasure?.['$text'],
-    description: obj.description?.['$text']
-  }))
-}
-
-// Helper function to extract sequencing information
 function extractSequencing(xmlDoc: any): any {
   const sequencing = xmlDoc.sequencing
-  if (!sequencing) return undefined
-
+  if (!sequencing) return null
+  
   return {
     controlMode: {
       choice: sequencing.controlmode?.['$choice'] === 'true',
@@ -274,54 +239,100 @@ function extractSequencing(xmlDoc: any): any {
       attemptLimit: sequencing.limitconditions?.['$attemptlimit'],
       attemptAbsoluteDurationLimit: sequencing.limitconditions?.['$attemptabsolutedurationlimit']
     },
-    rollupRules: extractRollupRules(sequencing.rollupRules)
+    rollupRules: extractRollupRules(sequencing.rollupRules),
+    objectives: extractObjectives(sequencing)
   }
 }
 
-// Helper function to extract rollup rules
 function extractRollupRules(rules: any): any[] {
-  if (!rules) return []
-
+  if (!rules?.rollupRule) return []
   const ruleArray = Array.isArray(rules.rollupRule) ? rules.rollupRule : [rules.rollupRule]
+  
   return ruleArray.map(rule => ({
     childActivitySet: rule['$childactivityset'],
     minimumCount: rule['$minimumcount'],
     minimumPercent: rule['$minimumpercent'],
-    action: rule.rollupaction?.['$action']
+    action: rule.rollupaction?.['$action'],
+    conditions: extractRollupConditions(rule.rollupConditions)
   }))
 }
 
-// Helper function to find the starting page
-function findStartingPage(xmlDoc: any): string | undefined {
-  // Try to find it in resources
-  const resources = xmlDoc.resources?.resource
-  if (Array.isArray(resources)) {
-    const resource = resources.find((r: any) => r['$href'] && r['$scormtype'] === 'sco')
-    if (resource) return resource['$href']
-  } else if (resources?.['$href'] && resources?.['$scormtype'] === 'sco') {
-    return resources['$href']
-  }
+function extractRollupConditions(conditions: any): any[] {
+  if (!conditions?.rollupCondition) return []
+  const condArray = Array.isArray(conditions.rollupCondition) ? 
+    conditions.rollupCondition : [conditions.rollupCondition]
+  
+  return condArray.map(cond => ({
+    operator: cond['$operator'],
+    condition: cond['$condition']
+  }))
+}
 
-  // If not found in resources, try organizations
-  const organizations = xmlDoc.organizations?.organization
-  if (Array.isArray(organizations)) {
-    for (const org of organizations) {
-      if (org.item?.['$identifierref']) {
-        const resourceId = org.item['$identifierref']
+function extractAuthors(xmlDoc: any): any[] {
+  const authors = xmlDoc.metadata?.contribute || []
+  const authorArray = Array.isArray(authors) ? authors : [authors]
+  
+  return authorArray
+    .filter(a => a.role?.['$text'] === 'author')
+    .map(a => ({
+      name: a.entity?.['$text'],
+      date: a.date?.['$text']
+    }))
+}
+
+function extractTechnicalRequirements(xmlDoc: any): any {
+  const technical = xmlDoc.metadata?.technical
+  if (!technical) return null
+  
+  return {
+    type: technical.type?.['$text'],
+    name: technical.name?.['$text'],
+    minimumVersion: technical.minimumversion?.['$text'],
+    maximumVersion: technical.maximumversion?.['$text']
+  }
+}
+
+function determineScormVersion(xmlDoc: any): string {
+  const schema = findValue(xmlDoc, 'metadata > schema')
+  const schemaVersion = findValue(xmlDoc, 'metadata > schemaversion')
+  
+  if (schema?.includes('2004')) return 'SCORM 2004'
+  if (schema?.includes('1.2')) return 'SCORM 1.2'
+  if (schemaVersion?.includes('2004')) return 'SCORM 2004'
+  if (schemaVersion?.includes('1.2')) return 'SCORM 1.2'
+  
+  // Default to 1.2 if version cannot be determined
+  return 'SCORM 1.2'
+}
+
+function findStartingPage(xmlDoc: any): string | undefined {
+  // Try to find in default organization
+  const organizations = xmlDoc.organizations
+  const defaultOrg = organizations?.['$default']
+  if (defaultOrg) {
+    const org = Array.isArray(organizations.organization) ?
+      organizations.organization.find((o: any) => o['$identifier'] === defaultOrg) :
+      organizations.organization
+    
+    if (org?.item) {
+      const firstItem = Array.isArray(org.item) ? org.item[0] : org.item
+      const resourceId = firstItem['$identifierref']
+      if (resourceId) {
         const resource = findResourceById(xmlDoc, resourceId)
         if (resource?.['$href']) return resource['$href']
       }
     }
   }
-
-  return undefined
+  
+  // Fallback to first resource with href
+  const resources = xmlDoc.resources?.resource || []
+  const resourceArray = Array.isArray(resources) ? resources : [resources]
+  const firstResource = resourceArray.find(r => r['$href'] && r['$scormtype'] === 'sco')
+  return firstResource?.['$href']
 }
 
-// Helper function to find a resource by ID
 function findResourceById(xmlDoc: any, id: string): any {
-  const resources = xmlDoc.resources?.resource
-  if (Array.isArray(resources)) {
-    return resources.find((r: any) => r['$identifier'] === id)
-  }
-  return resources?.['$identifier'] === id ? resources : undefined
+  const resources = xmlDoc.resources?.resource || []
+  const resourceArray = Array.isArray(resources) ? resources : [resources]
+  return resourceArray.find((r: any) => r['$identifier'] === id)
 }
