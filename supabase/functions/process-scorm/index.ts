@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-import JSZip from 'https://esm.sh/jszip@3.10.1'
 import { corsHeaders } from '../_shared/cors.ts'
 import { parseManifest } from './manifestParser.ts'
 
@@ -24,6 +23,12 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    // Update course status to processing
+    await supabaseClient
+      .from('courses')
+      .update({ processing_stage: 'processing' })
+      .eq('id', courseId)
+
     // Get course data
     const { data: course, error: courseError } = await supabaseClient
       .from('courses')
@@ -41,82 +46,52 @@ serve(async (req) => {
 
     console.log('Found course:', course.title)
 
-    // Download the zip file
-    const { data: fileData, error: downloadError } = await supabaseClient
+    // Find manifest file in the course files
+    const { data: files, error: listError } = await supabaseClient
       .storage
       .from('scorm_packages')
-      .download(course.original_zip_path)
+      .list(`Courses/${courseId}/course_files`)
 
-    if (downloadError) {
-      throw downloadError
+    if (listError) {
+      throw listError
     }
 
-    console.log('Downloaded zip file')
-
-    // Process the zip content
-    const zip = new JSZip()
-    const zipContent = await zip.loadAsync(await fileData.arrayBuffer())
-    
-    // Find manifest file (excluding __MACOSX)
-    const manifestFile = Object.keys(zipContent.files).find(path => 
-      path.toLowerCase().endsWith('imsmanifest.xml') && !path.startsWith('__MACOSX/')
+    const manifestFile = files.find(f => 
+      f.name.toLowerCase() === 'imsmanifest.xml'
     )
 
     if (!manifestFile) {
       throw new Error('No manifest file found in package')
     }
 
-    console.log('Found manifest at:', manifestFile)
-    
-    // Extract and parse manifest
-    const manifestContent = await zipContent.files[manifestFile].async('text')
-    const manifestData = await parseManifest(manifestContent)
-    
-    console.log('Parsed manifest data:', manifestData)
+    console.log('Found manifest file:', manifestFile.name)
 
-    // Extract and upload all files from the zip
-    console.log('Extracting and uploading files...')
-    for (const [relativePath, file] of Object.entries(zipContent.files)) {
-      // Skip macOS system files and directories
-      if (!file.dir && !relativePath.startsWith('__MACOSX/')) {
-        try {
-          const content = await file.async('arraybuffer')
-          const filePath = `${course.course_files_path}/${relativePath}`
-          
-          console.log('Uploading file:', filePath)
-          
-          const { error: uploadError } = await supabaseClient
-            .storage
-            .from('scorm_packages')
-            .upload(filePath, content, {
-              contentType: 'application/octet-stream',
-              upsert: true
-            })
+    // Download and parse manifest
+    const { data: manifestData, error: downloadError } = await supabaseClient
+      .storage
+      .from('scorm_packages')
+      .download(`Courses/${courseId}/course_files/imsmanifest.xml`)
 
-          if (uploadError) {
-            console.error('Error uploading file:', filePath, uploadError)
-            throw uploadError
-          }
-        } catch (error) {
-          console.error('Error processing file:', relativePath, error)
-          throw error
-        }
-      }
+    if (downloadError) {
+      throw downloadError
     }
 
-    // Get the manifest directory to adjust relative paths
-    const manifestDir = manifestFile.substring(0, manifestFile.lastIndexOf('/') + 1)
-    console.log('Manifest directory:', manifestDir)
+    const manifestContent = await manifestData.text()
+    const manifest = await parseManifest(manifestContent)
+    
+    console.log('Parsed manifest data:', manifest)
 
-    // Update course with processing results
+    // Update course with manifest data and mark as processed
     const { error: updateError } = await supabaseClient
       .from('courses')
       .update({
         manifest_data: {
-          ...manifestData,
+          ...manifest,
           status: 'processed',
-          startingPage: manifestData.startingPage || 'shared/launchpage.html'
-        }
+          index_path: `Courses/${courseId}/course_files/${manifest.startingPage || 'index.html'}`,
+          original_index_path: `Courses/${courseId}/course_files/${manifest.startingPage || 'index.html'}`
+        },
+        processing_stage: 'processed'
       })
       .eq('id', courseId)
 

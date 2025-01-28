@@ -90,6 +90,7 @@ export type Database = {
           id: string
           manifest_data: Json | null
           original_zip_path: string
+          processing_stage: string
           title: string
           updated_at: string
         }
@@ -101,6 +102,7 @@ export type Database = {
           id?: string
           manifest_data?: Json | null
           original_zip_path: string
+          processing_stage?: string
           title: string
           updated_at?: string
         }
@@ -112,6 +114,7 @@ export type Database = {
           id?: string
           manifest_data?: Json | null
           original_zip_path?: string
+          processing_stage?: string
           title?: string
           updated_at?: string
         }

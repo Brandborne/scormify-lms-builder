@@ -46,6 +46,7 @@ export function ScormUploader() {
         courseFilesPath
       });
 
+      // Upload original zip file
       const { data, error } = await supabase.storage
         .from('scorm_packages')
         .upload(originalZipPath, file);
@@ -55,14 +56,16 @@ export function ScormUploader() {
         throw error;
       }
 
-      console.log('File uploaded successfully:', data.path);
+      console.log('Original zip file uploaded successfully:', data.path);
 
+      // Get current session
       const { data: session } = await supabase.auth.getSession();
       if (!session.session) {
         console.error('No active session found');
         throw new Error('No active session');
       }
 
+      // Create initial course record
       console.log('Creating course record in database');
       const { data: courseData, error: courseError } = await supabase
         .from('courses')
@@ -72,15 +75,12 @@ export function ScormUploader() {
           original_zip_path: data.path,
           course_files_path: courseFilesPath,
           created_by: session.session.user.id,
+          processing_stage: 'uploading',
           manifest_data: {
             title: validationResult.manifest?.title,
             description: validationResult.manifest?.description,
             version: validationResult.manifest?.version,
-            scormVersion: validationResult.manifest?.version || "1.2",
-            startingPage: validationResult.manifest?.startingPage,
-            status: "pending_processing",
-            index_path: `${courseFilesPath}/scormcontent/index.html`,
-            original_index_path: `${courseFilesPath}/scormcontent/index.html`
+            scormVersion: validationResult.manifest?.version || "1.2"
           }
         })
         .select()
@@ -92,8 +92,30 @@ export function ScormUploader() {
       }
 
       console.log('Course record created:', courseData);
-      console.log('Initiating SCORM processing');
 
+      // Convert file to base64 for Edge Function
+      const reader = new FileReader();
+      const fileBase64Promise = new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+      });
+      reader.readAsDataURL(file);
+      const base64Data = await fileBase64Promise;
+      const base64Content = (base64Data as string).split(',')[1];
+
+      // Stage 1: Upload and unzip
+      console.log('Starting Stage 1: Upload and unzip');
+      const { error: uploadError } = await supabase.functions.invoke('upload-scorm', {
+        body: { courseId: courseData.id, fileData: base64Content }
+      });
+
+      if (uploadError) {
+        console.error('Upload stage error:', uploadError);
+        throw uploadError;
+      }
+
+      // Stage 2: Process SCORM
+      console.log('Starting Stage 2: SCORM processing');
       const { error: processError } = await supabase.functions.invoke('process-scorm', {
         body: { courseId: courseData.id }
       });
