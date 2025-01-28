@@ -33,6 +33,21 @@ serve(async (req) => {
       throw new Error('Course not found')
     }
 
+    // First, let's try to get the DTD file
+    const { data: dtdData, error: dtdError } = await supabaseClient
+      .storage
+      .from('scorm_packages')
+      .download(`${course.course_files_path}/XMLSchema.dtd`)
+
+    if (dtdError) {
+      console.error('Error downloading DTD:', dtdError)
+      // Don't throw, continue with manifest processing
+    } else {
+      // Log the DTD content for examination
+      const dtdContent = await dtdData.text()
+      console.log('DTD Content:', dtdContent)
+    }
+
     // List files in course directory
     const { data: files, error: listError } = await supabaseClient
       .storage
@@ -65,7 +80,10 @@ serve(async (req) => {
     }
 
     const manifestContent = await manifestData.text()
+    console.log('Manifest Content:', manifestContent)
+    
     const manifestInfo = await parseManifest(manifestContent)
+    console.log('Parsed Manifest Info:', manifestInfo)
 
     // Update course with processed manifest data
     const { error: updateError } = await supabaseClient
