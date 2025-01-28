@@ -9,27 +9,33 @@ export function parseResources(resourcesNode: Element | null): ResourceData[] {
     return [];
   }
 
-  const resourceNodes = getAllNodes(resourcesNode, 'resource');
-  console.log(`Found ${resourceNodes.length} resource nodes`);
+  try {
+    const resourceNodes = getAllNodes(resourcesNode, 'resource');
+    console.log(`Found ${resourceNodes.length} resource nodes`);
 
-  const resources = resourceNodes.map(resource => {
-    console.log('Parsing resource:', resource.outerHTML);
-    
-    const parsed = {
-      identifier: getNodeAttribute(resource, 'identifier') || '',
-      type: getNodeAttribute(resource, 'type') || '',
-      href: getNodeAttribute(resource, 'href'),
-      scormType: getNodeAttribute(resource, 'adlcp:scormtype') || 
-                 getNodeAttribute(resource, 'scormType'),
-      files: parseFiles(resource),
-      dependencies: parseDependencies(resource)
-    };
+    const resources = resourceNodes.map(resource => {
+      console.log('Parsing resource:', resource.outerHTML);
+      
+      const parsed = {
+        identifier: getNodeAttribute(resource, 'identifier') || '',
+        type: getNodeAttribute(resource, 'type') || '',
+        href: getNodeAttribute(resource, 'href'),
+        scormType: getNodeAttribute(resource, 'adlcp:scormtype') || 
+                  getNodeAttribute(resource, 'scormType'),
+        files: parseFiles(resource),
+        dependencies: parseDependencies(resource)
+      };
 
-    console.log('Parsed resource:', parsed);
-    return parsed;
-  });
+      console.log('Parsed resource:', parsed);
+      return parsed;
+    });
 
-  return resources;
+    console.log(`Successfully parsed ${resources.length} resources`);
+    return resources;
+  } catch (error) {
+    console.error('Error parsing resources:', error);
+    return [];
+  }
 }
 
 function parseFiles(resource: Element): string[] {

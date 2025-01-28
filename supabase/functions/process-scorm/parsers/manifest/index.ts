@@ -8,6 +8,7 @@ import type { ManifestResult } from '../types/manifest.ts';
 export function parseManifest(manifestXml: string): ManifestResult {
   console.log('Starting manifest parsing...');
   console.log('Manifest XML length:', manifestXml.length);
+  console.log('First 500 chars:', manifestXml.substring(0, 500));
   
   try {
     // Parse XML document
@@ -18,18 +19,33 @@ export function parseManifest(manifestXml: string): ManifestResult {
       throw new Error('Invalid manifest: No manifest element found');
     }
 
-    console.log('Found manifest element, detecting SCORM version...');
+    // Log manifest element details
+    console.log('Manifest element:', {
+      tagName: manifestElement.tagName,
+      attributes: Array.from(manifestElement.attributes).map(attr => 
+        `${attr.name}=${attr.value}`
+      ),
+      firstChildTags: Array.from(manifestElement.children)
+        .map(child => child.tagName)
+    });
+
+    // Detect SCORM version
     const scormVersion = detectScormVersion(manifestElement);
     console.log('Detected SCORM version:', scormVersion);
 
-    // Parse main sections
+    // Parse main sections with detailed logging
     const metadata = parseMetadata(manifestElement.querySelector('metadata'));
-    const organizations = parseOrganizations(manifestElement.querySelector('organizations'));
-    const resources = parseResources(manifestElement.querySelector('resources'));
+    console.log('Parsed metadata:', metadata);
 
-    // Find starting page
+    const organizations = parseOrganizations(manifestElement.querySelector('organizations'));
+    console.log('Parsed organizations:', organizations);
+
+    const resources = parseResources(manifestElement.querySelector('resources'));
+    console.log('Parsed resources:', resources);
+
+    // Find starting page with fallbacks
     const startingPage = findStartingPage(resources, organizations);
-    console.log('Starting page:', startingPage);
+    console.log('Determined starting page:', startingPage);
 
     const result: ManifestResult = {
       title: metadata.title || organizations.items[0]?.title || 'Untitled Course',
@@ -42,7 +58,7 @@ export function parseManifest(manifestXml: string): ManifestResult {
       resources
     };
 
-    console.log('Successfully parsed manifest:', result);
+    console.log('Final manifest parsing result:', JSON.stringify(result, null, 2));
     return result;
 
   } catch (error) {
@@ -52,23 +68,28 @@ export function parseManifest(manifestXml: string): ManifestResult {
 }
 
 function findStartingPage(resources: any[], organizations: any): string | undefined {
-  console.log('Finding starting page...');
+  console.log('Finding starting page from:', {
+    resourceCount: resources.length,
+    organizations
+  });
   
   // First try to find it in organizations
-  const defaultOrg = organizations.items.find((org: any) => 
-    org.identifier === organizations.default
-  );
-
-  if (defaultOrg?.resourceId) {
-    console.log('Found resource ID in default organization:', defaultOrg.resourceId);
-    const resource = resources.find(r => r.identifier === defaultOrg.resourceId);
-    if (resource?.href) {
-      console.log('Found starting page in organizations:', resource.href);
-      return resource.href;
+  if (organizations.default && organizations.items.length > 0) {
+    const defaultOrg = organizations.items.find((org: any) => 
+      org.identifier === organizations.default
+    );
+    
+    if (defaultOrg?.resourceId) {
+      console.log('Found resource ID in default organization:', defaultOrg.resourceId);
+      const resource = resources.find(r => r.identifier === defaultOrg.resourceId);
+      if (resource?.href) {
+        console.log('Found starting page in organizations:', resource.href);
+        return resource.href;
+      }
     }
   }
 
-  // If not found in organizations, look for first SCO resource
+  // Look for SCO resource
   const scoResource = resources.find(r => 
     r.scormType?.toLowerCase() === 'sco' && r.href
   );
