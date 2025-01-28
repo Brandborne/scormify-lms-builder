@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { corsHeaders } from '../_shared/cors.ts';
 import { XMLParser } from 'npm:fast-xml-parser';
+import { parseManifestData } from './parsers/manifestParser.ts';
 
 console.log('Process SCORM function initialized');
 
@@ -39,11 +40,6 @@ function validateManifestXML(xmlString: string): { isValid: boolean; errors: str
       errors.push('Missing required element: resources');
     }
 
-    // Check for metadata (optional but recommended)
-    if (!result.manifest.metadata) {
-      console.warn('Warning: metadata element not found');
-    }
-
     return {
       isValid: errors.length === 0,
       errors
@@ -56,7 +52,6 @@ function validateManifestXML(xmlString: string): { isValid: boolean; errors: str
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -69,7 +64,6 @@ serve(async (req) => {
       throw new Error('Course ID is required');
     }
 
-    // Initialize Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -82,7 +76,6 @@ serve(async (req) => {
       }
     );
 
-    // Fetch course data
     const { data: course, error: courseError } = await supabaseClient
       .from('courses')
       .select('*')
@@ -110,7 +103,6 @@ serve(async (req) => {
       );
     }
 
-    // List files in course directory
     const { data: files, error: listError } = await supabaseClient
       .storage
       .from('scorm_packages')
@@ -137,7 +129,6 @@ serve(async (req) => {
       );
     }
 
-    // Find manifest file (ignore macOS system files)
     const manifestFile = files.find(file => 
       !file.name.startsWith('._') && 
       !file.name.startsWith('__MACOSX') && 
@@ -165,9 +156,6 @@ serve(async (req) => {
       );
     }
 
-    console.log('Found manifest file:', manifestFile.name);
-
-    // Download manifest file content
     const { data: manifestData, error: downloadError } = await supabaseClient
       .storage
       .from('scorm_packages')
@@ -194,8 +182,11 @@ serve(async (req) => {
       );
     }
 
-    // Convert manifest blob to text
     const manifestText = await manifestData.text();
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      attributeNamePrefix: "@_"
+    });
 
     // Validate manifest XML
     const validationResult = validateManifestXML(manifestText);
@@ -222,13 +213,46 @@ serve(async (req) => {
       );
     }
 
+    // Parse manifest data
+    const result = parser.parse(manifestText);
+    const manifestInfo = parseManifestData(result);
+
+    // Update course with manifest data
+    const { error: updateError } = await supabaseClient
+      .from('courses')
+      .update({
+        manifest_data: manifestInfo
+      })
+      .eq('id', courseId);
+
+    if (updateError) {
+      console.error('Error updating course:', updateError);
+      return new Response(
+        JSON.stringify({
+          error: 'Failed to update course with manifest data',
+          toast: {
+            title: 'Error',
+            description: 'Failed to save manifest data',
+            type: 'error'
+          }
+        }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          },
+          status: 400
+        }
+      );
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true,
-        manifestPath: `${course.course_files_path}/${manifestFile.name}`,
+        manifestInfo,
         toast: {
           title: 'Success',
-          description: 'SCORM manifest validated successfully',
+          description: 'SCORM manifest processed successfully',
           type: 'success'
         }
       }),
