@@ -1,8 +1,6 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import { DOMParser } from "https://deno.land/x/deno_dom/deno-dom-wasm.ts";
 
-// Type definitions
-interface ObjectiveData {
+export interface ObjectiveData {
   primary?: {
     id: string;
     satisfiedByMeasure: boolean;
@@ -14,7 +12,7 @@ interface ObjectiveData {
   }>;
 }
 
-interface SequencingData {
+export interface SequencingData {
   controlMode?: {
     choice: boolean;
     flow: boolean;
@@ -25,7 +23,7 @@ interface SequencingData {
   };
 }
 
-interface ResourceData {
+export interface ResourceData {
   identifier: string;
   type: string;
   href?: string;
@@ -33,7 +31,7 @@ interface ResourceData {
   files: string[];
 }
 
-interface OrganizationItem {
+export interface OrganizationItem {
   identifier: string;
   title: string;
   objectives?: ObjectiveData;
@@ -41,24 +39,55 @@ interface OrganizationItem {
   resourceId?: string;
 }
 
-interface OrganizationsResult {
-  default: string;
-  items: OrganizationItem[];
-}
-
-interface MetadataResult {
-  schema?: string;
-  schemaVersion?: string;
+export interface ScormManifest {
   title?: string;
-  description?: string;
-  keywords?: string[];
   version?: string;
-  duration?: string;
-  copyright?: string;
+  scormVersion: string;
+  status: string;
+  metadata: {
+    schema?: string;
+    schemaVersion?: string;
+    objectives?: ObjectiveData;
+  };
+  organizations: {
+    default: string;
+    items: OrganizationItem[];
+  };
+  resources: ResourceData[];
+  sequencing?: SequencingData;
 }
 
-// Parser functions
-function parseMetadata(metadataNode: any): MetadataResult {
+export async function parseManifest(manifestContent: string): Promise<ScormManifest> {
+  console.log('Processing manifest content:', manifestContent);
+  
+  try {
+    // Convert XML string to JavaScript object
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(manifestContent, 'text/xml');
+    
+    // Convert XML document to a plain object for easier parsing
+    const manifest = xmlToObj(xmlDoc.documentElement);
+    console.log('Converted manifest object:', manifest);
+
+    // Detect SCORM version
+    const scormVersion = detectScormVersion(manifest);
+    console.log('Detected SCORM version:', scormVersion);
+
+    return {
+      scormVersion,
+      status: 'processed',
+      metadata: parseMetadata(manifest.metadata?.[0]),
+      organizations: parseOrganizations(manifest.organizations?.[0]),
+      resources: parseResources(manifest.resources?.[0]),
+      sequencing: parseSequencing(manifest['imsss:sequencing']?.[0]),
+    };
+  } catch (error) {
+    console.error('Error parsing manifest:', error);
+    throw new Error(`Failed to parse manifest: ${error.message}`);
+  }
+}
+
+function parseMetadata(metadataNode: any): any {
   if (!metadataNode) return {};
 
   const lom = metadataNode['lom:lom']?.[0];
@@ -76,7 +105,7 @@ function parseMetadata(metadataNode: any): MetadataResult {
   };
 }
 
-function parseOrganizations(organizationsNode: any): OrganizationsResult {
+function parseOrganizations(organizationsNode: any): any {
   if (!organizationsNode) {
     return { default: '', items: [] };
   }
@@ -143,58 +172,6 @@ function parseSequencing(sequencingNode: any): SequencingData {
       objectiveSetByContent: deliveryControls['$objectiveSetByContent'] === 'true'
     } : undefined
   };
-}
-
-function parseObjectives(objectivesNode: any): ObjectiveData {
-  if (!objectivesNode) return { secondary: [] };
-
-  const primaryObjective = objectivesNode['imsss:primaryObjective']?.[0];
-  const secondaryObjectives = objectivesNode['imsss:objective'] || [];
-
-  return {
-    primary: primaryObjective ? {
-      id: primaryObjective['$objectiveID'] || '',
-      satisfiedByMeasure: primaryObjective['$satisfiedByMeasure'] === 'true',
-      minNormalizedMeasure: parseFloat(primaryObjective['imsss:minNormalizedMeasure']?.[0]?.['#text'] || '0')
-    } : undefined,
-    secondary: Array.isArray(secondaryObjectives) 
-      ? secondaryObjectives.map((obj: any) => ({
-          id: obj['$objectiveID'] || '',
-          description: obj['#text'] || undefined
-        }))
-      : []
-  };
-}
-
-export async function parseManifestFile(manifestContent: string) {
-  console.log('Processing manifest content:', manifestContent);
-  
-  try {
-    // Convert XML string to JavaScript object
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(manifestContent, 'text/xml');
-    
-    // Convert XML document to a plain object for easier parsing
-    const manifest = xmlToObj(xmlDoc.documentElement);
-    console.log('Converted manifest object:', manifest);
-
-    // Detect SCORM version
-    const scormVersion = detectScormVersion(manifest);
-    console.log('Detected SCORM version:', scormVersion);
-
-    return {
-      scormVersion,
-      status: 'processed',
-      metadata: parseMetadata(manifest.metadata?.[0]),
-      organizations: parseOrganizations(manifest.organizations?.[0]),
-      resources: parseResources(manifest.resources?.[0]),
-      sequencing: parseSequencing(manifest['imsss:sequencing']?.[0]),
-      objectives: parseObjectives(manifest.objectives?.[0])
-    };
-  } catch (error) {
-    console.error('Error parsing manifest:', error);
-    throw new Error(`Failed to parse manifest: ${error.message}`);
-  }
 }
 
 function detectScormVersion(manifest: any): string {
