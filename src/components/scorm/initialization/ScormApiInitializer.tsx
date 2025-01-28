@@ -4,13 +4,14 @@ import ScormAPI from "@/lib/scorm/ScormAPI";
 
 interface ScormApiInitializerProps {
   courseId: string;
+  scormVersion?: string;
   onInitialized: (api: ScormAPI) => void;
 }
 
 // Keep track of initialized courses across renders
 const initializedCourses = new Set<string>();
 
-export function ScormApiInitializer({ courseId, onInitialized }: ScormApiInitializerProps) {
+export function ScormApiInitializer({ courseId, scormVersion, onInitialized }: ScormApiInitializerProps) {
   const { toast } = useToast();
   const initializingRef = useRef(false);
 
