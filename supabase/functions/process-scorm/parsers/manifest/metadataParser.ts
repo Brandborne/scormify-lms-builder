@@ -1,7 +1,7 @@
-import { getNodeText, getNodeAttribute, getAllNodes } from './xmlParser.ts';
-import { MetadataResult } from '../types/manifest.ts';
+import { getNodeText } from './xmlParser.ts';
+import type { ScormManifest } from '../../types/parser.ts';
 
-export function parseMetadata(metadataNode: Element | null): MetadataResult {
+export function parseMetadata(metadataNode: Element | null): Partial<ScormManifest['metadata']> {
   console.log('Parsing metadata from node:', metadataNode?.outerHTML);
   
   if (!metadataNode) {

@@ -1,7 +1,7 @@
 import { getNodeText, getNodeAttribute, getAllNodes } from './xmlParser.ts';
-import { OrganizationsResult, OrganizationItem } from '../types/manifest.ts';
+import type { OrganizationItem } from '../../types/parser.ts';
 
-export function parseOrganizations(organizationsNode: Element | null): OrganizationsResult {
+export function parseOrganizations(organizationsNode: Element | null): { default: string; items: OrganizationItem[] } {
   console.log('Parsing organizations from node:', organizationsNode?.outerHTML);
   
   if (!organizationsNode) {
@@ -12,7 +12,7 @@ export function parseOrganizations(organizationsNode: Element | null): Organizat
   const defaultOrg = getNodeAttribute(organizationsNode, 'default') || '';
   const organizationNodes = getAllNodes(organizationsNode, 'organization');
 
-  const items = organizationNodes.map(parseOrganizationItem).filter(Boolean);
+  const items = organizationNodes.map(parseOrganizationItem).filter(Boolean) as OrganizationItem[];
 
   const result = {
     default: defaultOrg,
@@ -29,25 +29,13 @@ function parseOrganizationItem(item: Element): OrganizationItem | null {
   if (!item) return null;
 
   const identifier = getNodeAttribute(item, 'identifier') || '';
-  const title = getNodeText(item, 'title');
+  const title = getNodeText(item, 'title') || '';
   const resourceId = getNodeAttribute(item, 'identifierref');
 
-  // Handle prerequisites
-  const prerequisites = getAllNodes(item, 'adlcp\\:prerequisites, prerequisites')
-    .map(prereq => prereq.textContent?.trim())
-    .filter(Boolean);
-
-  // Handle child items
-  const children = getAllNodes(item, 'item')
-    .map(childItem => parseOrganizationItem(childItem))
-    .filter(Boolean);
-
-  const result = {
+  const result: OrganizationItem = {
     identifier,
-    title: title || '',
-    prerequisites: prerequisites.length ? prerequisites : undefined,
-    resourceId,
-    children: children.length ? children : undefined
+    title,
+    resourceId
   };
 
   console.log('Parsed organization item:', result);

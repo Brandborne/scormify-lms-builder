@@ -1,5 +1,5 @@
 import { getNodeAttribute, getAllNodes } from './xmlParser.ts';
-import { ResourceData } from '../types/manifest.ts';
+import type { ResourceData } from '../../types/parser.ts';
 
 export function parseResources(resourcesNode: Element | null): ResourceData[] {
   console.log('Parsing resources from node:', resourcesNode?.outerHTML);
@@ -16,14 +16,13 @@ export function parseResources(resourcesNode: Element | null): ResourceData[] {
     const resources = resourceNodes.map(resource => {
       console.log('Parsing resource:', resource.outerHTML);
       
-      const parsed = {
+      const parsed: ResourceData = {
         identifier: getNodeAttribute(resource, 'identifier') || '',
         type: getNodeAttribute(resource, 'type') || '',
         href: getNodeAttribute(resource, 'href'),
         scormType: getNodeAttribute(resource, 'adlcp:scormtype') || 
                   getNodeAttribute(resource, 'scormType'),
-        files: parseFiles(resource),
-        dependencies: parseDependencies(resource)
+        files: parseFiles(resource)
       };
 
       console.log('Parsed resource:', parsed);
@@ -46,14 +45,4 @@ function parseFiles(resource: Element): string[] {
   
   console.log(`Parsed ${files.length} files for resource`);
   return files;
-}
-
-function parseDependencies(resource: Element): string[] {
-  const depNodes = getAllNodes(resource, 'dependency');
-  const dependencies = depNodes
-    .map(dep => getNodeAttribute(dep, 'identifierref'))
-    .filter(Boolean) as string[];
-  
-  console.log(`Parsed ${dependencies.length} dependencies for resource`);
-  return dependencies;
 }
