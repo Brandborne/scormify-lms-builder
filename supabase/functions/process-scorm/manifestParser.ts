@@ -1,14 +1,91 @@
-import { parseManifest } from '../../../src/lib/scorm/parsers/manifest/index.ts';
+import { parseMetadata } from '../../../src/lib/scorm/parsers/manifest/MetadataParser';
+import { parseOrganizations } from '../../../src/lib/scorm/parsers/manifest/OrganizationsParser';
+import { parseResources } from '../../../src/lib/scorm/parsers/manifest/ResourcesParser';
+import { parseSequencing } from '../../../src/lib/scorm/parsers/manifest/SequencingParser';
+import { parseObjectives } from '../../../src/lib/scorm/parsers/manifest/ObjectivesParser';
 
 export async function parseManifestFile(manifestContent: string) {
   console.log('Processing manifest content:', manifestContent);
   
   try {
-    const manifestData = parseManifest(manifestContent);
-    console.log('Parsed manifest data:', manifestData);
-    return manifestData;
+    // Convert XML string to JavaScript object
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(manifestContent, 'text/xml');
+    
+    // Convert XML document to a plain object for easier parsing
+    const manifest = xmlToObj(xmlDoc.documentElement);
+    console.log('Converted manifest object:', manifest);
+
+    // Detect SCORM version
+    const scormVersion = detectScormVersion(manifest);
+    console.log('Detected SCORM version:', scormVersion);
+
+    return {
+      scormVersion,
+      status: 'processed',
+      metadata: parseMetadata(manifest.metadata?.[0]),
+      organizations: parseOrganizations(manifest.organizations?.[0]),
+      resources: parseResources(manifest.resources?.[0]),
+      sequencing: parseSequencing(manifest['imsss:sequencing']?.[0]),
+      objectives: parseObjectives(manifest.objectives?.[0])
+    };
   } catch (error) {
     console.error('Error parsing manifest:', error);
     throw new Error(`Failed to parse manifest: ${error.message}`);
   }
+}
+
+function detectScormVersion(manifest: any): string {
+  const schemaVersion = manifest?.metadata?.[0]?.['schema']?.[0]?.['#text'];
+  if (schemaVersion?.includes('2004')) return 'SCORM 2004';
+  if (schemaVersion?.includes('1.2')) return 'SCORM 1.2';
+  
+  // Fallback to checking namespace
+  const xmlns = manifest['$xmlns'];
+  if (xmlns?.includes('2004')) return 'SCORM 2004';
+  if (xmlns?.includes('1.2')) return 'SCORM 1.2';
+  
+  return 'Unknown';
+}
+
+function xmlToObj(node: Node): any {
+  if (node.nodeType === Node.TEXT_NODE) {
+    const text = node.nodeValue?.trim();
+    return text ? { '#text': text } : undefined;
+  }
+
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    const obj: any = {};
+    
+    // Add attributes
+    const attributes = (node as Element).attributes;
+    for (let i = 0; i < attributes.length; i++) {
+      const attr = attributes[i];
+      obj[`$${attr.name}`] = attr.value;
+    }
+    
+    // Add child nodes
+    const children = node.childNodes;
+    for (let i = 0; i < children.length; i++) {
+      const child = children[i];
+      const childResult = xmlToObj(child);
+      
+      if (childResult !== undefined) {
+        const name = child.nodeName;
+        
+        if (obj[name]) {
+          if (!Array.isArray(obj[name])) {
+            obj[name] = [obj[name]];
+          }
+          obj[name].push(childResult);
+        } else {
+          obj[name] = childResult;
+        }
+      }
+    }
+    
+    return obj;
+  }
+  
+  return undefined;
 }

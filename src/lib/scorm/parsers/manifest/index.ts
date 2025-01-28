@@ -36,7 +36,7 @@ export function parseManifest(manifestXml: string): ManifestData {
       metadata: parseMetadata(manifest.metadata?.[0]),
       organizations: parseOrganizations(manifest.organizations?.[0]),
       resources: parseResources(manifest.resources?.[0]),
-      sequencing: parseSequencing(manifest.imsss:sequencing?.[0]),
+      sequencing: parseSequencing(manifest['imsss:sequencing']?.[0]),
       objectives: parseObjectives(manifest.objectives?.[0])
     };
   } catch (error) {
