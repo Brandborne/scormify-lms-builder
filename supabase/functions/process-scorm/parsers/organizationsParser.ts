@@ -1,7 +1,7 @@
 import type { OrganizationsResult, OrganizationItem } from '../types/parser.ts';
 
 export function parseOrganizations(organizationsNode: any): OrganizationsResult {
-  console.log('Parsing organizations from node:', organizationsNode);
+  console.log('Parsing organizations from node:', JSON.stringify(organizationsNode, null, 2));
   
   if (!organizationsNode) {
     console.log('No organizations node found');
@@ -20,11 +20,13 @@ export function parseOrganizations(organizationsNode: any): OrganizationsResult 
     items
   };
 
-  console.log('Parsed organizations:', result);
+  console.log('Parsed organizations:', JSON.stringify(result, null, 2));
   return result;
 }
 
 function parseOrganizationItem(item: any): OrganizationItem | null {
+  console.log('Parsing organization item:', JSON.stringify(item, null, 2));
+  
   if (!item) return null;
 
   const identifier = item['$identifier'] || '';
@@ -54,5 +56,6 @@ function parseOrganizationItem(item: any): OrganizationItem | null {
     result[key] === undefined && delete result[key]
   );
 
+  console.log('Parsed organization item:', JSON.stringify(result, null, 2));
   return result;
 }

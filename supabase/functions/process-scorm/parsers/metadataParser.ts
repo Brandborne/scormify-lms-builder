@@ -1,7 +1,7 @@
 import type { MetadataResult } from '../types/parser.ts';
 
 export function parseMetadata(metadataNode: any): MetadataResult {
-  console.log('Parsing metadata from node:', metadataNode);
+  console.log('Parsing metadata from node:', JSON.stringify(metadataNode, null, 2));
   
   if (!metadataNode) {
     console.log('No metadata node found');
@@ -31,6 +31,6 @@ export function parseMetadata(metadataNode: any): MetadataResult {
     result[key] === undefined && delete result[key]
   );
 
-  console.log('Parsed metadata:', result);
+  console.log('Parsed metadata:', JSON.stringify(result, null, 2));
   return result;
 }

@@ -1,7 +1,7 @@
 import type { SequencingData } from '../types/parser.ts';
 
 export function parseSequencing(node: any): SequencingData {
-  console.log('Parsing sequencing from node:', node);
+  console.log('Parsing sequencing from node:', JSON.stringify(node, null, 2));
   
   if (!node) {
     console.log('No sequencing node found');
@@ -22,6 +22,6 @@ export function parseSequencing(node: any): SequencingData {
     } : undefined
   };
 
-  console.log('Parsed sequencing:', result);
+  console.log('Parsed sequencing:', JSON.stringify(result, null, 2));
   return result;
 }
