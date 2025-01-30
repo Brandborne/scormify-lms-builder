@@ -26,9 +26,11 @@ export async function uploadScormToFirebase(
 
     // Define the storage path
     const zipStoragePath = `courses/${courseId}/original/${zipFile.name}`;
-    const zipFileRef = ref(storage, zipStoragePath);
+    console.log('Creating storage reference for path:', zipStoragePath);
     
-    console.log('Uploading ZIP file to:', zipStoragePath);
+    const zipFileRef = ref(storage, zipStoragePath);
+    console.log('Storage reference created successfully');
+    
     console.log('Starting uploadBytes operation...');
     
     try {
@@ -57,11 +59,14 @@ export async function uploadScormToFirebase(
         error: uploadError instanceof Error ? {
           name: uploadError.name,
           message: uploadError.message,
-          stack: uploadError.stack
+          stack: uploadError.stack,
+          code: (uploadError as any).code // Firebase errors often include a code
         } : uploadError,
         path: zipStoragePath
       });
-      throw uploadError;
+      throw new Error(uploadError instanceof Error ? 
+        `Upload failed: ${uploadError.message}` : 
+        'Upload failed with unknown error');
     }
 
   } catch (error) {
@@ -69,7 +74,8 @@ export async function uploadScormToFirebase(
       error: error instanceof Error ? {
         name: error.name,
         message: error.message,
-        stack: error.stack
+        stack: error.stack,
+        code: (error as any).code // Firebase errors often include a code
       } : error,
       stage: 'initialization'
     });

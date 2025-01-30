@@ -37,9 +37,16 @@ export function ScormFirebaseUploader() {
       if (configError) {
         console.error('Error fetching Firebase config:', {
           error: configError,
-          details: configError.message
+          details: configError.message,
+          status: configError.status,
+          context: configError.context
         });
-        throw new Error('Failed to initialize Firebase');
+        throw new Error(`Failed to initialize Firebase: ${configError.message}`);
+      }
+
+      if (!configData) {
+        console.error('No Firebase config received from Edge Function');
+        throw new Error('Failed to initialize Firebase: No configuration received');
       }
 
       console.log('Firebase config received, initializing storage...');
@@ -49,12 +56,22 @@ export function ScormFirebaseUploader() {
       const courseId = crypto.randomUUID();
       console.log('Starting upload for course:', courseId);
       
-      const result = await uploadScormToFirebase(courseId, file);
-      console.log('Upload completed successfully:', result);
-      
-      toast.success('SCORM package uploaded successfully');
+      try {
+        const result = await uploadScormToFirebase(courseId, file);
+        console.log('Upload completed successfully:', result);
+        toast.success('SCORM package uploaded successfully');
+      } catch (uploadError) {
+        console.error('Upload failed:', {
+          error: uploadError instanceof Error ? {
+            name: uploadError.name,
+            message: uploadError.message,
+            stack: uploadError.stack
+          } : uploadError
+        });
+        throw uploadError;
+      }
     } catch (error) {
-      console.error('Upload error:', {
+      console.error('Upload process failed:', {
         error: error instanceof Error ? {
           name: error.name,
           message: error.message,
