@@ -10,5 +10,11 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
+
+// Initialize Cloud Storage and get a reference to the service
 export const storage = getStorage(app);
+
+// Add some debug logging
+console.log('Firebase initialized with storage bucket:', import.meta.env.VITE_FIREBASE_STORAGE_BUCKET);
