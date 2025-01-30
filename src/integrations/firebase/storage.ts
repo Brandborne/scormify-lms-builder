@@ -20,20 +20,29 @@ export async function uploadScormToFirebase(
     const zipStoragePath = `courses/${courseId}/original/${zipFile.name}`;
     const zipFileRef = ref(storage, zipStoragePath);
     
-    console.log('Uploading ZIP file to:', zipStoragePath);
+    console.log('Starting ZIP file upload to:', zipStoragePath);
     
-    const uploadResult = await uploadBytes(zipFileRef, zipFile, {
+    // Track upload progress
+    const uploadTask = uploadBytes(zipFileRef, zipFile, {
       contentType: 'application/zip'
     });
+
+    // Log upload progress
+    console.log('Upload task created, waiting for completion...');
     
-    console.log('ZIP file upload completed:', {
+    const uploadResult = await uploadTask;
+    
+    console.log('ZIP file upload completed successfully:', {
       fullPath: uploadResult.ref.fullPath,
       contentType: uploadResult.metadata.contentType,
-      size: uploadResult.metadata.size
+      size: uploadResult.metadata.size,
+      generation: uploadResult.metadata.generation,
+      timeCreated: uploadResult.metadata.timeCreated
     });
 
+    console.log('Generating download URL...');
     const downloadUrl = await getDownloadURL(uploadResult.ref);
-    console.log('ZIP file download URL:', downloadUrl);
+    console.log('ZIP file download URL generated:', downloadUrl);
 
     // For now, return minimal response until we implement unzipping
     return {
@@ -42,7 +51,10 @@ export async function uploadScormToFirebase(
     };
 
   } catch (error) {
-    console.error('Upload process failed:', error);
+    console.error('Upload process failed:', error instanceof Error ? {
+      message: error.message,
+      stack: error.stack
+    } : error);
     throw error;
   }
 }
