@@ -30,67 +30,66 @@ export function ScormFrame({ url, title, scormVersion }: ScormFrameProps) {
           // Add new CSP meta tag with more permissive policy
           const meta = document.createElement('meta');
           meta.httpEquiv = 'Content-Security-Policy';
-          meta.content = `
-            default-src * 'self' data: blob: filesystem: about: ws: wss: 'unsafe-inline' 'unsafe-eval';
-            script-src * 'self' data: blob: 'unsafe-inline' 'unsafe-eval';
-            connect-src * 'self' data: blob: 'unsafe-inline';
-            img-src * 'self' data: blob:;
-            frame-src * 'self';
-            style-src * 'self' data: blob: 'unsafe-inline';
-            font-src * 'self' data: blob:;
-            frame-ancestors *;
-          `.replace(/\s+/g, ' ').trim();
-          
+          meta.content = `default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob:; frame-src *; style-src * 'unsafe-inline';`;
           iframe.contentDocument.head.insertBefore(meta, iframe.contentDocument.head.firstChild);
-          
+
           // Add base target for relative URLs
           const base = document.createElement('base');
           base.target = '_self';
           iframe.contentDocument.head.appendChild(base);
 
-          // Enhanced logging for script execution
-          console.log('Document readyState:', iframe.contentDocument.readyState);
-          console.log('SCORM API Window object:', {
-            API: !!window.API,
-            API_1484_11: !!window.API_1484_11
-          });
-          
-          // Log all script tags in the document
-          const scripts = Array.from(iframe.contentDocument.getElementsByTagName('script'));
-          console.log('Found scripts in content:', scripts.map(s => ({
-            src: s.src,
-            type: s.type,
-            async: s.async,
-            defer: s.defer
-          })));
-          
-          // Check for ScormDriver specifically
-          const hasScormDriver = scripts.some(s => s.src.includes('scormdriver.js'));
-          console.log('ScormDriver script found:', hasScormDriver);
-          
-          // Monitor script load events
-          const observer = new MutationObserver((mutations) => {
+          // Pre-inject SCORM API bridge script
+          const bridgeScript = document.createElement('script');
+          bridgeScript.textContent = `
+            if (!window.API && !window.API_1484_11) {
+              window.API = window.parent.API;
+              window.API_1484_11 = window.parent.API_1484_11;
+              console.log('SCORM API bridge initialized:', {
+                API: !!window.API,
+                API_1484_11: !!window.API_1484_11
+              });
+            }
+          `;
+          iframe.contentDocument.head.appendChild(bridgeScript);
+
+          // Enhanced script loading monitoring
+          const scriptLoadMonitor = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
-              if (mutation.type === 'childList') {
-                mutation.addedNodes.forEach((node) => {
-                  if (node instanceof HTMLScriptElement) {
-                    console.log('New script loaded:', {
-                      src: node.src,
-                      type: node.type
-                    });
-                  }
-                });
-              }
+              mutation.addedNodes.forEach((node) => {
+                if (node instanceof HTMLScriptElement) {
+                  const scriptInfo = {
+                    src: node.src,
+                    type: node.type,
+                    async: node.async,
+                    defer: node.defer,
+                    textContent: node.textContent?.substring(0, 100) + '...'
+                  };
+                  console.log('Script loaded:', scriptInfo);
+
+                  // Add load/error handlers
+                  node.addEventListener('load', () => {
+                    console.log('Script loaded successfully:', node.src);
+                  });
+                  node.addEventListener('error', (error) => {
+                    console.error('Script failed to load:', node.src, error);
+                  });
+                }
+              });
             });
           });
-          
-          observer.observe(iframe.contentDocument.head, {
+
+          scriptLoadMonitor.observe(iframe.contentDocument, {
             childList: true,
             subtree: true
           });
-          
-          // Log content type information
-          console.log('Content-Type meta:', iframe.contentDocument.querySelector('meta[http-equiv="Content-Type"]')?.getAttribute('content'));
+
+          // Log document readiness
+          console.log('Document readyState:', iframe.contentDocument.readyState);
+          iframe.contentDocument.addEventListener('DOMContentLoaded', () => {
+            console.log('DOMContentLoaded event fired');
+            const scripts = Array.from(iframe.contentDocument.getElementsByTagName('script'));
+            console.log('Scripts found after DOMContentLoaded:', scripts.length);
+          });
         }
       } catch (error) {
         console.error('Error setting up iframe:', error);
