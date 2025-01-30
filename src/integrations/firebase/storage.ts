@@ -6,7 +6,11 @@ export async function uploadScormToFirebase(
   courseId: string,
   zipFile: File
 ): Promise<{ uploadedFiles: string[], indexPath: string | null }> {
-  console.log('Starting SCORM upload to Firebase');
+  console.log('Starting SCORM upload to Firebase', {
+    courseId,
+    fileName: zipFile.name,
+    fileSize: zipFile.size
+  });
   
   // Extract zip contents
   const zip = await JSZip.loadAsync(zipFile);
@@ -18,9 +22,12 @@ export async function uploadScormToFirebase(
     if (file.dir) continue;
 
     try {
+      console.log(`Processing file: ${relativePath}`);
       const content = await file.async('arraybuffer');
       const storagePath = `courses/${courseId}/${relativePath}`;
       const fileRef = ref(storage, storagePath);
+      
+      console.log(`Uploading to path: ${storagePath}`);
       
       // Upload the file
       await uploadBytes(fileRef, content, {
@@ -33,14 +40,20 @@ export async function uploadScormToFirebase(
       // Check if this is an index file
       if (relativePath.toLowerCase().includes('index.html')) {
         indexPath = downloadUrl;
+        console.log('Found index file:', downloadUrl);
       }
 
-      console.log(`Uploaded: ${relativePath}`);
+      console.log(`Successfully uploaded: ${relativePath}`);
     } catch (error) {
       console.error(`Error uploading ${relativePath}:`, error);
-      throw error;
+      throw new Error(`Failed to upload ${relativePath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
+
+  console.log('Upload completed', {
+    totalFiles: uploadedFiles.length,
+    indexPath
+  });
 
   return { uploadedFiles, indexPath };
 }

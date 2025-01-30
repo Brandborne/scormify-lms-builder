@@ -10,11 +10,18 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-// Initialize Firebase
+// Initialize Firebase with debug logging
+console.log('Initializing Firebase with config:', {
+  ...firebaseConfig,
+  apiKey: '[REDACTED]' // Don't log the API key
+});
+
 const app = initializeApp(firebaseConfig);
 
-// Initialize Cloud Storage and get a reference to the service
-export const storage = getStorage(app);
+// Initialize Cloud Storage with explicit bucket URL
+const storageBucket = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET;
+const storage = getStorage(app, `gs://${storageBucket}`);
 
-// Add some debug logging
-console.log('Firebase initialized with storage bucket:', import.meta.env.VITE_FIREBASE_STORAGE_BUCKET);
+console.log('Firebase Storage initialized with bucket:', storageBucket);
+
+export { storage };
