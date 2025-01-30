@@ -1,6 +1,5 @@
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getFirebaseStorage } from './config';
-import JSZip from 'jszip';
 
 export async function uploadScormToFirebase(
   courseId: string,
@@ -17,72 +16,31 @@ export async function uploadScormToFirebase(
     const storage = getFirebaseStorage();
     console.log('Firebase storage instance obtained:', !!storage);
 
-    // Extract zip contents
-    console.log('Starting ZIP extraction...');
-    const zip = await JSZip.loadAsync(zipFile);
-    console.log('ZIP loaded successfully');
+    // Upload the zip file directly first
+    const zipStoragePath = `courses/${courseId}/original/${zipFile.name}`;
+    const zipFileRef = ref(storage, zipStoragePath);
     
-    const uploadedFiles: string[] = [];
-    let indexPath: string | null = null;
-
-    // Process each file in the zip
-    const entries = Object.entries(zip.files);
-    console.log(`Found ${entries.length} files in ZIP:`, 
-      entries.map(([path]) => path).join(', ')
-    );
-
-    for (const [relativePath, file] of entries) {
-      // Skip directories and macOS system files
-      if (file.dir || relativePath.startsWith('__MACOSX/') || relativePath.startsWith('._')) {
-        console.log(`Skipping file: ${relativePath} (directory or system file)`);
-        continue;
-      }
-
-      try {
-        console.log(`Processing file: ${relativePath}`);
-        const content = await file.async('arraybuffer');
-        console.log(`File ${relativePath} extracted, size: ${content.byteLength} bytes`);
-        
-        const storagePath = `courses/${courseId}/${relativePath}`;
-        const fileRef = ref(storage, storagePath);
-        console.log(`Created storage reference for path: ${storagePath}`);
-        
-        const contentType = getContentType(relativePath);
-        console.log(`Uploading ${relativePath} with content type: ${contentType}`);
-        
-        // Upload the file
-        const uploadResult = await uploadBytes(fileRef, content, {
-          contentType
-        });
-        console.log(`Upload successful for ${relativePath}:`, {
-          fullPath: uploadResult.ref.fullPath,
-          contentType: uploadResult.metadata.contentType,
-          size: uploadResult.metadata.size
-        });
-        
-        const downloadUrl = await getDownloadURL(fileRef);
-        console.log(`Download URL obtained for ${relativePath}: ${downloadUrl}`);
-        uploadedFiles.push(downloadUrl);
-
-        // Check if this is an index file
-        if (relativePath.toLowerCase().includes('index.html')) {
-          indexPath = downloadUrl;
-          console.log('Found index file:', downloadUrl);
-        }
-      } catch (error) {
-        console.error(`Error uploading ${relativePath}:`, error);
-        throw new Error(`Failed to upload ${relativePath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
-    }
-
-    console.log('Upload completed successfully', {
-      totalFiles: uploadedFiles.length,
-      indexPath,
-      courseId,
-      uploadedPaths: uploadedFiles
+    console.log('Uploading ZIP file to:', zipStoragePath);
+    
+    const uploadResult = await uploadBytes(zipFileRef, zipFile, {
+      contentType: 'application/zip'
+    });
+    
+    console.log('ZIP file upload completed:', {
+      fullPath: uploadResult.ref.fullPath,
+      contentType: uploadResult.metadata.contentType,
+      size: uploadResult.metadata.size
     });
 
-    return { uploadedFiles, indexPath };
+    const downloadUrl = await getDownloadURL(uploadResult.ref);
+    console.log('ZIP file download URL:', downloadUrl);
+
+    // For now, return minimal response until we implement unzipping
+    return {
+      uploadedFiles: [downloadUrl],
+      indexPath: null
+    };
+
   } catch (error) {
     console.error('Upload process failed:', error);
     throw error;
