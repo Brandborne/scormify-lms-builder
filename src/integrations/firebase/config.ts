@@ -13,15 +13,15 @@ const firebaseConfig = {
 // Initialize Firebase with debug logging
 console.log('Initializing Firebase with config:', {
   ...firebaseConfig,
-  apiKey: '[REDACTED]' // Don't log the API key
+  apiKey: '[REDACTED]', // Don't log the API key
+  storageBucket: firebaseConfig.storageBucket // Explicitly log the bucket
 });
 
 const app = initializeApp(firebaseConfig);
 
 // Initialize Cloud Storage with explicit bucket URL
-const storageBucket = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET;
-const storage = getStorage(app, `gs://${storageBucket}`);
+const storage = getStorage(app);
 
-console.log('Firebase Storage initialized with bucket:', storageBucket);
+console.log('Firebase Storage initialized');
 
 export { storage };

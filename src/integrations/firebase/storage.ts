@@ -19,7 +19,11 @@ export async function uploadScormToFirebase(
 
   // Process each file in the zip
   for (const [relativePath, file] of Object.entries(zip.files)) {
-    if (file.dir) continue;
+    // Skip directories and macOS system files
+    if (file.dir || relativePath.startsWith('__MACOSX/') || relativePath.startsWith('._')) {
+      console.log(`Skipping file: ${relativePath} (directory or system file)`);
+      continue;
+    }
 
     try {
       console.log(`Processing file: ${relativePath}`);
@@ -52,7 +56,8 @@ export async function uploadScormToFirebase(
 
   console.log('Upload completed', {
     totalFiles: uploadedFiles.length,
-    indexPath
+    indexPath,
+    courseId
   });
 
   return { uploadedFiles, indexPath };
