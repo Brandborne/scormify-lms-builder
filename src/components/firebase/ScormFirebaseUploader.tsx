@@ -22,7 +22,6 @@ export function ScormFirebaseUploader() {
       type: file.type
     });
 
-    // Validate file type
     if (!file.name.toLowerCase().endsWith('.zip')) {
       console.log('Invalid file type:', file.type);
       toast.error('Please upload a SCORM zip file');
@@ -31,7 +30,6 @@ export function ScormFirebaseUploader() {
 
     setIsUploading(true);
     try {
-      console.log('Fetching Firebase config from Edge Function...');
       // Get Firebase config from Edge Function
       const { data: configData, error: configError } = await supabase.functions.invoke('get-firebase-config');
       
@@ -40,7 +38,6 @@ export function ScormFirebaseUploader() {
         throw new Error('Failed to initialize Firebase');
       }
 
-      console.log('Firebase config received, initializing storage...');
       // Initialize Firebase with the config
       await initializeFirebaseStorage(configData);
 

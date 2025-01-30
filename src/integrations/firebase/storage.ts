@@ -1,4 +1,4 @@
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, UploadMetadata } from 'firebase/storage';
 import { getFirebaseStorage } from './config';
 
 export async function uploadScormToFirebase(
@@ -12,46 +12,45 @@ export async function uploadScormToFirebase(
   });
   
   try {
-    // Get storage instance and verify it's initialized
     const storage = getFirebaseStorage();
-    console.log('Firebase storage instance obtained:', !!storage);
+    console.log('Firebase storage instance obtained');
 
-    // Upload the zip file directly first
+    // Create metadata for the upload
+    const metadata: UploadMetadata = {
+      contentType: 'application/zip',
+      customMetadata: {
+        courseId,
+        originalName: zipFile.name
+      }
+    };
+
+    // Define the storage path
     const zipStoragePath = `courses/${courseId}/original/${zipFile.name}`;
     const zipFileRef = ref(storage, zipStoragePath);
     
-    console.log('Starting ZIP file upload to:', zipStoragePath);
+    console.log('Uploading ZIP file to:', zipStoragePath);
     
-    // Track upload progress
-    const uploadTask = uploadBytes(zipFileRef, zipFile, {
-      contentType: 'application/zip'
-    });
-
-    // Log upload progress
-    console.log('Upload task created, waiting for completion...');
+    // Upload the file with metadata
+    const uploadResult = await uploadBytes(zipFileRef, zipFile, metadata);
     
-    const uploadResult = await uploadTask;
-    
-    console.log('ZIP file upload completed successfully:', {
+    console.log('Upload completed successfully:', {
       fullPath: uploadResult.ref.fullPath,
       contentType: uploadResult.metadata.contentType,
       size: uploadResult.metadata.size,
-      generation: uploadResult.metadata.generation,
       timeCreated: uploadResult.metadata.timeCreated
     });
 
-    console.log('Generating download URL...');
+    // Generate download URL
     const downloadUrl = await getDownloadURL(uploadResult.ref);
-    console.log('ZIP file download URL generated:', downloadUrl);
+    console.log('Download URL generated:', downloadUrl);
 
-    // For now, return minimal response until we implement unzipping
     return {
       uploadedFiles: [downloadUrl],
-      indexPath: null
+      indexPath: null // Will be implemented when we add unzipping functionality
     };
 
   } catch (error) {
-    console.error('Upload process failed:', error instanceof Error ? {
+    console.error('Upload failed:', error instanceof Error ? {
       message: error.message,
       stack: error.stack
     } : error);
