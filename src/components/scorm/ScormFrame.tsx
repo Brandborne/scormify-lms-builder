@@ -40,10 +40,17 @@ export function ScormFrame({ url, title, scormVersion }: ScormFrameProps) {
             const existingCspTags = iframe.contentDocument.head.querySelectorAll('meta[http-equiv="Content-Security-Policy"]');
             existingCspTags.forEach(tag => tag.remove());
             
-            // Add new CSP meta tag with nonce
+            // Add new CSP meta tag with more permissive policy
             const meta = document.createElement('meta');
             meta.httpEquiv = 'Content-Security-Policy';
-            meta.content = `default-src * 'self' blob: data:; style-src * 'nonce-${nonce}'; script-src * 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:;`;
+            meta.content = `
+              default-src * 'self' blob: data:;
+              style-src * 'self' 'unsafe-inline' 'nonce-${nonce}';
+              script-src * 'unsafe-inline' 'unsafe-eval';
+              img-src * data: blob:;
+              connect-src *;
+              frame-src *;
+            `.replace(/\s+/g, ' ').trim();
             iframe.contentDocument.head.appendChild(meta);
             
             // Add base target for relative URLs
@@ -86,7 +93,7 @@ export function ScormFrame({ url, title, scormVersion }: ScormFrameProps) {
       src={url}
       className="w-full min-h-[800px] border-0 bg-white"
       title={title}
-      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-storage-access-by-user-activation"
+      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-storage-access-by-user-activation allow-presentation"
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; clipboard-write; fullscreen; microphone; camera; display-capture; web-share"
       loading="eager"
       referrerPolicy="origin"
