@@ -12,16 +12,23 @@ const firebaseConfig = {
 
 // Initialize Firebase with debug logging
 console.log('Initializing Firebase with config:', {
-  ...firebaseConfig,
-  apiKey: '[REDACTED]', // Don't log the API key
-  storageBucket: firebaseConfig.storageBucket // Explicitly log the bucket
+  projectId: firebaseConfig.projectId,
+  storageBucket: firebaseConfig.storageBucket,
+  authDomain: firebaseConfig.authDomain
 });
+
+if (!firebaseConfig.storageBucket) {
+  console.error('Storage bucket is not configured!', {
+    storageBucket: firebaseConfig.storageBucket,
+    envValue: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET
+  });
+}
 
 const app = initializeApp(firebaseConfig);
 
 // Initialize Cloud Storage with explicit bucket URL
 const storage = getStorage(app);
 
-console.log('Firebase Storage initialized');
+console.log('Firebase Storage initialized with bucket:', firebaseConfig.storageBucket);
 
 export { storage };
