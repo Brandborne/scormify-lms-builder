@@ -13,22 +13,11 @@ export function ScormFrame({ url, title, scormVersion }: ScormFrameProps) {
   const nonce = generateNonce();
 
   useEffect(() => {
-    // Check content type of the URL
-    fetch(url, { method: 'HEAD' })
-      .then(response => {
-        console.log('Content-Type:', response.headers.get('content-type'));
-        console.log('Content-Disposition:', response.headers.get('content-disposition'));
-        console.log('Full response headers:', Object.fromEntries([...response.headers]));
-      })
-      .catch(error => {
-        console.error('Error checking content type:', error);
-      });
-
     const iframe = iframeRef.current;
     if (!iframe) return;
 
     const setupIframe = () => {
-      console.log('Setting up iframe...');
+      console.log('Setting up iframe for SCORM content...');
       
       try {
         if (iframe.contentWindow && iframe.contentDocument?.head) {
@@ -42,38 +31,35 @@ export function ScormFrame({ url, title, scormVersion }: ScormFrameProps) {
           const meta = document.createElement('meta');
           meta.httpEquiv = 'Content-Security-Policy';
           meta.content = `
-            default-src * 'self' blob: data:;
-            style-src * 'self' 'unsafe-inline' 'nonce-${nonce}';
-            script-src * 'unsafe-inline' 'unsafe-eval';
+            default-src * 'self' data: blob:;
+            script-src * 'self' 'unsafe-inline' 'unsafe-eval' blob:;
+            style-src * 'self' 'unsafe-inline';
             img-src * data: blob:;
             connect-src *;
             frame-src *;
+            worker-src * blob:;
           `.replace(/\s+/g, ' ').trim();
           
-          // Insert CSP tag as the first element in head
-          if (iframe.contentDocument.head.firstChild) {
-            iframe.contentDocument.head.insertBefore(meta, iframe.contentDocument.head.firstChild);
-          } else {
-            iframe.contentDocument.head.appendChild(meta);
-          }
+          iframe.contentDocument.head.insertBefore(meta, iframe.contentDocument.head.firstChild);
           
           // Add base target for relative URLs
           const base = document.createElement('base');
           base.target = '_self';
           iframe.contentDocument.head.appendChild(base);
 
-          // Add nonce to all style tags
-          const styleTags = iframe.contentDocument.getElementsByTagName('style');
-          Array.from(styleTags).forEach(style => {
-            style.nonce = nonce;
-          });
-
           // Log SCORM API availability for debugging
           console.log('Document readyState:', iframe.contentDocument.readyState);
+          console.log('SCORM API Window object:', {
+            API: !!window.API,
+            API_1484_11: !!window.API_1484_11
+          });
+          
+          // Check for ScormDriver
           const hasScormDriver = iframe.contentDocument.querySelector('script[src*="scormdriver.js"]');
           console.log('ScormDriver script found:', !!hasScormDriver);
-          console.log('SCORM API available:', !!iframe.contentWindow.API);
-          console.log('SCORM 2004 API available:', !!iframe.contentWindow.API_1484_11);
+          
+          // Log content type information
+          console.log('Content-Type meta:', iframe.contentDocument.querySelector('meta[http-equiv="Content-Type"]')?.getAttribute('content'));
         }
       } catch (error) {
         console.error('Error setting up iframe:', error);
@@ -87,8 +73,6 @@ export function ScormFrame({ url, title, scormVersion }: ScormFrameProps) {
     }, 300);
 
     iframe.addEventListener('load', handleLoad);
-    
-    // Also try to set up immediately in case content is already loaded
     setupIframe();
 
     return () => {
@@ -102,7 +86,7 @@ export function ScormFrame({ url, title, scormVersion }: ScormFrameProps) {
       src={url}
       className="w-full min-h-[800px] border-0 bg-white"
       title={title}
-      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-storage-access-by-user-activation allow-presentation"
+      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-storage-access-by-user-activation allow-presentation allow-orientation-lock allow-pointer-lock"
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; clipboard-write; fullscreen; microphone; camera; display-capture; web-share"
       loading="eager"
       referrerPolicy="origin"
