@@ -13,6 +13,17 @@ export function ScormFrame({ url, title, scormVersion }: ScormFrameProps) {
   const nonce = generateNonce();
 
   useEffect(() => {
+    // Check content type of the URL
+    fetch(url, { method: 'HEAD' })
+      .then(response => {
+        console.log('Content-Type:', response.headers.get('content-type'));
+        console.log('Content-Disposition:', response.headers.get('content-disposition'));
+        console.log('Full response headers:', Object.fromEntries([...response.headers]));
+      })
+      .catch(error => {
+        console.error('Error checking content type:', error);
+      });
+
     const iframe = iframeRef.current;
     if (!iframe) return;
 
