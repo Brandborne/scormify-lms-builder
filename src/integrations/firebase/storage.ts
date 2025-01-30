@@ -1,5 +1,5 @@
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from './config';
+import { getFirebaseStorage } from './config';
 import JSZip from 'jszip';
 
 export async function uploadScormToFirebase(
@@ -16,6 +16,9 @@ export async function uploadScormToFirebase(
   const zip = await JSZip.loadAsync(zipFile);
   const uploadedFiles: string[] = [];
   let indexPath: string | null = null;
+
+  // Get storage instance
+  const storage = getFirebaseStorage();
 
   // Process each file in the zip
   for (const [relativePath, file] of Object.entries(zip.files)) {

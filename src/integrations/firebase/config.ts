@@ -1,34 +1,49 @@
 import { initializeApp } from 'firebase/app';
 import { getStorage } from 'firebase/storage';
+import { supabase } from '@/integrations/supabase/client';
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
-};
+let storage: ReturnType<typeof getStorage>;
 
-// Initialize Firebase with debug logging
-console.log('Initializing Firebase with config:', {
-  projectId: firebaseConfig.projectId,
-  storageBucket: firebaseConfig.storageBucket,
-  authDomain: firebaseConfig.authDomain
-});
+async function initializeFirebase() {
+  try {
+    console.log('Fetching Firebase configuration from Edge Function...');
+    
+    const { data, error } = await supabase.functions.invoke('get-firebase-config');
+    
+    if (error) {
+      console.error('Failed to fetch Firebase config:', error);
+      throw error;
+    }
 
-if (!firebaseConfig.storageBucket) {
-  console.error('Storage bucket is not configured!', {
-    storageBucket: firebaseConfig.storageBucket,
-    envValue: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET
-  });
+    const firebaseConfig = data;
+
+    console.log('Initializing Firebase with config:', {
+      projectId: firebaseConfig.projectId,
+      storageBucket: firebaseConfig.storageBucket,
+      authDomain: firebaseConfig.authDomain
+    });
+
+    if (!firebaseConfig.storageBucket) {
+      throw new Error('Storage bucket is not configured!');
+    }
+
+    const app = initializeApp(firebaseConfig);
+    storage = getStorage(app);
+
+    console.log('Firebase Storage initialized with bucket:', firebaseConfig.storageBucket);
+  } catch (error) {
+    console.error('Firebase initialization failed:', error);
+    throw error;
+  }
 }
 
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase when this module is imported
+initializeFirebase().catch(console.error);
 
-// Initialize Cloud Storage with explicit bucket URL
-const storage = getStorage(app);
-
-console.log('Firebase Storage initialized with bucket:', firebaseConfig.storageBucket);
-
-export { storage };
+// Export a function to get the storage instance
+export function getFirebaseStorage() {
+  if (!storage) {
+    throw new Error('Firebase Storage not initialized');
+  }
+  return storage;
+}
