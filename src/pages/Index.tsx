@@ -5,6 +5,7 @@ import { CourseCard } from "@/components/CourseCard";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ScormUploader } from "@/components/ScormUploader";
+import { ScormFirebaseUploader } from "@/components/firebase/ScormFirebaseUploader";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -81,7 +82,10 @@ const Index = () => {
         <LMSSidebar />
         <main className="flex-1 p-8">
           <DashboardHeader title="Learning Dashboard">
-            <ScormUploader />
+            <div className="flex gap-4">
+              <ScormUploader />
+              <ScormFirebaseUploader />
+            </div>
           </DashboardHeader>
           {error && (
             <div className="text-red-500 rounded-lg bg-red-50 p-4 mb-6">
