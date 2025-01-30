@@ -4,6 +4,7 @@ import { Upload } from "lucide-react";
 import { uploadScormToFirebase } from '@/integrations/firebase/storage';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { initializeFirebaseStorage } from '@/integrations/firebase/config';
 
 export function ScormFirebaseUploader() {
   const [isUploading, setIsUploading] = useState(false);
@@ -27,6 +28,9 @@ export function ScormFirebaseUploader() {
         console.error('Error fetching Firebase config:', configError);
         throw new Error('Failed to initialize Firebase');
       }
+
+      // Initialize Firebase with the config
+      await initializeFirebaseStorage(configData);
 
       const courseId = crypto.randomUUID();
       const result = await uploadScormToFirebase(courseId, file);
