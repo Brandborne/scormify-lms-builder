@@ -12,16 +12,21 @@ export async function uploadScormToFirebase(
     fileSize: zipFile.size
   });
   
+  // Get storage instance and verify it's initialized
+  const storage = getFirebaseStorage();
+  console.log('Firebase storage instance obtained:', !!storage);
+
   // Extract zip contents
+  console.log('Extracting ZIP contents...');
   const zip = await JSZip.loadAsync(zipFile);
   const uploadedFiles: string[] = [];
   let indexPath: string | null = null;
 
-  // Get storage instance
-  const storage = getFirebaseStorage();
-
   // Process each file in the zip
-  for (const [relativePath, file] of Object.entries(zip.files)) {
+  const entries = Object.entries(zip.files);
+  console.log(`Found ${entries.length} files in ZIP`);
+
+  for (const [relativePath, file] of entries) {
     // Skip directories and macOS system files
     if (file.dir || relativePath.startsWith('__MACOSX/') || relativePath.startsWith('._')) {
       console.log(`Skipping file: ${relativePath} (directory or system file)`);
@@ -37,9 +42,10 @@ export async function uploadScormToFirebase(
       console.log(`Uploading to path: ${storagePath}`);
       
       // Upload the file
-      await uploadBytes(fileRef, content, {
+      const uploadResult = await uploadBytes(fileRef, content, {
         contentType: getContentType(relativePath)
       });
+      console.log(`Upload successful for ${relativePath}:`, uploadResult);
       
       const downloadUrl = await getDownloadURL(fileRef);
       uploadedFiles.push(downloadUrl);
