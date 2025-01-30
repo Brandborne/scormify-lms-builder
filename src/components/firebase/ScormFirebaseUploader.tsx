@@ -30,14 +30,19 @@ export function ScormFirebaseUploader() {
 
     setIsUploading(true);
     try {
+      console.log('Fetching Firebase config from Edge Function...');
       // Get Firebase config from Edge Function
       const { data: configData, error: configError } = await supabase.functions.invoke('get-firebase-config');
       
       if (configError) {
-        console.error('Error fetching Firebase config:', configError);
+        console.error('Error fetching Firebase config:', {
+          error: configError,
+          details: configError.message
+        });
         throw new Error('Failed to initialize Firebase');
       }
 
+      console.log('Firebase config received, initializing storage...');
       // Initialize Firebase with the config
       await initializeFirebaseStorage(configData);
 
@@ -49,7 +54,13 @@ export function ScormFirebaseUploader() {
       
       toast.success('SCORM package uploaded successfully');
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error('Upload error:', {
+        error: error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : error
+      });
       toast.error(error instanceof Error ? error.message : 'Failed to upload SCORM package');
     } finally {
       setIsUploading(false);
