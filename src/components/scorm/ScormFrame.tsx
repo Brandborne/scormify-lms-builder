@@ -27,63 +27,72 @@ export function ScormFrame({ url, title, scormVersion }: ScormFrameProps) {
     const iframe = iframeRef.current;
     if (!iframe) return;
 
-    const handleLoad = debounce(() => {
-      console.log('SCORM content frame loaded:', iframe.src);
-      console.log('SCORM Version:', scormVersion);
+    const setupIframe = () => {
+      console.log('Setting up iframe...');
       
       try {
-        if (iframe.contentWindow) {
+        if (iframe.contentWindow && iframe.contentDocument?.head) {
           console.log('Successfully accessed iframe content window');
           
-          if (iframe.contentDocument?.head) {
-            // Remove any existing CSP meta tags
-            const existingCspTags = iframe.contentDocument.head.querySelectorAll('meta[http-equiv="Content-Security-Policy"]');
-            existingCspTags.forEach(tag => tag.remove());
-            
-            // Add new CSP meta tag with more permissive policy
-            const meta = document.createElement('meta');
-            meta.httpEquiv = 'Content-Security-Policy';
-            meta.content = `
-              default-src * 'self' blob: data:;
-              style-src * 'self' 'unsafe-inline' 'nonce-${nonce}';
-              script-src * 'unsafe-inline' 'unsafe-eval';
-              img-src * data: blob:;
-              connect-src *;
-              frame-src *;
-            `.replace(/\s+/g, ' ').trim();
+          // Remove any existing CSP meta tags
+          const existingCspTags = iframe.contentDocument.head.querySelectorAll('meta[http-equiv="Content-Security-Policy"]');
+          existingCspTags.forEach(tag => tag.remove());
+          
+          // Add new CSP meta tag with more permissive policy
+          const meta = document.createElement('meta');
+          meta.httpEquiv = 'Content-Security-Policy';
+          meta.content = `
+            default-src * 'self' blob: data:;
+            style-src * 'self' 'unsafe-inline' 'nonce-${nonce}';
+            script-src * 'unsafe-inline' 'unsafe-eval';
+            img-src * data: blob:;
+            connect-src *;
+            frame-src *;
+          `.replace(/\s+/g, ' ').trim();
+          
+          // Insert CSP tag as the first element in head
+          if (iframe.contentDocument.head.firstChild) {
+            iframe.contentDocument.head.insertBefore(meta, iframe.contentDocument.head.firstChild);
+          } else {
             iframe.contentDocument.head.appendChild(meta);
-            
-            // Add base target for relative URLs
-            const base = document.createElement('base');
-            base.target = '_self';
-            iframe.contentDocument.head.appendChild(base);
-
-            // Add nonce to all style tags
-            const styleTags = iframe.contentDocument.getElementsByTagName('style');
-            Array.from(styleTags).forEach(style => {
-              style.nonce = nonce;
-            });
           }
+          
+          // Add base target for relative URLs
+          const base = document.createElement('base');
+          base.target = '_self';
+          iframe.contentDocument.head.appendChild(base);
+
+          // Add nonce to all style tags
+          const styleTags = iframe.contentDocument.getElementsByTagName('style');
+          Array.from(styleTags).forEach(style => {
+            style.nonce = nonce;
+          });
 
           // Log SCORM API availability for debugging
-          const hasScormDriver = iframe.contentWindow.document.querySelector('script[src*="scormdriver.js"]');
+          console.log('Document readyState:', iframe.contentDocument.readyState);
+          const hasScormDriver = iframe.contentDocument.querySelector('script[src*="scormdriver.js"]');
           console.log('ScormDriver script found:', !!hasScormDriver);
           console.log('SCORM API available:', !!iframe.contentWindow.API);
           console.log('SCORM 2004 API available:', !!iframe.contentWindow.API_1484_11);
         }
       } catch (error) {
-        console.error('Error accessing iframe content:', error);
+        console.error('Error setting up iframe:', error);
       }
+    };
+
+    const handleLoad = debounce(() => {
+      console.log('SCORM content frame loaded:', iframe.src);
+      console.log('SCORM Version:', scormVersion);
+      setupIframe();
     }, 300);
 
     iframe.addEventListener('load', handleLoad);
-    iframe.addEventListener('error', (event) => {
-      console.error('Iframe loading error:', event);
-    });
+    
+    // Also try to set up immediately in case content is already loaded
+    setupIframe();
 
     return () => {
       iframe.removeEventListener('load', handleLoad);
-      iframe.removeEventListener('error', () => {});
     };
   }, [url, nonce, scormVersion]);
 
