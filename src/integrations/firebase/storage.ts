@@ -18,14 +18,18 @@ export async function uploadScormToFirebase(
     console.log('Firebase storage instance obtained:', !!storage);
 
     // Extract zip contents
-    console.log('Extracting ZIP contents...');
+    console.log('Starting ZIP extraction...');
     const zip = await JSZip.loadAsync(zipFile);
+    console.log('ZIP loaded successfully');
+    
     const uploadedFiles: string[] = [];
     let indexPath: string | null = null;
 
     // Process each file in the zip
     const entries = Object.entries(zip.files);
-    console.log(`Found ${entries.length} files in ZIP`);
+    console.log(`Found ${entries.length} files in ZIP:`, 
+      entries.map(([path]) => path).join(', ')
+    );
 
     for (const [relativePath, file] of entries) {
       // Skip directories and macOS system files
@@ -37,17 +41,24 @@ export async function uploadScormToFirebase(
       try {
         console.log(`Processing file: ${relativePath}`);
         const content = await file.async('arraybuffer');
+        console.log(`File ${relativePath} extracted, size: ${content.byteLength} bytes`);
+        
         const storagePath = `courses/${courseId}/${relativePath}`;
         const fileRef = ref(storage, storagePath);
+        console.log(`Created storage reference for path: ${storagePath}`);
         
-        console.log(`Uploading to path: ${storagePath}`);
-        console.log(`File size: ${content.byteLength} bytes`);
+        const contentType = getContentType(relativePath);
+        console.log(`Uploading ${relativePath} with content type: ${contentType}`);
         
         // Upload the file
         const uploadResult = await uploadBytes(fileRef, content, {
-          contentType: getContentType(relativePath)
+          contentType
         });
-        console.log(`Upload successful for ${relativePath}:`, uploadResult);
+        console.log(`Upload successful for ${relativePath}:`, {
+          fullPath: uploadResult.ref.fullPath,
+          contentType: uploadResult.metadata.contentType,
+          size: uploadResult.metadata.size
+        });
         
         const downloadUrl = await getDownloadURL(fileRef);
         console.log(`Download URL obtained for ${relativePath}: ${downloadUrl}`);
@@ -58,18 +69,17 @@ export async function uploadScormToFirebase(
           indexPath = downloadUrl;
           console.log('Found index file:', downloadUrl);
         }
-
-        console.log(`Successfully uploaded: ${relativePath}`);
       } catch (error) {
         console.error(`Error uploading ${relativePath}:`, error);
         throw new Error(`Failed to upload ${relativePath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
 
-    console.log('Upload completed', {
+    console.log('Upload completed successfully', {
       totalFiles: uploadedFiles.length,
       indexPath,
-      courseId
+      courseId,
+      uploadedPaths: uploadedFiles
     });
 
     return { uploadedFiles, indexPath };
