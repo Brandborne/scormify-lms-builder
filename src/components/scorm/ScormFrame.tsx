@@ -31,13 +31,14 @@ export function ScormFrame({ url, title, scormVersion }: ScormFrameProps) {
           const meta = document.createElement('meta');
           meta.httpEquiv = 'Content-Security-Policy';
           meta.content = `
-            default-src * 'self' data: blob:;
-            script-src * 'self' 'unsafe-inline' 'unsafe-eval' blob:;
-            style-src * 'self' 'unsafe-inline';
-            img-src * data: blob:;
-            connect-src *;
-            frame-src *;
-            worker-src * blob:;
+            default-src * 'self' data: blob: filesystem: about: ws: wss: 'unsafe-inline' 'unsafe-eval';
+            script-src * 'self' data: blob: 'unsafe-inline' 'unsafe-eval';
+            connect-src * 'self' data: blob: 'unsafe-inline';
+            img-src * 'self' data: blob:;
+            frame-src * 'self';
+            style-src * 'self' data: blob: 'unsafe-inline';
+            font-src * 'self' data: blob:;
+            frame-ancestors *;
           `.replace(/\s+/g, ' ').trim();
           
           iframe.contentDocument.head.insertBefore(meta, iframe.contentDocument.head.firstChild);
@@ -47,16 +48,46 @@ export function ScormFrame({ url, title, scormVersion }: ScormFrameProps) {
           base.target = '_self';
           iframe.contentDocument.head.appendChild(base);
 
-          // Log SCORM API availability for debugging
+          // Enhanced logging for script execution
           console.log('Document readyState:', iframe.contentDocument.readyState);
           console.log('SCORM API Window object:', {
             API: !!window.API,
             API_1484_11: !!window.API_1484_11
           });
           
-          // Check for ScormDriver
-          const hasScormDriver = iframe.contentDocument.querySelector('script[src*="scormdriver.js"]');
-          console.log('ScormDriver script found:', !!hasScormDriver);
+          // Log all script tags in the document
+          const scripts = Array.from(iframe.contentDocument.getElementsByTagName('script'));
+          console.log('Found scripts in content:', scripts.map(s => ({
+            src: s.src,
+            type: s.type,
+            async: s.async,
+            defer: s.defer
+          })));
+          
+          // Check for ScormDriver specifically
+          const hasScormDriver = scripts.some(s => s.src.includes('scormdriver.js'));
+          console.log('ScormDriver script found:', hasScormDriver);
+          
+          // Monitor script load events
+          const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+              if (mutation.type === 'childList') {
+                mutation.addedNodes.forEach((node) => {
+                  if (node instanceof HTMLScriptElement) {
+                    console.log('New script loaded:', {
+                      src: node.src,
+                      type: node.type
+                    });
+                  }
+                });
+              }
+            });
+          });
+          
+          observer.observe(iframe.contentDocument.head, {
+            childList: true,
+            subtree: true
+          });
           
           // Log content type information
           console.log('Content-Type meta:', iframe.contentDocument.querySelector('meta[http-equiv="Content-Type"]')?.getAttribute('content'));
@@ -86,7 +117,7 @@ export function ScormFrame({ url, title, scormVersion }: ScormFrameProps) {
       src={url}
       className="w-full min-h-[800px] border-0 bg-white"
       title={title}
-      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-storage-access-by-user-activation allow-presentation allow-orientation-lock allow-pointer-lock"
+      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-storage-access-by-user-activation allow-presentation allow-orientation-lock allow-pointer-lock allow-popups-to-escape-sandbox"
       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; clipboard-write; fullscreen; microphone; camera; display-capture; web-share"
       loading="eager"
       referrerPolicy="origin"
